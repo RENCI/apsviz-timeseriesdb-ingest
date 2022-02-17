@@ -7,7 +7,7 @@ import pandas as pd
 from loguru import logger
 
 # This function queries the drf_harvest_data_file_meta table using a file_name, an pulls out the 
-# file_name, and file_date_time, if the file_name exists in the table.
+# file_name, and if the file_name exists in the table.
 def getFileDateTime(inputFile):
     try:
         # Create connection to database and get cursor
@@ -20,14 +20,14 @@ def getFileDateTime(inputFile):
         cur.execute("""BEGIN""")
 
         # Run query
-        cur.execute("""SELECT dir_path, file_name, file_date_time, ingested, version, overlap_past_file_date_time
+        cur.execute("""SELECT dir_path, file_name, ingested, overlap_past_file_date_time
                        FROM drf_harvest_data_file_meta
                        WHERE file_name = %(input_file)s
-                       ORDER BY file_date_time""",
+                       ORDER BY file_name""",
                     {'input_file': inputFile})
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['dir_path', 'file_name', 'file_date_time', 'ingested', 'version', 'overlap_past_file_date_time'])
+        df = pd.DataFrame(cur.fetchall(), columns=['dir_path', 'file_name', 'ingested', 'overlap_past_file_date_time'])
 
         # Close cursor and database connection
         cur.close()
@@ -66,23 +66,10 @@ def createFileList(inputDir, inputDataset):
         file_name = dirOutputFile.split('/')[-1] 
         data_date_time = file_name.split('_')[-1].split('.')[0]
 
-        checkFile = getFileDateTime(file_name)
-        checked_file = checkFile.count()
-
-        if checked_file['file_date_time'] > 0:
-            version = checkFile['version'][-1]+1
-            #print('There is another file') 
-        elif checked_file['file_date_time'] == 0:
-            version = 1
-            #print('There is not another file') 
-        else:
-            sys.exit('Somethings wrong with the query!')
-
         df = pd.read_csv(dirOutputFile)
         data_begin_time = df['TIME'].min()
         data_end_time = df['TIME'].max()
 
-        file_date_time = datetime.datetime.fromtimestamp(os.path.getctime(dirOutputFile))
         source = inputDataset.split('_')[0]
 
         if source == 'adcirc': 
@@ -95,10 +82,10 @@ def createFileList(inputDir, inputDataset):
         ingested = 'False'
         overlap_past_file_date_time = 'False'
 
-        outputList.append([dir_path,file_name,data_date_time,data_begin_time,data_end_time,file_date_time,source,content_info,ingested,version,overlap_past_file_date_time]) 
+        outputList.append([dir_path,file_name,data_date_time,data_begin_time,data_end_time,source,content_info,ingested,overlap_past_file_date_time]) 
 
     # Convert outputList to a DataFrame
-    df = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'data_date_time', 'data_begin_time', 'data_end_time', 'file_date_time', 'source', 'content_info', 'ingested', 'version', 'overlap_past_file_date_time'])
+    df = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'data_date_time', 'data_begin_time', 'data_end_time', 'source', 'content_info', 'ingested', 'overlap_past_file_date_time'])
 
     # Get first time, and last time from the list of files. This will be used in the filename, to enable checking for time overlap in files
     first_time = df['data_date_time'][0]

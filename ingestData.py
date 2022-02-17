@@ -36,11 +36,11 @@ def getHarvestDataFileMeta(inputDataset):
 
         # Return Pandas dataframe
         if inputDataset == 'adcirc':
-            # Limit to 40 files at a time
-            return(df.head(40))
+            # Limit to 60 files at a time
+            return(df.head(60))
         else:
-            # Limit to 20 files at a time
-            return(df.head(20))
+            # Limit to 30 files at a time
+            return(df.head(30))
 
     # If exception print error
     except (Exception, psycopg2.DatabaseError) as error:
@@ -67,7 +67,7 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
             cur.execute("""BEGIN""")
 
             # Run query
-            cur.execute("""COPY drf_harvest_data_file_meta(dir_path,file_name,data_date_time,data_begin_time,data_end_time,file_date_time,source,content_info,ingested,version,overlap_past_file_date_time)
+            cur.execute("""COPY drf_harvest_data_file_meta(dir_path,file_name,data_date_time,data_begin_time,data_end_time,source,content_info,ingested,overlap_past_file_date_time)
                            FROM %(ingest_path_file)s
                            DELIMITER ','
                            CSV HEADER""",

@@ -37,9 +37,9 @@ def getInputFiles(inputDataset):
 
         # Return Pandas dataframe
         if inputDataset == 'adcirc':
-            return(df.head(40))
+            return(df.head(60))
         else:  
-            return(df.head(20))
+            return(df.head(30))
 
     # If exception print error
     except (Exception, psycopg2.DatabaseError) as error:
