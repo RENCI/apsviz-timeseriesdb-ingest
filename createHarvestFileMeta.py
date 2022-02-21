@@ -40,6 +40,40 @@ def getFileDateTime(inputFile):
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
 
+# This function takes source as input, and returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, 
+# that have been ingested.
+def getOldHarvestFiles(source):
+    try:
+        # Create connection to database and get cursor
+        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        cur = conn.cursor()
+       
+        # Set enviromnent 
+        cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+        cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
+        cur.execute("""BEGIN""")
+
+        # Run query
+        cur.execute("""SELECT * FROM drf_harvest_data_file_meta
+                       WHERE source = %(source)s AND ingested = True""", 
+                    {'source': source})
+       
+        # convert query output to Pandas dataframe 
+        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_paht', 'file_name', 'data_date_time', 
+                                                   'data_begin_time', 'data_end_time', 'source', 'content_info', 
+                                                   'ingested', 'overlap_past_file_date_time'])
+
+        # Close cursor and database connection
+        cur.close()
+        conn.close()
+
+        # Return DataFrame
+        return(df)
+
+    # If exception print error    
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+
 # This function takes an input directory path and input dataset, and uses them to create a file list
 # that is ingested into the drf_harvest_data_file_meta table, and used to ingest the data files.
 def createFileList(inputDir, inputDataset):
@@ -85,10 +119,16 @@ def createFileList(inputDir, inputDataset):
         outputList.append([dir_path,file_name,data_date_time,data_begin_time,data_end_time,source,content_info,ingested,overlap_past_file_date_time]) 
 
     # Convert outputList to a DataFrame
-    df = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'data_date_time', 'data_begin_time', 'data_end_time', 'source', 'content_info', 'ingested', 'overlap_past_file_date_time'])
+    dfnew = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'data_date_time', 'data_begin_time', 'data_end_time', 'source', 'content_info', 'ingested', 'overlap_past_file_date_time'])
+
+    # Get DataFrame of existing list of files, in the database, that have been ingested.
+    dfold = getOldHarvestFiles(source)
+
+    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
+    df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
     # Get first time, and last time from the list of files. This will be used in the filename, to enable checking for time overlap in files
-    first_time = df['data_date_time'][0]
+    first_time = df['data_date_time'].iloc[0]
     last_time = df['data_date_time'].iloc[-1] 
 
     # Return DataFrame first time, and last time
