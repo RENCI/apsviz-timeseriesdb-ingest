@@ -87,11 +87,11 @@ def addMeta(outputDir, outputFile):
 def main(args):
     # Add logger
     logger.remove()
-    log_path = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
-    logger.add(log_path+'/createIngestSourceMeta.log', level='DEBUG')
+    log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
+    logger.add(log_path+'createIngestSourceMeta.log', level='DEBUG')
 
     # Extract args variables
-    outputDir = args.outputDir
+    outputDir = os.path.join(args.outputDir, '')
     outputFile = args.outputFile
 
     logger.info('Start processing source data for file '+outputFile+'.')
@@ -106,8 +106,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--outputDir", action="store", dest="outputDir")
-    parser.add_argument("--outputFile", action="store", dest="outputFile")
+    parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
+    parser.add_argument("--outputFile", action="store", help="Output file name", dest="outputFile", required=True)
 
     # Parse input arguments
     args = parser.parse_args()

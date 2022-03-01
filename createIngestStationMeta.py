@@ -255,11 +255,11 @@ def addNCEMMeta(locationType):
 def main(args):
     # Add logger
     logger.remove()
-    log_path = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
-    logger.add(log_path+'/createIngestStationMeta.log', level='DEBUG')
+    log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
+    logger.add(log_path+'createIngestStationMeta.log', level='DEBUG')
 
     # Extract args variables
-    outputDir = args.outputDir
+    outputDir = os.path.join(args.outputDir, '')
     outputFile = args.outputFile
 
     # Get dataset and location type
@@ -289,8 +289,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--outputDir", action="store", dest="outputDir")
-    parser.add_argument("--outputFile", action="store", dest="outputFile")
+    parser.add_argument("--outputDIR", "--outputDir", help="Input directory path", action="store", dest="outputDir", required=True)
+    parser.add_argument("--outputFile", help="Input file name", action="store", dest="outputFile", choices=['noaa_stationdata_TIDAL_meta.csv','contrails_stationdata_COASTAL_meta.csv','contrails_stationdata_RIVERS_meta.csv'], required=True)
 
     # Parse arguments
     args = parser.parse_args()

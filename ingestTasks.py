@@ -4,6 +4,7 @@
 # Import Python modules
 import argparse, glob, os, psycopg2
 import pandas as pd
+from pathlib import Path
 from loguru import logger
 
 # This function takes an dataset name as input and uses it to query the drf_harvest_data_file_meta table,
@@ -54,7 +55,7 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
 
     for infoFile in inputFiles:
         # Create list of data info files, to be ingested by searching the input directory for data info files.
-        ingestPathFile = ingestDir+infoFile.split('/')[-1]
+        ingestPathFile = ingestDir+Path(infoFile).parts[-1]
 
         try:
             # Create connection to database and get cursor
@@ -94,7 +95,7 @@ def ingestStation(inputDir, ingestDir):
     # Loop thru geom file list, ingesting each one 
     for geomFile in inputFiles:
         # Define the ingest path and file using the ingest directory and the geom file name
-        ingestPathFile = ingestDir+geomFile.split('/')[-1]
+        ingestPathFile = ingestDir+Path(geomFile).parts[-1]
  
         try:
             # Create connection to database and get cursor
@@ -134,7 +135,7 @@ def ingestSource(inputDir, ingestDir):
     # Loop thru source file list, ingesting each one
     for sourceFile in inputFiles:
         # Define the ingest path and file using the ingest directory and the source file name
-        ingestPathFile = ingestDir+sourceFile.split('/')[-1]
+        ingestPathFile = ingestDir+Path(sourceFile).parts[-1]
 
         try:
             # Create connection to database and get cursor
@@ -271,14 +272,32 @@ def createView():
 def main(args):
     # Add logger
     logger.remove()
-    log_path = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
-    logger.add(log_path+'/ingestData.log', level='DEBUG')
+    log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
+    logger.add(log_path+'ingestTasks.log', level='DEBUG')
 
     # Extract args variables
-    inputDir = args.inputDir
-    ingestDir = args.ingestDir
+    if args.inputDir is None:
+        inputDir = ''
+    elif args.inputDir is not None:
+        inputDir = os.path.join(args.inputDir, '')
+    else:
+        sys.exit('Incorrect inputDir')
+
+    if args.ingestDir is None:
+        ingestDir = ''
+    elif args.ingestDir is not None:
+        ingestDir = os.path.join(args.ingestDir, '')
+    else:
+        sys.exit('Incorrect ingestDir')
+
     inputTask = args.inputTask
-    inputDataset = args.inputDataset
+
+    if args.inputDataset is None:
+        inputDataset = ''
+    elif args.inputDataset is not None:
+        inputDataset = args.inputDataset
+    else:
+        sys.exit('Incorrect ingestDataset')
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
     if inputTask.lower() == 'file':
@@ -308,10 +327,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputDir", action="store", dest="inputDir")
-    parser.add_argument("--ingestDir", action="store", dest="ingestDir")
-    parser.add_argument("--inputTask", action="store", dest="inputTask")
-    parser.add_argument("--inputDataset", action="store", dest="inputDataset")
+    parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=False)
+    parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['File','Station','Source','Data','View'], required=True)
+    parser.add_argument("--inputDataset", help="Input dataset to be processed", action="store", dest="inputDataset", choices=['adcirc','contrails','noaa'], required=False)
 
     # Parse arguments
     args = parser.parse_args()

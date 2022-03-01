@@ -179,11 +179,11 @@ def processData(outputDir, inputDataset):
 def main(args):
     # Add logger
     logger.remove()
-    log_path = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
-    logger.add(log_path+'/createIngestData.log', level='DEBUG')
+    log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
+    logger.add(log_path+'createIngestData.log', level='DEBUG')
 
     # Extract args variables
-    outputDir = args.outputDir
+    outputDir = os.path.join(args.outputDir, '')
     inputDataset = args.inputDataset
 
     logger.info('Start processing data for dataset '+inputDataset+'.')
@@ -196,8 +196,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--outputDir", action="store", dest="outputDir")
-    parser.add_argument("--inputDataset", action="store", dest="inputDataset")
+    parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
+    parser.add_argument("--inputDataset", help="Input dataset name", action="store", dest="inputDataset", choices=['noaa','contrails','adcirc'], required=True)
 
     args = parser.parse_args()
     main(args)

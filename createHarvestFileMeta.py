@@ -4,6 +4,7 @@
 # Import python modules
 import argparse, glob, sys, os, datetime, psycopg2
 import pandas as pd
+from pathlib import Path
 from loguru import logger
 
 # This function queries the drf_harvest_data_file_meta table using a file_name, an pulls out the 
@@ -97,7 +98,7 @@ def createFileList(inputDir, inputDataset):
     # Loop through dirOutputFiles, generate new variables and add them to outputList
     for dirOutputFile in dirOutputFiles:
         dir_path = dirOutputFile.split(inputDataset)[0]
-        file_name = dirOutputFile.split('/')[-1] 
+        file_name = Path(dirOutputFile).parts[-1] 
         data_date_time = file_name.split('_')[-1].split('.')[0]
 
         df = pd.read_csv(dirOutputFile)
@@ -139,12 +140,12 @@ def createFileList(inputDir, inputDataset):
 def main(args):
     # Add logger
     logger.remove()
-    log_path = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
-    logger.add(log_path+'/createHarvestFileMeta.log', level='DEBUG')
+    log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
+    logger.add(log_path+'createHarvestFileMeta.log', level='DEBUG')
 
     # Extract args variables
-    inputDir = args.inputDir
-    outputDir = args.outputDir
+    inputDir = os.path.join(args.inputDir, '')
+    outputDir = os.path.join(args.outputDir, '')
     inputDataset = args.inputDataset
 
     logger.info('Start processing source data for dataset '+inputDataset+'.')
@@ -168,9 +169,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputDir", action="store", dest="inputDir")    
-    parser.add_argument("--outputDir", action="store", dest="outputDir")
-    parser.add_argument("--inputDataset", action="store", dest="inputDataset")
+    parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=True)    
+    parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
+    parser.add_argument("--inputDataset", help="Input dataset name", action="store", dest="inputDataset", choices=['adcirc_stationdata','contrails_stationdata','noaa_stationdata'], required=True)
 
     # Parse input arguments
     args = parser.parse_args()
