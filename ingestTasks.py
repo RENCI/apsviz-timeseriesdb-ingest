@@ -10,7 +10,7 @@ from loguru import logger
 # This function takes an dataset name as input and uses it to query the drf_harvest_data_file_meta table,
 # creating a DataFrame that contains a list of data files to ingest. The ingest directory is the directory
 # path in the apsviz-timeseriesdb database container.
-def getHarvestDataFileMeta(inputDataset):
+def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
         conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
@@ -24,9 +24,10 @@ def getHarvestDataFileMeta(inputDataset):
         # Run query
         cur.execute("""SELECT file_name
                        FROM drf_harvest_data_file_meta
-                       WHERE source = %(source)s AND ingested = False
+                       WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
+                       source_archive = %(sourcearchive)s AND ingested = False
                        ORDER BY data_date_time""",
-                    {'source': inputDataset})
+                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
 
         # convert query output to Pandas dataframe
         df = pd.DataFrame(cur.fetchall(), columns=['file_name'])
@@ -36,12 +37,12 @@ def getHarvestDataFileMeta(inputDataset):
         conn.close()
 
         # Return Pandas dataframe
-        if inputDataset == 'adcirc':
-            # Limit to 60 files at a time
-            return(df.head(60))
+        if inputSourceName == 'adcirc':
+            # Limit to 100 files at a time
+            return(df.head(100))
         else:
-            # Limit to 30 files at a time
-            return(df.head(30))
+            # Limit to 50 files at a time
+            return(df.head(50))
 
     # If exception print error
     except (Exception, psycopg2.DatabaseError) as error:
@@ -68,7 +69,7 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
             cur.execute("""BEGIN""")
 
             # Run query
-            cur.execute("""COPY drf_harvest_data_file_meta(dir_path,file_name,data_date_time,data_begin_time,data_end_time,source,content_info,ingested,overlap_past_file_date_time)
+            cur.execute("""COPY drf_harvest_data_file_meta(dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,ingested,overlap_past_file_date_time)
                            FROM %(ingest_path_file)s
                            DELIMITER ','
                            CSV HEADER""",
@@ -171,9 +172,9 @@ def ingestSource(inputDir, ingestDir):
 # ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column "ingested", in the 
 # drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the directory path in the 
 # apsviz-timeseriesdb database container.
-def ingestData(ingestDir, inputDataset):
+def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
     # Get DataFrame the contains list of data files that need to be ingested
-    dfDirFiles = getHarvestDataFileMeta(inputDataset)
+    dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
     # Loop thru DataFrame ingesting each data file 
     for index, row in dfDirFiles.iterrows():
@@ -267,7 +268,7 @@ def createView():
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
 
-# Main program function takes args as input, which contains the inputDir, ingestDir, inputTask, and inputDataset values.
+# Main program function takes args as input, which contains the inputDir, ingestDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
 def main(args):
     # Add logger
@@ -292,12 +293,26 @@ def main(args):
 
     inputTask = args.inputTask
 
-    if args.inputDataset is None:
-        inputDataset = ''
-    elif args.inputDataset is not None:
-        inputDataset = args.inputDataset
+    if args.inputDataSource is None:
+        inputDataSource = ''
+    elif args.inputDataSource is not None:
+        inputDataSource = args.inputDataSource
     else:
-        sys.exit('Incorrect ingestDataset')
+        sys.exit('Incorrect inputDataSource')
+
+    if args.inputSourceName is None:
+        inputSourceName = ''
+    elif args.inputSourceName is not None:
+        inputSourceName = args.inputSourceName
+    else:
+        sys.exit('Incorrect inputSourceName')
+
+    if args.inputSourceArchive is None:
+        inputSourceArchive = ''
+    elif args.inputSourceArchive is not None:
+        inputSourceArchive = args.inputSourceArchive
+    else:
+        sys.exit('Incorrect inputSourceArchive')
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
     if inputTask.lower() == 'file':
@@ -313,15 +328,15 @@ def main(args):
         ingestSource(inputDir, ingestDir)
         logger.info('ingested source data.')
     elif inputTask.lower() == 'data':
-        logger.info('Ingesting data for dataset '+inputDataset+'.')
-        ingestData(ingestDir, inputDataset)
-        logger.info('Ingested data for dataset '+inputDataset+'.')
+        logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
+        ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive)
+        logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
     elif inputTask.lower() == 'view':
         logger.info('Creating view.')
         createView()
         logger.info('Created view.')
 
-# Run main function takes inputDir, ingestDir, inputTask, and inputDataset as input.
+# Run main function takes inputDir, ingestDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive as input.
 if __name__ == "__main__":
     """ This is executed when run from the command line """
     parser = argparse.ArgumentParser()
@@ -330,7 +345,9 @@ if __name__ == "__main__":
     parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=False)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['File','Station','Source','Data','View'], required=True)
-    parser.add_argument("--inputDataset", help="Input dataset to be processed", action="store", dest="inputDataset", choices=['adcirc','contrails','noaa'], required=False)
+    parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions'], required=False)
+    parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa'], required=False)
+    parser.add_argument("--inputSourceArchive", help="Input source archive to be processed", action="store", dest="inputSourceArchive", choices=['contrails','renci','noaa'], required=False)
 
     # Parse arguments
     args = parser.parse_args()

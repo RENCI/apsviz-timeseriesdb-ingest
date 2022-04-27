@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # Import Python modules
-import argparse, glob, sys, os, psycopg2, us, pdb
+import argparse, glob, sys, os, psycopg2, us
 import pandas as pd
 from psycopg2.extensions import AsIs
 from geopy.geocoders import Nominatim
@@ -89,7 +89,7 @@ def getNCEMStations(locationType):
             cur.execute("""SELECT site_id, latitude, longitude, owner, name, county FROM dbo_gages_all
                            WHERE is_coastal = 1 AND owner != 'NOAA' AND latitude IS NOT NULL
                            ORDER BY site_id""")
-        elif locationType == 'rivers':
+        elif locationType == 'river':
             cur.execute("""SELECT site_id, latitude, longitude, owner, name, county FROM dbo_gages_all
                            WHERE is_coastal = 0 AND owner != 'NOAA' AND latitude IS NOT NULL
                            ORDER BY site_id""")
@@ -290,7 +290,7 @@ if __name__ == "__main__":
 
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--outputDIR", "--outputDir", help="Input directory path", action="store", dest="outputDir", required=True)
-    parser.add_argument("--outputFile", help="Input file name", action="store", dest="outputFile", choices=['noaa_stationdata_TIDAL_meta.csv','contrails_stationdata_COASTAL_meta.csv','contrails_stationdata_RIVERS_meta.csv'], required=True)
+    parser.add_argument("--outputFile", help="Input file name", action="store", dest="outputFile", choices=['noaa_stationdata_tidal_meta.csv','contrails_stationdata_coastal_meta.csv','contrails_stationdata_river_meta.csv'], required=True)
 
     # Parse arguments
     args = parser.parse_args()

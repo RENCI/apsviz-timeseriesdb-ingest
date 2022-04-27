@@ -65,7 +65,14 @@ def addMeta(outputDir, outputFile):
         df['source_archive'] = source
     elif source == 'noaa':
         # Add data_source, source_name, and source_archive to dataframe
-        df['data_source'] = 'tidal_gauge'
+        gtype = outputFile.split('_')[3].lower()
+        if gtype == 'gauge':
+            df['data_source'] = 'tidal_gauge'
+        elif gtype == 'predictions':
+            df['data_source'] = 'tidal_predictions'
+        else:
+            sys.exit(1)
+
         df['source_name'] = source
         df['source_archive'] = source
     else:
