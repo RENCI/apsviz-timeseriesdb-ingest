@@ -86,11 +86,7 @@ def createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchiv
         inputDataset = inputSourceArchive+'_stationdata'
 
     # Search for files in the inputDir that have inputDataset name in them, and generate a list of files found
-    if inputDataSource == 'namforecast_hsofs':
-        dirInputFiles = glob.glob(inputDir+inputDataset+"_namforecast_HSOFS_*.csv")
-    elif inputDataSource == 'nowcast_hsofs':
-        dirInputFiles = glob.glob(inputDir+inputDataset+"_nowcast_HSOFS_*.csv")
-    elif inputDataSource == 'tidal_gauge':
+    if inputDataSource == 'tidal_gauge':
         dirInputFiles = glob.glob(inputDir+inputDataset+"_water_level_*.csv")
         if len(dirInputFiles) == 0:
             logger.info('Search for old NOAA file name')
@@ -114,7 +110,8 @@ def createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchiv
         else:
             logger.info('Search for new contrails file format which uses river in the name')
     else:
-        logger.info('incorrect inputDataSource name '+inputDataSource)
+        logger.info('Get inputDataSource name '+inputDataSource)
+        dirInputFiles = glob.glob(inputDir+inputDataset+"_"+inputSourceArchive.upper()+"_"+inputDataSource.upper()+"_*.csv")
  
     # Define outputList variable
     outputList = []
@@ -123,7 +120,9 @@ def createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchiv
     for dirInputFile in dirInputFiles:
         dir_path = dirInputFile.split(inputDataset)[0]
         file_name = Path(dirInputFile).parts[-1] 
-        data_date_time = re.search(r'(\d+-\d+-\d+T\d+:\d+:\d+)',file_name).group() #file_name.split('_')[-1].split('.')[0]
+
+        datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',file_name) 
+        data_date_time = datetimes[0]
 
         df = pd.read_csv(dirInputFile)
         data_begin_time = df['TIME'].min()
@@ -175,7 +174,7 @@ def main(args):
 
     # Create output file name
     if inputSourceName == 'adcirc':
-        outputFile = 'harvest_files_'+inputSourceName+'_stationdata_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+        outputFile = 'harvest_files_'+inputSourceName+'_stationdata_'+inputSourceArchive+'_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
     else:
         outputFile = 'harvest_files_'+inputSourceArchive+'_stationdata_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
 
@@ -191,7 +190,7 @@ if __name__ == "__main__":
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=True)    
     parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
-    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','tidal_gauge','tidal_predictions','coastal_gauge','river_gauge'], required=True)
+    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','tidal_gauge','tidal_predictions','coastal_gauge','river_gauge'], required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','contrails','renci'], required=True)
 

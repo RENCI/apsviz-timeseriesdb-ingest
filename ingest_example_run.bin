@@ -1,0 +1,13 @@
+#python ingestTasks.py --inputDir /Users/jmpmcman/Work/Surge/data/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask File 
+#python ingestTasks.py --inputDir /Users/jmpmcman/Work/Surge/data/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Station 
+#python ingestTasks.py --inputDir /Users/jmpmcman/Work/Surge/data/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Source
+python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource namforecast_hsofs --inputSourceName adcirc --inputSourceArchive renci
+#python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource namforecast_ec95d --inputSourceName adcirc --inputSourceArchive renci
+python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource nowcast_hsofs --inputSourceName adcirc --inputSourceArchive renci
+python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource nowcast_ec95d --inputSourceName adcirc --inputSourceArchive renci
+python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource coastal_gauge --inputSourceName ncem --inputSourceArchive contrails
+python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource river_gauge --inputSourceName ncem --inputSourceArchive contrails
+python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource tidal_gauge --inputSourceName noaa --inputSourceArchive noaa
+#python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource tidal_predictions --inputSourceName noaa --inputSourceArchive noaa
+#python ingestTasks.py --inputTask View
+

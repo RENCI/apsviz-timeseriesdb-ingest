@@ -345,7 +345,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=False)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['File','Station','Source','Data','View'], required=True)
-    parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions'], required=False)
+    parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','nowcast_ec95d','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions'], required=False)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa'], required=False)
     parser.add_argument("--inputSourceArchive", help="Input source archive to be processed", action="store", dest="inputSourceArchive", choices=['contrails','renci','noaa'], required=False)
 

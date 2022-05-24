@@ -105,8 +105,11 @@ def addMeta(inputDir, outputDir, inputFile, inputDataSource, inputSourceName, in
     dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tuples)
  
     # Get the timemark for the forecast and nowecast data 
-    data_date_time = re.search(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile).group() 
-    df['timemark'] = data_date_time #inputFile.split('_')[-1].split('.')[0].lower().strip()
+    datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
+    if len(datetimes) > 1: 
+        df['timemark'] = datetimes[1]
+    else:
+        df['timemark'] = datetimes[0] 
 
     # Add source id(s) to dataframe 
     for index, row in dfstations.iterrows():
@@ -122,7 +125,7 @@ def addMeta(inputDir, outputDir, inputFile, inputDataSource, inputSourceName, in
 # generates and list of input filenames, and uses them to run the addMeta function above.
 def processData(outputDir, inputDataSource, inputSourceName, inputSourceArchive):
     dfDirFiles = getInputFiles(inputDataSource, inputSourceName, inputSourceArchive) 
-    
+ 
     for index, row in dfDirFiles.iterrows():
         inputDir = row[0]
         inputFile = row[1] 
@@ -154,7 +157,7 @@ if __name__ == "__main__":
 
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
-    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','tidal_gauge','tidal_predictions','coastal_gauge','river_gauge'], required=True)
+    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','nowcast_ec95d','tidal_gauge','tidal_predictions','coastal_gauge','river_gauge'], required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','contrails','renci'], required=True)
 

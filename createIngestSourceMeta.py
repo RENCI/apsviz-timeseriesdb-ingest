@@ -44,7 +44,13 @@ def getStationID(locationType):
 # and add station_id(s) that are extracted from the drf_gauge_station table in theapsviz_gauges database.
 def addMeta(outputDir, outputFile):
     # Extract list of stations from dataframe for query database using the getStationID function
-    locationType = outputFile.split('_')[2]
+    if outputFile.split('_')[0] == 'adcirc':
+        locationType = outputFile.split('_')[3]
+    elif outputFile.split('_')[0] == 'contrails':
+        locationType = outputFile.split('_')[2]
+    elif outputFile.split('_')[0] == 'noaa':
+        locationType = outputFile.split('_')[2]
+
     df = getStationID(locationType)
 
     # Get source name from outputFilee
@@ -54,9 +60,9 @@ def addMeta(outputDir, outputFile):
     if source == 'adcirc':
         # Get source_name and data_source from outputFile, and add them to the dataframe along
         # with the source_archive value
-        df['data_source'] = outputFile.split('_')[3].lower()+'_'+outputFile.split('_')[4].lower()
+        df['data_source'] = outputFile.split('_')[4].lower()+'_'+outputFile.split('_')[5].lower()
         df['source_name'] = source
-        df['source_archive'] = 'renci'
+        df['source_archive'] = outputFile.split('_')[2].lower() 
     elif source == 'contrails':
         # Add data_source, source_name, and source_archive to dataframe
         gtype = outputFile.split('_')[2].lower()
