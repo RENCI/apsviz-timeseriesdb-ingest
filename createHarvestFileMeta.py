@@ -95,6 +95,8 @@ def createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchiv
             logger.info('Search for new NOAA file name which includes water_level in the name')
     elif inputDataSource == 'tidal_predictions':
         dirInputFiles = glob.glob(inputDir+inputDataset+"_predictions_*.csv")
+    elif inputDataSource == 'ocean_buoy':
+        dirInputFiles = glob.glob(inputDir+inputDataset+"_wave_height_*.csv")
     elif inputDataSource == 'coastal_gauge':
         dirInputFiles = glob.glob(inputDir+inputDataset+"_coastal_*.csv")
         if len(dirInputFiles) == 0:
@@ -128,7 +130,11 @@ def createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchiv
         data_begin_time = df['TIME'].min()
         data_end_time = df['TIME'].max()
 
-        ingested = 'False'
+        if pd.isnull(data_begin_time) and pd.isnull(data_end_time):
+            ingested = 'True'
+        else:
+            ingested = 'False'
+
         overlap_past_file_date_time = 'False'
 
         outputList.append([dir_path,file_name,data_date_time,data_begin_time,data_end_time,inputDataSource,inputSourceName,inputSourceArchive,ingested,overlap_past_file_date_time]) 
@@ -190,9 +196,9 @@ if __name__ == "__main__":
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=True)    
     parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
-    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','tidal_gauge','tidal_predictions','coastal_gauge','river_gauge'], required=True)
-    parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ncem'], required=True)
-    parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','contrails','renci'], required=True)
+    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','tidal_gauge','tidal_predictions','ocean_buoy','coastal_gauge','river_gauge'], required=True)
+    parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
+    parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
 
     # Parse input arguments
     args = parser.parse_args()

@@ -50,6 +50,8 @@ def addMeta(outputDir, outputFile):
         locationType = outputFile.split('_')[2]
     elif outputFile.split('_')[0] == 'noaa':
         locationType = outputFile.split('_')[2]
+    elif outputFile.split('_')[0] == 'ndbc':
+        locationType = outputFile.split('_')[2]
 
     df = getStationID(locationType)
 
@@ -80,6 +82,12 @@ def addMeta(outputDir, outputFile):
             sys.exit(1)
 
         df['source_name'] = source
+        df['source_archive'] = source
+
+    elif source == 'ndbc':
+        # Add data_source, source_name, and source_archive to dataframe
+        df['data_source'] = 'ocean_buoy'
+        df['source_name'] = 'ndbc'
         df['source_archive'] = source
     else:
         # If source in incorrect print message and exit
