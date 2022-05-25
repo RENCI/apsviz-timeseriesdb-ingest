@@ -39,7 +39,7 @@ def getGeometry(lon, lat):
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
 
-# This function takes not input, and returns a DataFrame that contains a list of NOAA stations that it extracted from the noaa_stations
+# This function takes no input, and returns a DataFrame that contains a list of NOAA stations that it extracted from the noaa_stations
 # table. The data in the noaa_stations table was obtained from NOAA's api.tidesandcurrents.noaa.gov API.
 def getNOAAStations():
     try:
@@ -64,6 +64,37 @@ def getNOAAStations():
         conn.close()
 
         # Return DataFrame 
+        return(df)
+
+    # If exception print error
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+
+# This function takes no input, and returns a DataFrame that contains a list of NDBC stations that it extracted from the ndbc_stations
+# table. The data in the ndbc_stations table was obtained from a NDBC meta file.
+def getNDBCStations():
+    try:
+        # Create connection to database and get cursor
+        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        cur = conn.cursor()
+
+        # Set enviromnent
+        cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+        cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
+        cur.execute("""BEGIN""")
+
+        # Run query
+        cur.execute("""SELECT station, lat, lon, name, units, tz, owner, state, county FROM ndbc_stations
+                       ORDER BY station""")
+
+        # convert query output to Pandas dataframe
+        df = pd.DataFrame(cur.fetchall(), columns=['station_name', 'lat', 'lon', 'location_name', 'units', 'tz', 'gauge_owner', 'state', 'county'])
+
+        # Close cursor and database connection
+        cur.close()
+        conn.close()
+
+        # Return DataFrame
         return(df)
 
     # If exception print error
@@ -110,7 +141,6 @@ def getNCEMStations(locationType):
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
             
-
 # This function queriers the original NOAA station table (noaa_stations), using the getNOAAStations function, 
 # extracting station information, and returns a dataframe. It uses the information from the table along with  
 # Nominatim and ZipCodeDatabase to generate and address from latitude and longitude values. 
@@ -212,6 +242,38 @@ def addNOAAMeta(locationType):
     # Return DataFrame 
     return(df)
 
+# This function queriers the original NDBC station table (ndbc_stations), using the getNDBCStations function,
+# extracting station information, and returns a dataframe. It uses the information from the table along with
+# Nominatim and ZipCodeDatabase to generate and address from latitude and longitude values.
+def addNDBCMeta(locationType):
+    # Get station data from original NOAA station table
+    df = getNDBCStations()
+
+    # Define list for input into new columns
+    geom = []
+
+    # Loop through dataframe
+    for index, row in df.iterrows():
+        # Get longitude and latitude values
+        lon = row['lon']
+        lat = row['lat']
+
+        # Append geometry to geom variable
+        geom.append(getGeometry(lon, lat))
+
+    # Add meta to DataFrame
+    df['location_type'] = 'ocean'
+    df['country'] = 'us'
+    df['geom'] = geom
+    df.columns= df.columns.str.lower()
+
+    # Reorder columns in DataFrame
+    newColsOrder = ["station_name","lat","lon","tz","gauge_owner","location_name","location_type","country","state","county","geom"]
+    df=df.reindex(columns=newColsOrder)
+
+    # Return DataFrame
+    return(df)
+
 # This function queriers the original NCEM station table (db_gages_all), using the getNCEMStations function,
 # extracting station information, and returns a dataframe. 
 def addNCEMMeta(locationType):
@@ -273,6 +335,11 @@ def main(args):
         df = addNOAAMeta(locationType)
         df.to_csv(outputDir+'geom_'+outputFile, index=False) 
         logger.info('Finnished processing NOAA stations.')
+    elif dataset == 'ndbc':
+        logger.info('Start processing NDBC stations.')
+        df = addNDBCMeta(locationType)
+        df.to_csv(outputDir+'geom_'+outputFile, index=False)
+        logger.info('Finnished processing NDBC stations.')
     elif dataset == 'contrails':
         # If dataset is contrails run the addNCEMMeta function and write output to csv file
         logger.info('Start processing Contrails stations.')
@@ -290,7 +357,7 @@ if __name__ == "__main__":
 
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--outputDIR", "--outputDir", help="Input directory path", action="store", dest="outputDir", required=True)
-    parser.add_argument("--outputFile", help="Input file name", action="store", dest="outputFile", choices=['noaa_stationdata_tidal_meta.csv','contrails_stationdata_coastal_meta.csv','contrails_stationdata_river_meta.csv'], required=True)
+    parser.add_argument("--outputFile", help="Input file name", action="store", dest="outputFile", choices=['noaa_stationdata_tidal_meta.csv','ndbc_stationdata_tidal_meta.csv','contrails_stationdata_coastal_meta.csv','contrails_stationdata_river_meta.csv'], required=True)
 
     # Parse arguments
     args = parser.parse_args()
