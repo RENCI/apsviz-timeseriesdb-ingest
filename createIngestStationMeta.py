@@ -84,12 +84,13 @@ def getNDBCStations():
         cur.execute("""BEGIN""")
 
         # Run query
-        cur.execute("""SELECT station, lat, lon, name, units, tz, owner, state, county FROM ndbc_stations
+        cur.execute("""SELECT station, lat, lon, name, tz, state FROM ndbc_stations
                        ORDER BY station""")
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['station_name', 'lat', 'lon', 'location_name', 'units', 'tz', 'gauge_owner', 'state', 'county'])
-
+        df = pd.DataFrame(cur.fetchall(), columns=['station_name', 'lat', 'lon', 'location_name', 'tz', 'state'])
+        df['state'] = df['state'].str.lower()
+ 
         # Close cursor and database connection
         cur.close()
         conn.close()
@@ -262,8 +263,10 @@ def addNDBCMeta(locationType):
         geom.append(getGeometry(lon, lat))
 
     # Add meta to DataFrame
+    df['gauge_owner'] = 'ndbc' 
     df['location_type'] = 'ocean'
     df['country'] = 'us'
+    df['county'] = 'none'
     df['geom'] = geom
     df.columns= df.columns.str.lower()
 
