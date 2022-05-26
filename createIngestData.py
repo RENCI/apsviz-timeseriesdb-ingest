@@ -104,11 +104,16 @@ def addMeta(inputDir, outputDir, inputFile, inputDataSource, inputSourceName, in
     # Run getSourceID function to get the source_id(s)
     dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tuples)
  
-    # Get the timemark for the forecast and nowecast data 
+    # Get the timemark frome the the data filename 
     datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
-    if len(datetimes) > 1: 
+    if re.search('forecast', inputDataSource):
+        # If the inputDataSource has forecast in its name get the second datetime in the filename
         df['timemark'] = datetimes[1]
+    elif re.search('nowcast', inputDataSource):
+        # If the inputDataSource has nowcast in its name get the third datetime in the filename
+        df['timemark'] = datetimes[2]
     else:
+        # If the inputDataSource does not have forecast or  nowcast in its name get the first datetime in the filename
         df['timemark'] = datetimes[0] 
 
     # Add source id(s) to dataframe 
