@@ -4,6 +4,7 @@
 # Import python modules
 import argparse, glob, sys, os, re, datetime, psycopg2
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from loguru import logger
 
@@ -148,9 +149,15 @@ def createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchiv
     # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
     df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
-    # Get first time, and last time from the list of files. This will be used in the filename, to enable checking for time overlap in files
-    first_time = df['data_date_time'].iloc[0]
-    last_time = df['data_date_time'].iloc[-1] 
+    if len(df.values) == 0:
+        logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
+        first_time = np.nan
+        last_time = np.nan
+    else:
+        logger.info('There are '+str(len(df.values))+' new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
+        # Get first time, and last time from the list of files. This will be used in the filename, to enable checking for time overlap in files
+        first_time = df['data_date_time'].iloc[0]
+        last_time = df['data_date_time'].iloc[-1] 
 
     # Return DataFrame first time, and last time
     return(df, first_time, last_time)
@@ -175,18 +182,21 @@ def main(args):
     # Get DataFrame file list, and time variables by running the createFileList function
     df, first_time, last_time = createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchive)
 
-    # Get current date    
-    current_date = datetime.date.today()
-
-    # Create output file name
-    if inputSourceName == 'adcirc':
-        outputFile = 'harvest_files_'+inputSourceName+'_stationdata_'+inputSourceArchive+'_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+    if pd.isnull(first_time) and pd.isnull(last_time):
+        logger.info('No new files for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
     else:
-        outputFile = 'harvest_files_'+inputSourceArchive+'_stationdata_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+        # Get current date    
+        current_date = datetime.date.today()
 
-    # Write DataFrame containing list of files to a csv file
-    df.to_csv(outputDir+outputFile, index=False)
-    logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
+        # Create output file name
+        if inputSourceName == 'adcirc':
+            outputFile = 'harvest_files_'+inputSourceName+'_stationdata_'+inputSourceArchive+'_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+        else:
+            outputFile = 'harvest_files_'+inputSourceArchive+'_stationdata_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+
+        # Write DataFrame containing list of files to a csv file
+        df.to_csv(outputDir+outputFile, index=False)
+        logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
 
 # Run main function takes outputDir, and outputFile as input.
 if __name__ == "__main__":
