@@ -9,9 +9,9 @@ The gauge data that is being ingested cans currently be accessed from the apsviz
 
 /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ 
 
-It was generated using the software in the DataHarvesterSources repo, which cat be downloaded from:  
+It was generated using the software in the ADCIRC Support Tools (AST) repo, which cat be downloaded from:  
 
-https://github.com/RENCI/DataHarvesterSources.git
+https://github.com/RENCI/AST
 
 
 ## Create list of data files, and ingest them into the database
