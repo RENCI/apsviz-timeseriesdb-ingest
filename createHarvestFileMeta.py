@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # Import python modules
-import argparse, glob, sys, os, re, datetime, psycopg2
+import argparse, glob, sys, os, re, datetime, psycopg2, pdb
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -96,8 +96,12 @@ def createFileList(inputDir, inputDataSource, inputSourceName, inputSourceArchiv
             logger.info('Search for new NOAA file name which includes water_level in the name')
     elif inputDataSource == 'tidal_predictions':
         dirInputFiles = glob.glob(inputDir+inputDataset+"_predictions_*.csv")
+    elif inputDataSource == 'air_barometer':
+        dirInputFiles = glob.glob(inputDir+inputDataset+"_air_pressure_*.csv")
     elif inputDataSource == 'ocean_buoy':
         dirInputFiles = glob.glob(inputDir+inputDataset+"_wave_height_*.csv")
+    elif inputDataSource == 'wind_anemometer':
+        dirInputFiles = glob.glob(inputDir+inputDataset+"_wind_speed_*.csv")
     elif inputDataSource == 'coastal_gauge':
         dirInputFiles = glob.glob(inputDir+inputDataset+"_coastal_*.csv")
         if len(dirInputFiles) == 0:
@@ -206,7 +210,7 @@ if __name__ == "__main__":
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=True)    
     parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
-    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','tidal_gauge','tidal_predictions','ocean_buoy','coastal_gauge','river_gauge'], required=True)
+    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','tidal_gauge','tidal_predictions','ocean_buoy','coastal_gauge','river_gauge','wind_anemometer','air_barometer'], required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
 

@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # Import Python modules
-import argparse, glob, os, psycopg2
+import argparse, glob, os, psycopg2, pdb
 import pandas as pd
 from pathlib import Path
 from loguru import logger
@@ -149,7 +149,7 @@ def ingestSource(inputDir, ingestDir):
             cur.execute("""BEGIN""")
 
             # Run query
-            cur.execute("""COPY drf_gauge_source(station_id,data_source,source_name,source_archive)
+            cur.execute("""COPY drf_gauge_source(station_id,data_source,source_name,source_archive,units)
                            FROM %(ingest_path_file)s
                            DELIMITER ','
                            CSV HEADER""",
@@ -193,15 +193,38 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
             cur.execute("""BEGIN""")
 
-            # Run query
-            cur.execute("""COPY drf_gauge_data(source_id,timemark,time,water_level)
-                           FROM %(ingest_path_file)s
-                           DELIMITER ','
-                           CSV HEADER""",
-                        {'ingest_path_file': ingestPathFile})
+            if inputDataSource == 'air_barometer':
+                # Run query
+                cur.execute("""COPY drf_gauge_data(source_id,timemark,time,air_pressure)
+                               FROM %(ingest_path_file)s
+                               DELIMITER ','
+                               CSV HEADER""",
+                            {'ingest_path_file': ingestPathFile})
 
-            # Commit ingest
-            conn.commit()
+                # Commit ingest
+                conn.commit()
+
+            elif inputDataSource == 'wind_anemometer':
+                # Run query
+                cur.execute("""COPY drf_gauge_data(source_id,timemark,time,wind_speed)
+                               FROM %(ingest_path_file)s
+                               DELIMITER ','
+                               CSV HEADER""",
+                            {'ingest_path_file': ingestPathFile})
+
+                # Commit ingest
+                conn.commit()
+
+            else:
+                # Run query
+                cur.execute("""COPY drf_gauge_data(source_id,timemark,time,water_level)
+                               FROM %(ingest_path_file)s
+                               DELIMITER ','
+                               CSV HEADER""",
+                            {'ingest_path_file': ingestPathFile})
+
+                # Commit ingest
+                conn.commit()
 
             # Run update 
             cur.execute("""UPDATE drf_harvest_data_file_meta
@@ -242,11 +265,14 @@ def createView():
                               d.timemark AS timemark,
                               d.time AS time,
                               d.water_level AS water_level,
+                              d.wind_speed AS wind_speed,
+                              d.air_pressure AS air_pressure, 
                               g.tz AS tz,
                               g.gauge_owner AS gauge_owner,
                               s.data_source AS data_source,
                               s.source_name AS source_name,
                               s.source_archive AS source_archive,
+                              s.units AS units,
                               g.location_name AS location_name,
                               g.location_type AS location_type,
                               g.country AS country,
@@ -345,7 +371,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=False)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['File','Station','Source','Data','View'], required=True)
-    parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','nowcast_ec95d','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions','ocean_buoy'], required=False)
+    parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','nowcast_ec95d','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions','ocean_buoy','air_barometer','wind_anemometer'], required=False)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=False)
     parser.add_argument("--inputSourceArchive", help="Input source archive to be processed", action="store", dest="inputSourceArchive", choices=['contrails','renci','noaa','ndbc'], required=False)
 

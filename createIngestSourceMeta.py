@@ -65,19 +65,26 @@ def addMeta(outputDir, outputFile):
         df['data_source'] = outputFile.split('_')[4].lower()+'_'+outputFile.split('_')[5].lower()
         df['source_name'] = source
         df['source_archive'] = outputFile.split('_')[2].lower() 
+        df['units'] = 'm'
     elif source == 'contrails':
         # Add data_source, source_name, and source_archive to dataframe
         gtype = outputFile.split('_')[2].lower()
         df['data_source'] = gtype+'_gauge'
         df['source_name'] = 'ncem'
         df['source_archive'] = source
+        df['units'] = 'm'
     elif source == 'noaa':
         # Add data_source, source_name, and source_archive to dataframe
         gtype = outputFile.split('_')[3].lower()
         if gtype == 'gauge':
             df['data_source'] = 'tidal_gauge'
+            df['units'] = 'm'
         elif gtype == 'predictions':
             df['data_source'] = 'tidal_predictions'
+            df['units'] = 'm'
+        elif gtype == 'barometer':
+            df['data_source'] = 'air_barometer'
+            df['units'] = 'mb'
         else:
             sys.exit(1)
 
@@ -85,8 +92,17 @@ def addMeta(outputDir, outputFile):
         df['source_archive'] = source
 
     elif source == 'ndbc':
-        # Add data_source, source_name, and source_archive to dataframe
-        df['data_source'] = 'ocean_buoy'
+        gtype = outputFile.split('_')[3].lower()
+        if gtype == 'buoy':
+            # Add data_source, source_name, and source_archive to dataframe
+            df['data_source'] = 'ocean_buoy'
+            df['units'] = 'm'
+        elif gtype == 'anemometer':
+            df['data_source'] = 'wind_anemometer'
+            df['units'] = 'mps'
+        else:
+            sys.exit(1)
+
         df['source_name'] = 'ndbc'
         df['source_archive'] = source
     else:
@@ -97,7 +113,7 @@ def addMeta(outputDir, outputFile):
     df.drop(columns=['station_name'], inplace=True)
 
     # Reorder column name and update indeces 
-    newColsOrder = ['station_id','data_source','source_name','source_archive']
+    newColsOrder = ['station_id','data_source','source_name','source_archive','units']
     df=df.reindex(columns=newColsOrder)
 
     # Write dataframe to csv file 
