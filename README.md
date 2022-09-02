@@ -29,8 +29,8 @@ From this directory you can run the build.sh file as follows:
 
 After the build has finished edit the createcontainer.sh file, adding the directory path you want to add as a volume:
 
-#!/bin/bash
-# setup specific to apsviz_timeseriesdb_ingest 
+\#!/bin/bash
+\# setup specific to apsviz_timeseriesdb_ingest 
 version=$1;
 
 docker run -ti --name apsviz_timeseriesdb_ingest_$version \
