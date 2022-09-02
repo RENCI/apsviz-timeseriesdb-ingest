@@ -43,7 +43,7 @@ WORKDIR /home/nru/repos
 RUN chmod 777 -R .
 
 # get the repo
-RUN git clone -b container https://github.com/RENCI/apsviz-timeseriesdb-ingest.git
+RUN git clone https://github.com/RENCI/apsviz-timeseriesdb-ingest.git
 
 # change to the run directory                        
 WORKDIR /home/nru/repos/apsviz-timeseriesdb-ingest/run
