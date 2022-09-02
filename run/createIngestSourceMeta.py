@@ -5,14 +5,17 @@
 import argparse, psycopg2, sys, os
 import pandas as pd
 from psycopg2.extensions import AsIs
+from dotenv import load_dotenv
 from loguru import logger
+
+load_dotenv()
 
 # This function takes a gauge location type (COASTAL, TIDAL or RIVERS), and uses it to query the drf_gauge_station table, 
 # and return a list of station id(s), and station names.
 def getStationID(locationType):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent 

@@ -7,13 +7,16 @@ import pandas as pd
 from psycopg2.extensions import AsIs
 from geopy.geocoders import Nominatim
 from pyzipcode import ZipCodeDatabase
+from dotenv import load_dotenv
 from loguru import logger
+
+load_dotenv()
 
 # This function takes a longitude and latitude value as input, and returns a geometry in OGC Well-Known Text (WKT)
 def getGeometry(lon, lat):
     try:
         # Create connection to database and get cursor 
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent 
@@ -44,7 +47,7 @@ def getGeometry(lon, lat):
 def getNOAAStations():
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -75,7 +78,7 @@ def getNOAAStations():
 def getNDBCStations():
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -108,7 +111,7 @@ def getNDBCStations():
 def getNCEMStations(locationType):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent

@@ -6,14 +6,17 @@ import argparse, os, glob, re, psycopg2
 import pandas as pd
 import numpy as np
 from psycopg2.extensions import AsIs
+from dotenv import load_dotenv
 from loguru import logger
+
+load_dotenv()
 
 # This function takes a dataset name as input, and uses it to query the drf_harvest_data_file_met table, creating a list
 # of filenames. The list is converted to a DataFrame and returned.
 def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -52,7 +55,7 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
 def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tuples):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent 

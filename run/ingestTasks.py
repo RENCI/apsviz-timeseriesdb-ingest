@@ -2,10 +2,13 @@
 # coding: utf-8
 
 # Import Python modules
-import argparse, glob, os, psycopg2, pdb
+import argparse, glob, os, psycopg2
 import pandas as pd
 from pathlib import Path
+from dotenv import load_dotenv
 from loguru import logger
+
+load_dotenv()
 
 # This function takes an dataset name as input and uses it to query the drf_harvest_data_file_meta table,
 # creating a DataFrame that contains a list of data files to ingest. The ingest directory is the directory
@@ -13,7 +16,7 @@ from loguru import logger
 def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -60,7 +63,7 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
 
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -100,7 +103,7 @@ def ingestStation(inputDir, ingestDir):
  
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -140,7 +143,7 @@ def ingestSource(inputDir, ingestDir):
 
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -185,7 +188,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
 
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -248,7 +251,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
 def createView():
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent

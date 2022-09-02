@@ -2,18 +2,21 @@
 # coding: utf-8
 
 # Import python modules
-import argparse, glob, sys, os, re, datetime, psycopg2, pdb
+import argparse, glob, sys, os, re, datetime, psycopg2
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from dotenv import load_dotenv
 from loguru import logger
+
+load_dotenv()
 
 # This function queries the drf_harvest_data_file_meta table using a file_name, an pulls out the 
 # file_name, and if the file_name exists in the table.
 def getFileDateTime(inputFile):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -47,7 +50,7 @@ def getFileDateTime(inputFile):
 def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect("dbname='apsviz_gauges' user='apsviz_gauges' host='localhost' port='5432' password='apsviz_gauges'")
+        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
        
         # Set enviromnent 
