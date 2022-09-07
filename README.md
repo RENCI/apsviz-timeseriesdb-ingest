@@ -58,7 +58,7 @@ At this point things are installed, and you can access the apsviz_timeseriesdb_i
 
 ## Create list of data files, and ingest them into the database
 
-The first step is to make sure you have created a directory to store the files that are going to be creating. From within the apsviz_timeseriesdb_ingest shell make the following directories:
+The first step is to make sure you have created a directory to store the files that you are going to be creating. From within the apsviz_timeseriesdb_ingest shell make the following directories:
 
 mkdir -p /data/DataIngesting/DAILY_INGEST
 
@@ -68,7 +68,7 @@ conda run -n apsvizTimeseriesdbIngest python createHarvestFileMeta.py --inputDir
 conda run -n apsvizTimeseriesdbIngest python createHarvestFileMeta.py --inputDir /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset contrails_stationdata  
 conda run -n apsvizTimeseriesdbIngest python createHarvestFileMeta.py --inputDir /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset noaa_stationdata  
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the follwing command:  
+The information in these files can be ingested into the database using the ingestData.py program, by running the following command:  
  
 python ingestData.py --inputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask File --inputDataset None
 
@@ -80,9 +80,9 @@ conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /pr
 conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset contrails  
 conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset noaa  
 
-Before running these commands make sure you have ingested the original NOAA and NCEM gauge data by following the instalation instructions for the apsviz-timeseriesdb repo.
+Before running these commands make sure you have ingested the original NOAA and NCEM gauge data by following the installation instructions for the apsviz-timeseriesdb repo.
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the follwing command: 
+The information in these files can be ingested into the database using the ingestData.py program, by running the following command: 
 
 conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Station --inputDataset None
 
@@ -100,19 +100,19 @@ conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputD
 conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile contrails_stationdata_COASTAL_meta.csv  
 conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile contrails_stationdata_RIVERS_meta.csv  
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the follwing command: 
+The information in these files can be ingested into the database using the ingestData.py program, by running the following command: 
 
 conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Source --inputDataset None  
 
 ## Create files containing gauge data, and ingest them into the database
 
-Now that both the both the station and source data has been ingested into the database, the files containing the gauge data cand be created by using the createIngestData.py program. This program reads in the data files in the DataHarvesting directory, and adds the source_id, from the source table, along the a timemark value along with the source_id, and timestep uniquely identifies each record in the data table. To create the data files run the following commands:  
+Now that both the station and source data has been ingested into the database, the files containing the gauge data can be created by using the createIngestData.py program. This program reads in the data files in the DataHarvesting directory, and adds the source_id, from the source table, along the a timemark value along with the source_id, and timestep uniquely identifies each record in the data table. To create the data files run the following commands:  
 
 conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset adcirc  
 conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset contrails  
 conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset noaa 
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the follwing commands:
+The information in these files can be ingested into the database using the ingestData.py program, by running the following commands:
 
 conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir None --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataset adcirc  
 conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir None --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataset contrails  
