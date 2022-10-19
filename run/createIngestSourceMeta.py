@@ -2,7 +2,10 @@
 # coding: utf-8
 
 # Import python modules
-import argparse, psycopg2, sys, os
+import argparse
+import psycopg2
+import sys
+import os
 import pandas as pd
 from psycopg2.extensions import AsIs
 from dotenv import load_dotenv
@@ -39,22 +42,15 @@ def getStationID(locationType):
         # Return Pandas dataframe
         return(df)
 
-    # If exception print error
+    # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes a input a directory path and outputFile, and used them to read the input file
 # and add station_id(s) that are extracted from the drf_gauge_station table in theapsviz_gauges database.
 def addMeta(outputDir, outputFile):
     # Extract list of stations from dataframe for query database using the getStationID function
-    if outputFile.split('_')[0] == 'adcirc':
-        locationType = outputFile.split('_')[3]
-    elif outputFile.split('_')[0] == 'contrails':
-        locationType = outputFile.split('_')[2]
-    elif outputFile.split('_')[0] == 'noaa':
-        locationType = outputFile.split('_')[2]
-    elif outputFile.split('_')[0] == 'ndbc':
-        locationType = outputFile.split('_')[2]
+    locationType = outputFile.split('_')[3]
 
     df = getStationID(locationType)
 
@@ -69,16 +65,16 @@ def addMeta(outputDir, outputFile):
         df['source_name'] = source
         df['source_archive'] = outputFile.split('_')[2].lower() 
         df['units'] = 'm'
-    elif source == 'contrails':
+    elif source == 'ncem':
         # Add data_source, source_name, and source_archive to dataframe
-        gtype = outputFile.split('_')[2].lower()
-        df['data_source'] = gtype+'_gauge'
-        df['source_name'] = 'ncem'
-        df['source_archive'] = source
+        location_type = outputFile.split('_')[3].lower()
+        df['data_source'] = location_type+'_gauge'
+        df['source_name'] = source
+        df['source_archive'] = 'contrails'
         df['units'] = 'm'
     elif source == 'noaa':
         # Add data_source, source_name, and source_archive to dataframe
-        gtype = outputFile.split('_')[3].lower()
+        gtype = outputFile.split('_')[5].lower()
         if gtype == 'gauge':
             df['data_source'] = 'tidal_gauge'
             df['units'] = 'm'
@@ -95,7 +91,7 @@ def addMeta(outputDir, outputFile):
         df['source_archive'] = source
 
     elif source == 'ndbc':
-        gtype = outputFile.split('_')[3].lower()
+        gtype = outputFile.split('_')[5].lower()
         if gtype == 'buoy':
             # Add data_source, source_name, and source_archive to dataframe
             df['data_source'] = 'ocean_buoy'
@@ -106,10 +102,10 @@ def addMeta(outputDir, outputFile):
         else:
             sys.exit(1)
 
-        df['source_name'] = 'ndbc'
+        df['source_name'] = source
         df['source_archive'] = source
     else:
-        # If source in incorrect print message and exit
+        # If source in incorrect log message and exit
         sys.exit('Incorrect source')
  
     # Drop station_name from DataFrame 
@@ -129,6 +125,8 @@ def main(args):
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
     logger.add(log_path+'createIngestSourceMeta.log', level='DEBUG')
+    logger.add(sys.stdout, level="DEBUG")
+    logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
     outputDir = os.path.join(args.outputDir, '')

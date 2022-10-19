@@ -2,7 +2,12 @@
 # coding: utf-8
 
 # Import Python modules
-import argparse, glob, sys, os, psycopg2, us
+import argparse
+import glob
+import sys
+import os
+import psycopg2
+import us
 import pandas as pd
 from psycopg2.extensions import AsIs
 from geopy.geocoders import Nominatim
@@ -38,9 +43,9 @@ def getGeometry(lon, lat):
         # return first row
         return(rows[0][0])      
 
-    # If exception print error 
+    # If exception log error 
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes no input, and returns a DataFrame that contains a list of NOAA stations that it extracted from the noaa_stations
 # table. The data in the noaa_stations table was obtained from NOAA's api.tidesandcurrents.noaa.gov API.
@@ -69,9 +74,9 @@ def getNOAAStations():
         # Return DataFrame 
         return(df)
 
-    # If exception print error
+    # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes no input, and returns a DataFrame that contains a list of NDBC stations that it extracted from the ndbc_stations
 # table. The data in the ndbc_stations table was obtained from a NDBC meta file.
@@ -101,9 +106,9 @@ def getNDBCStations():
         # Return DataFrame
         return(df)
 
-    # If exception print error
+    # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes a gauge location type (COASTAL, TIDAL or RIVERS) as input, and returns a DataFrame that contains a list of NCEM stations 
 # that are extracted from the dbo_gages_all table. The dbo_gages_all table contains data from an Excel file (dbo_GAGES_ALL.xlsx) that was 
@@ -141,9 +146,9 @@ def getNCEMStations(locationType):
         # Return DataFrame 
         return(df)
 
-    # If exception print error
+    # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
             
 # This function queriers the original NOAA station table (noaa_stations), using the getNOAAStations function, 
 # extracting station information, and returns a dataframe. It uses the information from the table along with  
@@ -214,8 +219,8 @@ def addNOAAMeta(locationType):
                         else:
                             state.append('')
                             county.append(countyname)
-                            print(stateinfo)
-                            print(address)
+                            logger.info(stateinfo)
+                            logger.info(address)
         else:
             statename = address.get('state', '').strip()
             if len(statename) > 2:
@@ -325,6 +330,8 @@ def main(args):
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
     logger.add(log_path+'createIngestStationMeta.log', level='DEBUG')
+    logger.add(sys.stdout, level="DEBUG")
+    logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
     outputDir = os.path.join(args.outputDir, '')

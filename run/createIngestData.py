@@ -2,7 +2,12 @@
 # coding: utf-8
 
 # Import python modules
-import argparse, os, glob, re, psycopg2
+import argparse
+import os
+import sys
+import glob
+import re
+import psycopg2
 import pandas as pd
 import numpy as np
 from psycopg2.extensions import AsIs
@@ -45,9 +50,9 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
         else:  
             return(df.head(50))
 
-    # If exception print error
+    # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes as input the data_source (hsofs...), and a list of station_id(s), and returns source_id(s) for    
 # model data from the drf_gauge_source table in the apsviz_gauges database. This funciton specifically gets source_id(s) for
@@ -82,9 +87,9 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tu
         # Return Pandas dataframe 
         return(dfstations)
 
-    # If exception print error
+    # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes as input a directory input path, directory output path and a filename, and returns a csv 
 # file that containes gauge data. the function uses the getObsSourceID and getModelSourceID functions above to get
@@ -147,6 +152,8 @@ def main(args):
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
     logger.add(log_path+'createIngestData.log', level='DEBUG')
+    logger.add(sys.stdout, level="DEBUG")
+    logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
     outputDir = os.path.join(args.outputDir, '')
@@ -165,7 +172,7 @@ if __name__ == "__main__":
 
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
-    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','nowcast_ec95d','tidal_gauge','tidal_predictions', 'air_barometer','ocean_buoy','wind_anemometer','coastal_gauge','river_gauge'], required=True)
+    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','namforecast_ec95d','nowcast_hsofs','nowcast_ec95d','tidal_gauge','tidal_predictions', 'air_barometer','ocean_buoy','wind_anemometer','coastal_gauge','river_gauge'], required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
 

@@ -1,4 +1,0 @@
-conda run -n apsvizTimeseriesdbIngest python createIngestStationMeta.py --outputDir /data/DataIngesting/DAILY_INGEST/ --outputFile noaa_stationdata_tidal_meta.csv
-conda run -n apsvizTimeseriesdbIngest python createIngestStationMeta.py --outputDir /data/DataIngesting/DAILY_INGEST/ --outputFile ndbc_stationdata_tidal_meta.csv
-conda run -n apsvizTimeseriesdbIngest python createIngestStationMeta.py --outputDir /data/DataIngesting/DAILY_INGEST/ --outputFile contrails_stationdata_coastal_meta.csv
-conda run -n apsvizTimeseriesdbIngest python createIngestStationMeta.py --outputDir /data/DataIngesting/DAILY_INGEST/ --outputFile contrails_stationdata_river_meta.csv

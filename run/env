@@ -1,0 +1,10 @@
+DEBUG=0
+SECRET_KEY=change_me
+DJANGO_ALLOWED_HOSTS=localhost 0.0.0.0 127.0.0.1 apsviz-timeseriesdb_db_1 [::1]
+SQL_ENGINE=timescale.db.backends.postgis
+SQL_DATABASE=apsviz_gauges
+SQL_USER=apsviz_gauges
+SQL_PASSWORD=xxxxxx
+SQL_HOST=apsviz-timeseriesdb_db_1
+SQL_PORT=5432
+DATABASE=postgres

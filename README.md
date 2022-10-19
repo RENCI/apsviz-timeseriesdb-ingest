@@ -3,7 +3,7 @@ The software, in this repo, is used to ingest gauge data from NOAA, NCEM, NDBC, 
 
 https://github.com/RENCI/apsviz-timeseriesdb  
 
-Flow the installation instractions for that repo. It creates and postgesql database, that serves data using a Django Rest Framework (DRF) app. 
+Follow the installation instructions for that repo. It creates and postgesql database, that serves data using a Django Rest Framework (DRF) app. 
 
 The gauge data that is being ingested cans currently be accessed from the apsviz-timeseriesdb.edc.renci.org VM in the following directory:   
 
@@ -18,6 +18,12 @@ https://github.com/RENCI/AST
 To install apsviz-timeseriesdb-ingest you first need to clone it:
 
 git clone https://github.com/RENCI/apsviz-timeseriesdb-ingest.git
+
+Next edit the run/env file adding a password to the line:
+
+SQL_PASSWORD=xxxxxx
+
+where you change xxxxxx to your password.
 
 Then change your directory to apsviz-timeseriesdb-ingest/build:
 
@@ -56,72 +62,96 @@ At this point things are installed, and you can access the apsviz_timeseriesdb_i
 ./root_shell.sh latest
  
 
-## Create list of data files, and ingest them into the database
+## Ingest Data into Database
 
 The first step is to make sure you have created a directory to store the files that you are going to be creating. From within the apsviz_timeseriesdb_ingest shell make the following directories:
 
 mkdir -p /data/DataIngesting/DAILY_INGEST
 
-Next, create the files that contain the list of files that are to be ingested into the database. This can be done using the createHarvestFileMeta.py program by running the following commands:
+If you are running on you local machine also make sure you have downloaded the harvest files from the directory:
 
-conda run -n apsvizTimeseriesdbIngest python createHarvestFileMeta.py --inputDir /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset adcirc_stationdata  
-conda run -n apsvizTimeseriesdbIngest python createHarvestFileMeta.py --inputDir /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset contrails_stationdata  
-conda run -n apsvizTimeseriesdbIngest python createHarvestFileMeta.py --inputDir /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset noaa_stationdata  
+/projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the following command:  
- 
-python ingestData.py --inputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask File --inputDataset None
+on the apsviz-timeseriesdb.edc.renci.org VM, to the same location that you added as a volume when create the container, so that when you are in the container the following directory exits:
 
-## Create files containing list of stations, and ingest them into the database
+/data/DataIngesting/DAILY_HARVESTING/
 
-The next step is the create files, that contain the guage stations. This can be down using the createIngestStationMeta.py program by running the following commands:
+### Create and Ingest Station Data 
 
-conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset adcirc  
-conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset contrails  
-conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset noaa  
+To ingest the station data, first make sure you have already ingested the original station data, as describe in the README.md for apsviz-timeseriesdb:
 
-Before running these commands make sure you have ingested the original NOAA and NCEM gauge data by following the installation instructions for the apsviz-timeseriesdb repo.
+https://github.com/RENCI/apsviz-timeseriesdb
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the following command: 
+The run the command in the run directory:
 
-conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Station --inputDataset None
+python runIngest.py --inputTask Station
 
-## Create files containing list of sources, and ingest them into the database
+This will create Station data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_gauge_station table in the database.
 
-Now that the gauge stations have been ingested into the database, the source files can be created using the createIngestSourceMeta.py program. This program uses station data that was ingested in the previous section. It generates a list of source, using the station_id from the station table, and adds information about data sources. To create the source files run the following commands:  
+### Create and Ingest Source Data
 
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile adcirc_stationdata_TIDAL_namforecast_HSOFS_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile adcirc_stationdata_TIDAL_nowcast_HSOFS_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile adcirc_stationdata_COASTAL_namforecast_HSOFS_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile adcirc_stationdata_COASTAL_nowcast_HSOFS_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile adcirc_stationdata_RIVERS_namforecast_HSOFS_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile adcirc_stationdata_RIVERS_nowcast_HSOFS_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile noaa_stationdata_TIDAL_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile contrails_stationdata_COASTAL_meta.csv  
-conda run -n apsvizTimeseriesdbIngest python createIngestSourceMeta.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --outputFile contrails_stationdata_RIVERS_meta.csv  
+To ingest the source data, first run the source_meta.bin file:
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the following command: 
+./source_meta.bin
 
-conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Source --inputDataset None  
+This will ingest meta data on the data sources that will be used as argparse input when running runIngest.py. The next step is to ingest the source data into the drf_gauge_source table. To do this run the following command:
 
-## Create files containing gauge data, and ingest them into the database
+python runIngest.py --inputTask Source_data
 
-Now that both the station and source data has been ingested into the database, the files containing the gauge data can be created by using the createIngestData.py program. This program reads in the data files in the DataHarvesting directory, and adds the source_id, from the source table, along the a timemark value along with the source_id, and timestep uniquely identifies each record in the data table. To create the data files run the following commands:  
+This will create Source data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_gauge_source table in the database.
 
-conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset adcirc  
-conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset contrails  
-conda run -n apsvizTimeseriesdbIngest python createIngestData.py --outputDir /projects/ees/TDS/DataIngesting/DAILY_INGEST/ --inputDataset noaa 
+### Create and Ingest Harvest File Meta Data
 
-The information in these files can be ingested into the database using the ingestData.py program, by running the following commands:
+To create and ingest the harvest file meta data run the following command:
 
-conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir None --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataset adcirc  
-conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir None --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataset contrails  
-conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir None --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataset noaa  
+python runIngest.py --inputTask File 
 
-## Create view of station, source and data tables 
+This will create Harvest meta data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_harvest_data_file_meta  table in the database.
 
-The final step is the create a view combining the station, source and data tables. This can be down by running the following command:  
+### Create and Ingest Data Files
 
-conda run -n apsvizTimeseriesdbIngest python ingestData.py --inputDir None --ingestDir None --inputTask View --inputDataset None  
+To create and ingest the data files first run the command:
 
- 
+python runIngest.py --inputTask DataCreate
+
+This will create data files in /data/DataIngesting/DAILY_INGEST/.
+
+The next step is the ingest them by running the following command:
+
+python runIngest.py --inputTask DataIngest
+
+This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
+
+### Create View 
+
+To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
+
+python runIngest.py --inputTask View
+
+This will create a view (drf_gauge_station_source_data) that is accessible through the Django REST Framework API:
+
+http://xxxx.xxxx.xxx/api/gauge_station_source_data/
+
+where xxxx.xxxx.xxx is your server.
+
+### Add New Source
+
+To add a new source, first create the source meta, and ingest it into the drf_source_meta table by running the following command:
+
+python ingestTasks.py --inputDataSource xxxxx_xxx --inputSourceName xxxxxx --inputSourceArchive xxxxxx --inputLocationType xxxxxx --inputTask Source_meta
+
+where the --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, the --inputSourceName xxxxxx is the source name such as adcirc, the --inputSourceArchive xxxxxx is the source archive such as renci, and the --inputLocationType xxxxxx is the location type such as tidal.
+
+In the next step create the source data files that will be ingested into the drf_gauge_source table by running the following command:
+
+python createIngestSourceMeta.py --outputDir /data/DataIngesting/DAILY_INGEST/ --outputFile nnnn_stationdata_aaaaaa_llllllll_dddddddddd_meta.csv
+
+where nnnn is the source name (e.g. adcirc), aaaaaa is the source archive (e.g. renci), llllllll is the location type (e.g. tidal), and dddddddddd is the data source (e.g. namforecast_ec95d).
+
+Finally run the following command to ingest that data into the drf_gauge_source table in the database:
+
+python ingestTasks.py --ingestDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource ddddddddddd--inputSourceName nnnn --inputSourceArchive aaaaaa is the source archive i(e.g. renci).
+
+where dddddddddd is the data source (e.g. namforecast_ec95d), nnnn is the source name (e.g. adcirc), and aaaaaa is the source archive (e.g. renci).
+
+The source is now ready to be used in ingesting data.

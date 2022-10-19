@@ -2,7 +2,13 @@
 # coding: utf-8
 
 # Import python modules
-import argparse, glob, sys, os, re, datetime, psycopg2
+import argparse
+import glob
+import sys
+import os
+import re
+import datetime
+import psycopg2
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -41,9 +47,9 @@ def getFileDateTime(inputFile):
         # Return DataFrame
         return(df)
 
-    # If exception print error
+    # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes source as input, and returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, 
 # that have been ingested.
@@ -76,9 +82,9 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
         # Return DataFrame
         return(df)
 
-    # If exception print error    
+    # If exception log error    
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 # This function takes an input directory path and input dataset, and uses them to create a file list
 # that is ingested into the drf_harvest_data_file_meta table, and used to ingest the data files.
@@ -176,6 +182,8 @@ def main(args):
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
     logger.add(log_path+'createHarvestFileMeta.log', level='DEBUG')
+    logger.add(sys.stdout, level="DEBUG")
+    logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
     inputDir = os.path.join(args.inputDir, '')
