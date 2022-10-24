@@ -3,7 +3,12 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
-  - psycopg2
-  - pandas
-  - loguru
+  - psycopg2=2.9.3
+  - pandas=1.5.1
+  - loguru=0.6.0
+  - geopy
   - python-dotenv
+  - pip
+  - pip:
+      - us
+      - pyzipcode
