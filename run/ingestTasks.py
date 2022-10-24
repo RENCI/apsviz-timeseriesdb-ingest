@@ -172,6 +172,7 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
 
     for infoFile in inputFiles:
         # Create list of data info files, to be ingested by searching the input directory for data info files.
+        # ingestDir is the path in apsviz-timeseriesdb container, which starts the /home
         ingestPathFile = ingestDir+Path(infoFile).parts[-1]
 
         try:
