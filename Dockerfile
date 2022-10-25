@@ -71,6 +71,7 @@ ENV PATH /venv/bin:$PATH
 COPY run/*.py ./
 COPY run/*.bin ./
 COPY run/env .env
+COPY stations/*.csv ./stations/
 
 # set the python path
 ENV PYTHONPATH=/home/nru

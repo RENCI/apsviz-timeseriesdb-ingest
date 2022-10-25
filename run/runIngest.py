@@ -5,6 +5,7 @@
 import os
 import sys
 import argparse
+import shutil
 import psycopg2
 import subprocess
 import pandas as pd
@@ -14,16 +15,15 @@ from loguru import logger
 # import .env file
 load_dotenv()
 
-# Run createIngestStationMeta.py to ingest station data from the original station data tables (i.e. dbo_gages_all, ndbc_stations, and noaa_stations), 
-# into the drf_gauge_station table. Ingesting the original station data was a step when installing the apsviz-timeseriesdb repo:
-#     https://github.com/RENCI/apsviz-timeseriesdb 
-def runStation():
+# This function moves the station data files in /nru/home/stations to the directory /data/DataIngesting/DAILY_INGEST/, and then ingests them 
+# into the drf_gauge_station table. 
+def runIngestStations():
+    # Move station meta files to the /data/DataIngesting/DAILY_INGEST/
+    logger.info('Copy stations directory to /data/DataIngesting/DAILY_INGEST/')
+    shutil.copytree('/home/nru/stations', '/data/DataIngesting/DAILY_INGEST/stations')
+
     # Create list of program commands
-    program_list = [['python','createIngestStationMeta.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--outputFile','noaa_stationdata_tidal_meta.csv'],
-                    ['python','createIngestStationMeta.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--outputFile','ndbc_stationdata_tidal_meta.csv'],
-                    ['python','createIngestStationMeta.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--outputFile','contrails_stationdata_coastal_meta.csv'],
-                    ['python','createIngestStationMeta.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--outputFile','contrails_stationdata_river_meta.csv'],
-                    ['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','Station']]
+    program_list = [['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/stations/','--ingestDir','/home/DataIngesting/DAILY_INGEST/stations/','--inputTask','IngestStations']]
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -157,10 +157,10 @@ def main(args):
     inputTask = args.inputTask
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
-    if inputTask.lower() == 'station':
-        logger.info('Run station data.')
-        runStation()
-        logger.info('Ran station data.')
+    if inputTask.lower() == 'ingeststations':
+        logger.info('Run ingest station data.')
+        runIngestStations()
+        logger.info('Ran ingest station data.')
     elif inputTask.lower() == 'source_data':
         logger.info('Run source data.')
         runSourceData()
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['Station','Source_data','File','DataCreate','DataIngest','View'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','Source_data','File','DataCreate','DataIngest','View'], required=True)
 
     # Parse arguments
     args = parser.parse_args()

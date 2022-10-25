@@ -203,6 +203,10 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
         except (Exception, psycopg2.DatabaseError) as error:
             logger.info(error)
 
+        # Remove harvest meta file after ingesting it.
+        logger.info('Remove harvest meta file: '+infoFile+' after ingesting it')
+        os.remove(infoFile)
+
 # This function takes an ingest directory and input dataset as input, and uses them to run the getHarvestDataFileMeta
 # function and define the ingestPathFile variable. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
 # that contains a list of data files, that are queried from the drf_harvest_data_file_meta table. These files are then 
@@ -399,7 +403,7 @@ def main(args):
         logger.info('Ingesting source data.')
         ingestSourceData(inputDir, ingestDir)
         logger.info('ingested source data.')
-    if inputTask.lower() == 'file':
+    elif inputTask.lower() == 'file':
         logger.info('Ingesting input file information.')
         ingestHarvestDataFileMeta(inputDir, ingestDir)
         logger.info('Ingested input file information.')

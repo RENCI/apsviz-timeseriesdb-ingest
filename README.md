@@ -76,17 +76,13 @@ on the apsviz-timeseriesdb.edc.renci.org VM, to the same location that you added
 
 /data/DataIngesting/DAILY_HARVESTING/
 
-### Create and Ingest Station Data 
+### Ingest Station Data 
 
-To ingest the station data, first make sure you have already ingested the original station data, as describe in the README.md for apsviz-timeseriesdb:
+To ingest the station meta data run the command below in the /home/nru directory:
 
-https://github.com/RENCI/apsviz-timeseriesdb
+python runIngest.py --inputTask IngestStations
 
-The run the command in the run directory:
-
-python runIngest.py --inputTask Station
-
-This will create Station data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_gauge_station table in the database.
+This will ingest the station data in the stations directory into the drf_gauge_station table in the database.
 
 ### Create and Ingest Source Data
 
