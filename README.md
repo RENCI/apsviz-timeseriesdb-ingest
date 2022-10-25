@@ -23,7 +23,7 @@ Next edit the run/env file adding a password to the line:
 
 SQL_PASSWORD=xxxxxx
 
-where you change xxxxxx to your password.
+where you change xxxxxx to the password that is used to access the database in apsviz-timeseriesdb. 
 
 Then change your directory to apsviz-timeseriesdb-ingest/build:
 
