@@ -20,7 +20,7 @@ load_dotenv()
 def runIngestStations():
     # Move station meta files to the /data/DataIngesting/DAILY_INGEST/
     logger.info('Copy stations directory to /data/DataIngesting/DAILY_INGEST/')
-    shutil.copytree('/home/nru/stations', '/data/DataIngesting/DAILY_INGEST/stations')
+    shutil.copytree('/home/nru/stations', '/data/DataIngesting/DAILY_INGEST/stations', dirs_exist_ok=True)
 
     # Create list of program commands
     program_list = [['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/stations/','--ingestDir','/home/DataIngesting/DAILY_INGEST/stations/','--inputTask','IngestStations']]

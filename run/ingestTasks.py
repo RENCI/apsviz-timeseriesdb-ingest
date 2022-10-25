@@ -46,7 +46,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 # This function takes an input directory and an ingest directory as input. The input directory is used to search for geom 
 # station files that are to be ingested. The ingest directory is used to define the path of the file to be ingested. The 
 # ingest directory is the directory path in the apsviz-timeseriesdb database container.
-def ingestStation(inputDir, ingestDir):
+def ingestStations(inputDir, ingestDir):
     # Create list of geom files, to be ingested by searching the input directory for geom files.
     inputFiles = glob.glob(inputDir+"geom_*.csv")
 
@@ -395,9 +395,9 @@ def main(args):
         logger.info('Ingesting source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputLocationType+'.')
         ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType)
         logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputLocationType+'.')
-    elif inputTask.lower() == 'station':
+    elif inputTask.lower() == 'ingeststations':
         logger.info('Ingesting station data.')
-        ingestStation(inputDir, ingestDir)
+        ingestStations(inputDir, ingestDir)
         logger.info('Ingested station data.')
     elif inputTask.lower() == 'source_data':
         logger.info('Ingesting source data.')
@@ -424,7 +424,7 @@ if __name__ == "__main__":
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=False)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['Source_meta','Station','Source_data', 'File','Data','View'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['Source_meta','IngestStations','Source_data', 'File','Data','View'], required=True)
     parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions','ocean_buoy','air_barometer','wind_anemometer'], required=False)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=False)
     parser.add_argument("--inputSourceArchive", help="Input source archive to be processed", action="store", dest="inputSourceArchive", choices=['contrails','renci','noaa','ndbc'], required=False)
