@@ -132,12 +132,26 @@ def runDataIngest():
         subprocess.call(program)
         logger.info('Ran '+" ".join(program))
 
-# This function runs ingestTasks.py with --inputTask View, creating a view (drf_gauge_station_source_data) that combines the drf_gauge_station, 
-# drf_gauge_source, and drf_gauge_data tables.
-def runCreateView():
-    # Create list of program commands
-    program_list = [['python','ingestTasks.py','--inputTask','View']]
+def runCurrentIngest():
+    # get source meta
+    df = getSourceMeta()
 
+    # Create list of program commands for createHarvestFileMeta
+    program_list = []
+    for index, row in df.iterrows():
+        program_list.append(['python','createHarvestFileMeta.py','--inputDir','/data/DataHarvesting/DAILY_HARVESTING/','--outputDir','/data/DataIngesting/DAILY_INGEST/','--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+
+    program_list.append(['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','File'])
+
+    # Create list of program commands for createIngestData
+    for index, row in df.iterrows():
+        program_list.append(['python','createIngestData.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+
+    # Create list of program commands to ingest data created by CreatIngestData, using ingestTask with Data specified
+    for index, row in df.iterrows():
+        program_list.append(['python','ingestTasks.py','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+
+    # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
         subprocess.call(program)
@@ -177,10 +191,11 @@ def main(args):
         logger.info('Run data ingest.')
         runDataIngest()
         logger.info('Ran data ingest.')
-    elif inputTask.lower() == 'view':
-        logger.info('Run create view.')
-        runCreateView()
-        logger.info('Ran create view.')
+    elif inputTask.lower() == 'concurrentingest':
+        logger.info('Run concurrent ingest.')
+        runCurrentIngest()
+        logger.info('Ran concurent ingest.')
+
 
 # Run main function 
 if __name__ == "__main__":
@@ -188,7 +203,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','Source_data','File','DataCreate','DataIngest','View'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','Source_data','File','DataCreate','DataIngest','ConcurrentIngest'], required=True)
 
     # Parse arguments
     args = parser.parse_args()
