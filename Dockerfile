@@ -69,7 +69,7 @@ ENV PATH /venv/bin:$PATH
 
 # copy python and bin files to container
 COPY run/*.py ./
-COPY run/*.bin ./
+COPY run/*.csv ./
 COPY run/env .env
 COPY stations/*.csv ./stations/
 

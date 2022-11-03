@@ -15,23 +15,7 @@ from loguru import logger
 # import .env file
 load_dotenv()
 
-# This function moves the station data files in /nru/home/stations to the directory /data/DataIngesting/DAILY_INGEST/, and then ingests them 
-# into the drf_gauge_station table. 
-def runIngestStations():
-    # Move station meta files to the /data/DataIngesting/DAILY_INGEST/
-    logger.info('Copy stations directory to /data/DataIngesting/DAILY_INGEST/')
-    shutil.copytree('/home/nru/stations', '/data/DataIngesting/DAILY_INGEST/stations', dirs_exist_ok=True)
-
-    # Create list of program commands
-    program_list = [['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/stations/','--ingestDir','/home/DataIngesting/DAILY_INGEST/stations/','--inputTask','IngestStations']]
-
-    # Run list of program commands using subprocess
-    for program in program_list:
-        logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
-
-# This function is used by the runSourceData(), runHarvestFile(), runDataCreate(), and runDataIngest() functions to query the drf_source_meta table, in the 
+# This function is used by the runHarvestFile(), runDataCreate(), and runDataIngest() functions to query the drf_source_meta table, in the
 # database, and get argparse input for those function
 def getSourceMeta():
     try:
@@ -61,37 +45,18 @@ def getSourceMeta():
     except (Exception, psycopg2.DatabaseError) as error:
         logger.info(error)
 
-# This function runs createIngestSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source table, 
-# in the database, by running ingestTasks.py using --inputTask Sourc_data.
-def runSourceData():
-    # get source meta
-    df = getSourceMeta()
-
-    # Create list of program commands
-    program_list = []
-    for index, row in df.iterrows():
-        program_list.append(['python','createIngestSourceMeta.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--outputFile',row['source_name']+'_stationdata_'+row['source_archive']+'_'+row['location_type']+'_'+row['data_source']+'_meta.csv'])
-
-    program_list.append(['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','Source_data'])
-
-    # Run list of program commands using subprocess
-    for program in program_list:
-        logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
-
 # This function runs createHarvestFileMeta.py, which creates harvest meta data files, that are ingested into the drf_harvest_data_file_meta table, 
 # in the database, by running ingestTasks.py using --inputTask File.
-def runHarvestFile():
+def runHarvestFile(harvestDir, ingestDir, databaseDir):
     # get source meta
     df = getSourceMeta()
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','createHarvestFileMeta.py','--inputDir','/data/DataHarvesting/DAILY_HARVESTING/','--outputDir','/data/DataIngesting/DAILY_INGEST/','--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
 
-    program_list.append(['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','File'])
+    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--databaseDir',databaseDir,'--inputTask','File'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -101,14 +66,14 @@ def runHarvestFile():
 
 # This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be ingested into the 
 # database using the runDataIngest function. 
-def runDataCreate():
+def runDataCreate(ingestDir):
     # get source meta
     df = getSourceMeta()
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','createIngestData.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','createIngestData.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -117,14 +82,14 @@ def runDataCreate():
         logger.info('Ran '+" ".join(program))
 
 # This function runs ingestTasks.py with --inputTask Data, ingest gauge data into the drf_gauge_data table, in the database.
-def runDataIngest():
+def runDataIngest(databaseDir):
     # get source meta
     df = getSourceMeta()
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','ingestTasks.py','--databaseDir',databaseDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -132,32 +97,13 @@ def runDataIngest():
         subprocess.call(program)
         logger.info('Ran '+" ".join(program))
 
-def runCurrentIngest():
-    # get source meta
-    df = getSourceMeta()
+# This functions creates and ingest the harvest files, and data in sequence
+def runSequenceIngest(harvestDir, ingestDir, databaseDir):
+    runHarvestFile(harvestDir, ingestDir, databaseDir)
+    runDataCreate(ingestDir)
+    runDataIngest(databaseDir)
 
-    # Create list of program commands for createHarvestFileMeta
-    program_list = []
-    for index, row in df.iterrows():
-        program_list.append(['python','createHarvestFileMeta.py','--inputDir','/data/DataHarvesting/DAILY_HARVESTING/','--outputDir','/data/DataIngesting/DAILY_INGEST/','--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
-
-    program_list.append(['python','ingestTasks.py','--inputDir','/data/DataIngesting/DAILY_INGEST/','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','File'])
-
-    # Create list of program commands for createIngestData
-    for index, row in df.iterrows():
-        program_list.append(['python','createIngestData.py','--outputDir','/data/DataIngesting/DAILY_INGEST/','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
-
-    # Create list of program commands to ingest data created by CreatIngestData, using ingestTask with Data specified
-    for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir','/home/DataIngesting/DAILY_INGEST/','--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
-
-    # Run list of program commands using subprocess
-    for program in program_list:
-        logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
-
-# Main program function takes args as input, which contains the inputDir, ingestDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive values.
+# Main program function takes args as input, which contains the harvestDir, ingestDir, databaseDir, and inputTask variables
 @logger.catch
 def main(args):
     # Add logger
@@ -167,34 +113,50 @@ def main(args):
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
+    # Check if inputDir argument exist. This argument is used in runIngestStations.
+    if args.harvestDir is None:
+        harvestDir = ''
+    elif args.harvestDir is not None:
+        harvestDir = os.path.join(args.harvestDir, '')
+    else:
+        sys.exit('Incorrect harvestDir')
+
+    # Check if ingestDir argument exist. This argument is used in runCreateStations.
+    if args.ingestDir is None:
+        ingestDir = ''
+    elif args.ingestDir is not None:
+        ingestDir = os.path.join(args.ingestDir, '')
+    else:
+        sys.exit('Incorrect ingestDir')
+
+    # Check if ingestDir argument exist. This argument is used in runIngestStations.
+    if args.databaseDir is None:
+        databaseDir = ''
+    elif args.databaseDir is not None:
+        databaseDir = os.path.join(args.databaseDir, '')
+    else:
+        sys.exit('Incorrect databaseDir')
+
     # Get input task
     inputTask = args.inputTask
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
-    if inputTask.lower() == 'ingeststations':
-        logger.info('Run ingest station data.')
-        runIngestStations()
-        logger.info('Ran ingest station data.')
-    elif inputTask.lower() == 'source_data':
-        logger.info('Run source data.')
-        runSourceData()
-        logger.info('Ran source data.')
-    elif inputTask.lower() == 'file':
+    if inputTask.lower() == 'file':
         logger.info('Run input file information.')
-        runHarvestFile()
+        runHarvestFile(harvestDir, ingestDir, databaseDir)
         logger.info('Ran input file information.')
     elif inputTask.lower() == 'datacreate':
         logger.info('Run data create.')
-        runDataCreate()
+        runDataCreate(ingestDir)
         logger.info('Ran data create.')
     elif inputTask.lower() == 'dataingest':
         logger.info('Run data ingest.')
-        runDataIngest()
+        runDataIngest(databaseDir)
         logger.info('Ran data ingest.')
-    elif inputTask.lower() == 'concurrentingest':
-        logger.info('Run concurrent ingest.')
-        runCurrentIngest()
-        logger.info('Ran concurent ingest.')
+    elif inputTask.lower() == 'sequenceingest':
+        logger.info('Run sequence ingest.')
+        runSequenceIngest(harvestDir, ingestDir, databaseDir)
+        logger.info('Ran sequence ingest.')
 
 
 # Run main function 
@@ -203,7 +165,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','Source_data','File','DataCreate','DataIngest','ConcurrentIngest'], required=True)
+    parser.add_argument("--harvestDIR", "--harvestDir", help="Harvest directory path", action="store", dest="harvestDir", required=False)
+    parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
+    parser.add_argument("--databaseDIR", "--databaseDir", help="Database directory path", action="store", dest="databaseDir", required=False)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['File','DataCreate','DataIngest','SequenceIngest'], required=True)
 
     # Parse arguments
     args = parser.parse_args()

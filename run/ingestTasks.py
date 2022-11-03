@@ -46,14 +46,14 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 # This function takes an input directory and an ingest directory as input. The input directory is used to search for geom 
 # station files that are to be ingested. The ingest directory is used to define the path of the file to be ingested. The 
 # ingest directory is the directory path in the apsviz-timeseriesdb database container.
-def ingestStations(inputDir, ingestDir):
+def ingestStations(ingestDir, databaseDir):
     # Create list of geom files, to be ingested by searching the input directory for geom files.
-    inputFiles = glob.glob(inputDir+"geom_*.csv")
+    inputFiles = glob.glob(ingestDir+"stations/geom_*.csv")
 
     # Loop thru geom file list, ingesting each one 
     for geomFile in inputFiles:
         # Define the ingest path and file using the ingest directory and the geom file name
-        ingestPathFile = ingestDir+Path(geomFile).parts[-1]
+        databasePathFile = databaseDir+'stations/'+Path(geomFile).parts[-1]
  
         try:
             # Create connection to database and get cursor
@@ -70,7 +70,7 @@ def ingestStations(inputDir, ingestDir):
                            FROM %(ingest_path_file)s
                            DELIMITER ','
                            CSV HEADER""",
-                        {'ingest_path_file': ingestPathFile})
+                        {'ingest_path_file': databasePathFile})
 
             # Commit ingest
             conn.commit()
@@ -86,14 +86,14 @@ def ingestStations(inputDir, ingestDir):
 # This function takes an input directory and ingest directory as input. It uses the input directory to search for source  
 # csv files, that were created by the createIngestSourceMeta.py program. It uses the ingest directory to define the path
 # of the file that is to be ingested. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
-def ingestSourceData(inputDir, ingestDir):
+def ingestSourceData(ingestDir, databaseDir):
     # Create list of source files, to be ingested by searching the input directory for source files.
-    inputFiles = glob.glob(inputDir+"source_*.csv")
+    inputFiles = glob.glob(ingestDir+"source_*.csv")
 
     # Loop thru source file list, ingesting each one
     for sourceFile in inputFiles:
         # Define the ingest path and file using the ingest directory and the source file name
-        ingestPathFile = ingestDir+Path(sourceFile).parts[-1]
+        databasePathFile = databaseDir+Path(sourceFile).parts[-1]
 
         try:
             # Create connection to database and get cursor
@@ -110,7 +110,7 @@ def ingestSourceData(inputDir, ingestDir):
                            FROM %(ingest_path_file)s
                            DELIMITER ','
                            CSV HEADER""",
-                        {'ingest_path_file': ingestPathFile})
+                        {'ingest_path_file': databasePathFile})
 
             # Commit ingest
             conn.commit()
@@ -167,13 +167,13 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 # This function takes an input directory and ingest directory as input. It uses the input directory to seach for
 # harvest_files that need to be ingested. It uses the ingest directory to define the path of the harvest_file
 # to ingesting. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
-def ingestHarvestDataFileMeta(inputDir, ingestDir):
-    inputFiles = glob.glob(inputDir+"harvest_files_*.csv")
+def ingestHarvestDataFileMeta(ingestDir, databaseDir):
+    inputFiles = glob.glob(ingestDir+"harvest_files_*.csv")
 
     for infoFile in inputFiles:
         # Create list of data info files, to be ingested by searching the input directory for data info files.
-        # ingestDir is the path in apsviz-timeseriesdb container, which starts the /home
-        ingestPathFile = ingestDir+Path(infoFile).parts[-1]
+        # databaseDir is the path in apsviz-timeseriesdb container, which starts the /home
+        databasePathFile = databaseDir+Path(infoFile).parts[-1]
 
         try:
             # Create connection to database and get cursor
@@ -190,7 +190,7 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
                            FROM %(ingest_path_file)s
                            DELIMITER ','
                            CSV HEADER""",
-                        {'ingest_path_file': ingestPathFile})
+                        {'ingest_path_file': databasePathFile})
 
             # Commit ingest
             conn.commit()
@@ -208,21 +208,21 @@ def ingestHarvestDataFileMeta(inputDir, ingestDir):
         os.remove(infoFile)
 
 # This function takes an ingest directory and input dataset as input, and uses them to run the getHarvestDataFileMeta
-# function and define the ingestPathFile variable. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
+# function and define the databasePathFile variable. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
 # that contains a list of data files, that are queried from the drf_harvest_data_file_meta table. These files are then 
 # ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column "ingested", in the 
 # drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the directory path in the 
 # apsviz-timeseriesdb database container.
-def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
+def ingestData(databaseDir, inputDataSource, inputSourceName, inputSourceArchive):
     # Get DataFrame the contains list of data files that need to be ingested
     dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
     # Loop thru DataFrame ingesting each data file 
     for index, row in dfDirFiles.iterrows():
         # Get name of file, that needs to be ingested, from DataFrame, and create data_copy file name and output path
-        # (ingestPathFile) outsaved to the DataIngesting directory area where is the be ingested using the copy command.
+        # (databasePathFile) outsaved to the DataIngesting directory area where is the be ingested using the copy command.
         ingestFile = row[0]
-        ingestPathFile = ingestDir+'data_copy_'+ingestFile
+        databasePathFile = databaseDir+'data_copy_'+ingestFile
 
         try:
             # Create connection to database and get cursor
@@ -240,7 +240,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
                                FROM %(ingest_path_file)s
                                DELIMITER ','
                                CSV HEADER""",
-                            {'ingest_path_file': ingestPathFile})
+                            {'ingest_path_file': databasePathFile})
 
                 # Commit ingest
                 conn.commit()
@@ -251,7 +251,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
                                FROM %(ingest_path_file)s
                                DELIMITER ','
                                CSV HEADER""",
-                            {'ingest_path_file': ingestPathFile})
+                            {'ingest_path_file': databasePathFile})
 
                 # Commit ingest
                 conn.commit()
@@ -262,7 +262,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
                                FROM %(ingest_path_file)s
                                DELIMITER ','
                                CSV HEADER""",
-                            {'ingest_path_file': ingestPathFile})
+                            {'ingest_path_file': databasePathFile})
 
                 # Commit ingest
                 conn.commit()
@@ -335,7 +335,7 @@ def createView():
     except (Exception, psycopg2.DatabaseError) as error:
         logger.info(error)
 
-# Main program function takes args as input, which contains the inputDir, ingestDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive values.
+# Main program function takes args as input, which contains the inputDir, databaseDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
 def main(args):
     # Add logger
@@ -346,19 +346,19 @@ def main(args):
     logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
-    if args.inputDir is None:
-        inputDir = ''
-    elif args.inputDir is not None:
-        inputDir = os.path.join(args.inputDir, '')
-    else:
-        sys.exit('Incorrect inputDir')
-
     if args.ingestDir is None:
         ingestDir = ''
     elif args.ingestDir is not None:
         ingestDir = os.path.join(args.ingestDir, '')
     else:
         sys.exit('Incorrect ingestDir')
+
+    if args.databaseDir is None:
+        databaseDir = ''
+    elif args.databaseDir is not None:
+        databaseDir = os.path.join(args.databaseDir, '')
+    else:
+        sys.exit('Incorrect databaseDir')
 
     inputTask = args.inputTask
 
@@ -397,34 +397,34 @@ def main(args):
         logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputLocationType+'.')
     elif inputTask.lower() == 'ingeststations':
         logger.info('Ingesting station data.')
-        ingestStations(inputDir, ingestDir)
+        ingestStations(ingestDir, databaseDir)
         logger.info('Ingested station data.')
-    elif inputTask.lower() == 'source_data':
+    elif inputTask.lower() == 'ingestsource':
         logger.info('Ingesting source data.')
-        ingestSourceData(inputDir, ingestDir)
+        ingestSourceData(ingestDir, databaseDir)
         logger.info('ingested source data.')
     elif inputTask.lower() == 'file':
         logger.info('Ingesting input file information.')
-        ingestHarvestDataFileMeta(inputDir, ingestDir)
+        ingestHarvestDataFileMeta(ingestDir, databaseDir)
         logger.info('Ingested input file information.')
     elif inputTask.lower() == 'data':
         logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
-        ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive)
+        ingestData(databaseDir, inputDataSource, inputSourceName, inputSourceArchive)
         logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
     elif inputTask.lower() == 'view':
         logger.info('Creating view.')
         createView()
         logger.info('Created view.')
 
-# Run main function takes inputDir, ingestDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive as input.
+# Run main function takes inputDir, databaseDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive as input.
 if __name__ == "__main__":
     """ This is executed when run from the command line """
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputDIR", "--inputDir", help="Input directory path", action="store", dest="inputDir", required=False)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['Source_meta','IngestStations','Source_data', 'File','Data','View'], required=True)
+    parser.add_argument("--databaseDIR", "--databaseDir", help="Database directory path", action="store", dest="databaseDir", required=False)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['Source_meta','IngestStations','ingestSource', 'File','Data','View'], required=True)
     parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions','ocean_buoy','air_barometer','wind_anemometer'], required=False)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=False)
     parser.add_argument("--inputSourceArchive", help="Input source archive to be processed", action="store", dest="inputSourceArchive", choices=['contrails','renci','noaa','ndbc'], required=False)

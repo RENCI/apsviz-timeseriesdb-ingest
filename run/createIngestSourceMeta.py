@@ -48,7 +48,7 @@ def getStationID(locationType):
 
 # This function takes a input a directory path and outputFile, and used them to read the input file
 # and add station_id(s) that are extracted from the drf_gauge_station table in theapsviz_gauges database.
-def addMeta(outputDir, outputFile):
+def addMeta(ingestDir, outputFile):
     # Extract list of stations from dataframe for query database using the getStationID function
     locationType = outputFile.split('_')[3]
 
@@ -116,9 +116,9 @@ def addMeta(outputDir, outputFile):
     df=df.reindex(columns=newColsOrder)
 
     # Write dataframe to csv file 
-    df.to_csv(outputDir+'source_'+outputFile, index=False)
+    df.to_csv(ingestDir+'source_'+outputFile, index=False)
 
-# Main program function takes args as input, which contains the outputDir, and outputFile values.
+# Main program function takes args as input, which contains the ingestDir, and outputFile values.
 @logger.catch
 def main(args):
     # Add logger
@@ -129,22 +129,22 @@ def main(args):
     logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
-    outputDir = os.path.join(args.outputDir, '')
+    ingestDir = os.path.join(args.ingestDir, '')
     outputFile = args.outputFile
 
     logger.info('Start processing source data for file '+outputFile+'.')
 
     # Run addMeta function
-    addMeta(outputDir, outputFile)
+    addMeta(ingestDir, outputFile)
     logger.info('Finished processing source data for file '+outputFile+'.')
 
-# Run main function takes outputDir, and outputFile as input.
+# Run main function takes ingestDir, and outputFile as input.
 if __name__ == "__main__":
     """ This is executed when run from the command line """
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
+    parser.add_argument("--ingestDIR", "--ingestDir", help="Output directory path", action="store", dest="ingestDir", required=True)
     parser.add_argument("--outputFile", action="store", help="Output file name", dest="outputFile", required=True)
 
     # Parse input arguments

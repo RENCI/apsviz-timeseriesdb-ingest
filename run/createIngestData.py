@@ -96,10 +96,10 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tu
 # a list of existing source ids that it includes in the gauge data to enable joining the gauge data table with 
 # gauge source table. The function adds a timemark, that it gets from the input file name. The timemark values can
 # be used to uniquely query an ADCIRC  model run.
-def addMeta(inputDir, outputDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive):
+def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive):
     # Read input file, convert column name to lower case, rename station column to station_name, convert its data 
     # type to string, and add timemark and source_id columns
-    df = pd.read_csv(inputDir+inputFile)
+    df = pd.read_csv(harvestDir+inputFile)
     df.columns= df.columns.str.lower()
     df = df.rename(columns={'station': 'station_name'})
     df = df.astype({"station_name": str})
@@ -132,20 +132,20 @@ def addMeta(inputDir, outputDir, inputFile, inputDataSource, inputSourceName, in
     df.drop(columns=['station_name'], inplace=True)
 
     # Write dataframe to csv file
-    df.to_csv(outputDir+'data_copy_'+inputFile, index=False)
+    df.to_csv(ingestDir+'data_copy_'+inputFile, index=False)
 
 # This function takes as input a directory input path, a directory output path and a dataset variable. It 
 # generates and list of input filenames, and uses them to run the addMeta function above.
-def processData(outputDir, inputDataSource, inputSourceName, inputSourceArchive):
+def processData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
     dfDirFiles = getInputFiles(inputDataSource, inputSourceName, inputSourceArchive) 
  
     for index, row in dfDirFiles.iterrows():
-        inputDir = row[0]
+        harvestDir = row[0]
         inputFile = row[1] 
 
-        addMeta(inputDir, outputDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive)
+        addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive)
 
-# Main program function takes args as input, which contains the  outputDir, inputDataSource, inputSourceName, and inputSourceArchive values.
+# Main program function takes args as input, which contains the  ingestDir, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
 def main(args):
     # Add logger
@@ -156,22 +156,22 @@ def main(args):
     logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
-    outputDir = os.path.join(args.outputDir, '')
+    ingestDir = os.path.join(args.ingestDir, '')
     inputDataSource = args.inputDataSource
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
 
     logger.info('Start processing data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
-    processData(outputDir, inputDataSource, inputSourceName, inputSourceArchive) 
+    processData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive) 
     logger.info('Finished processing data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
 
-# Run main function takes outputDir, inputDataSource, inputSourceName, inputSourceArchiv as input.
+# Run main function takes ingestDir, inputDataSource, inputSourceName, inputSourceArchiv as input.
 if __name__ == "__main__":
     """ This is executed when run from the command line """
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--outputDIR", "--outputDir", help="Output directory path", action="store", dest="outputDir", required=True)
+    parser.add_argument("--ingestDIR", "--ingestDir", help="Output directory path", action="store", dest="ingestDir", required=True)
     parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','namforecast_ec95d','nowcast_hsofs','nowcast_ec95d','tidal_gauge','tidal_predictions', 'air_barometer','ocean_buoy','wind_anemometer','coastal_gauge','river_gauge'], required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
