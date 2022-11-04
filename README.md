@@ -60,11 +60,8 @@ To create the network link run the createnetwork.sh file as follows:
 At this point things are installed, and you can access the apsviz_timeseriesdb_ingest container shell using the root_shell.sh file as follows:
 
 ./root_shell.sh latest
- 
 
-## Ingest Data into Database
-
-The first step is to make sure you have created a directory to store the files that you are going to be creating. From within the apsviz_timeseriesdb_ingest shell make the following directories:
+From within the apsviz_timeseriesdb_ingest shell make the following directories:
 
 mkdir -p /data/DataIngesting/DAILY_INGEST
 
@@ -75,20 +72,34 @@ If you are running on you local machine also make sure you have downloaded the h
 on the apsviz-timeseriesdb.edc.renci.org VM, to the same location that you added as a volume when create the container, so that when you are in the container the following directory exits:
 
 /data/DataIngesting/DAILY_HARVESTING/
+ 
+## Ingest Data into Database
 
-## The Short Way
+### Create View
 
-### Prepare Ingest
+To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
+
+python prepare4Ingest.py --inputTask View
+
+This will create a view (drf_gauge_station_source_data) that is accessible through the Django REST Framework API:
+
+http://xxxx.xxxx.xxx/api/gauge_station_source_data/
+
+where xxxx.xxxx.xxx is your server.
+
+### Ingest The Short Way
+
+#### Prepare Ingest
 
 python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest 
 
-### Ingest data
+#### Ingest data
 
 python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest
 
-## The Long Way
+### Ingest The Long Way
 
-### Ingest Station Data 
+#### Ingest Station Data 
 
 To ingest the station meta data run the command below in the /home/nru directory:
 
@@ -96,7 +107,7 @@ python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databas
 
 This will ingest the station data in the stations directory into the drf_gauge_station table in the database.
 
-### Create and Ingest Source Data
+#### Create and Ingest Source Data
 
 To ingest the source data, first run the source_meta.bin file:
 
@@ -108,7 +119,7 @@ python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databas
 
 This will create Source data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_gauge_source table in the database.
 
-### Create and Ingest Harvest File Meta Data
+#### Create and Ingest Harvest File Meta Data
 
 To create and ingest the harvest file meta data run the following command:
 
@@ -116,7 +127,7 @@ python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingest
 
 This will create Harvest meta data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_harvest_data_file_meta  table in the database.
 
-### Create and Ingest Data Files
+#### Create and Ingest Data Files
 
 To create and ingest the data files first run the command:
 
@@ -130,19 +141,7 @@ python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir 
 
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
 
-### Create View 
-
-To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
-
-python prepare4Ingest.py --inputTask View
-
-This will create a view (drf_gauge_station_source_data) that is accessible through the Django REST Framework API:
-
-http://xxxx.xxxx.xxx/api/gauge_station_source_data/
-
-where xxxx.xxxx.xxx is your server.
-
-### Add New Source
+#### Add New Source
 
 To add a new source, first create the source meta, and ingest it into the drf_source_meta table by running the following command:
 
