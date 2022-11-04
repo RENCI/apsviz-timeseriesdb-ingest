@@ -91,9 +91,13 @@ where xxxx.xxxx.xxx is your server.
 
 #### Prepare Ingest
 
+To ingest the station data and source data run the command below in the /home/nru directory:
+
 python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest 
 
 #### Ingest data
+
+To ingest the gauge data run the command below in the /home/nru directory:
 
 python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest
 
