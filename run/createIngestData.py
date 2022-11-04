@@ -45,10 +45,11 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
         conn.close()
 
         # Return Pandas dataframe
-        if inputSourceName == 'adcirc':
-            return(df.head(100))
-        else:  
-            return(df.head(50))
+        #if inputSourceName == 'adcirc':
+        #    return(df.head(100))
+        #else:  
+        #    return(df.head(50))
+        return(df)
 
     # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:

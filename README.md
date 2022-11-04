@@ -126,7 +126,7 @@ This will create data files in /data/DataIngesting/DAILY_INGEST/.
 
 The next step is the ingest them by running the following command:
 
-python runIngest.py --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask DataIngest
+python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask DataIngest
 
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
 

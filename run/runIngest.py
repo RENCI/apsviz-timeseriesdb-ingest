@@ -82,14 +82,14 @@ def runDataCreate(ingestDir):
         logger.info('Ran '+" ".join(program))
 
 # This function runs ingestTasks.py with --inputTask Data, ingest gauge data into the drf_gauge_data table, in the database.
-def runDataIngest(databaseDir):
+def runDataIngest(ingestDir, databaseDir):
     # get source meta
     df = getSourceMeta()
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--databaseDir',databaseDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--databaseDir',databaseDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -101,7 +101,7 @@ def runDataIngest(databaseDir):
 def runSequenceIngest(harvestDir, ingestDir, databaseDir):
     runHarvestFile(harvestDir, ingestDir, databaseDir)
     runDataCreate(ingestDir)
-    runDataIngest(databaseDir)
+    runDataIngest(ingestDir, databaseDir)
 
 # Main program function takes args as input, which contains the harvestDir, ingestDir, databaseDir, and inputTask variables
 @logger.catch
@@ -151,7 +151,7 @@ def main(args):
         logger.info('Ran data create.')
     elif inputTask.lower() == 'dataingest':
         logger.info('Run data ingest.')
-        runDataIngest(databaseDir)
+        runDataIngest(ingestDir, databaseDir)
         logger.info('Ran data ingest.')
     elif inputTask.lower() == 'sequenceingest':
         logger.info('Run sequence ingest.')

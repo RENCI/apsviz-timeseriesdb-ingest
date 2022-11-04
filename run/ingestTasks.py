@@ -83,6 +83,10 @@ def ingestStations(ingestDir, databaseDir):
         except (Exception, psycopg2.DatabaseError) as error:
             logger.info(error)
 
+        # Remove station data file after ingesting it.
+        logger.info('Remove station data file: '+geomFile+' after ingesting it')
+        os.remove(geomFile)
+
 # This function takes an input directory and ingest directory as input. It uses the input directory to search for source  
 # csv files, that were created by the createIngestSourceMeta.py program. It uses the ingest directory to define the path
 # of the file that is to be ingested. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
@@ -123,6 +127,10 @@ def ingestSourceData(ingestDir, databaseDir):
         except (Exception, psycopg2.DatabaseError) as error:
             logger.info(error)
 
+        # Remove source data file after ingesting it.
+        logger.info('Remove source data file: '+sourceFile+' after ingesting it')
+        os.remove(sourceFile)
+
 # This function takes an dataset name as input and uses it to query the drf_harvest_data_file_meta table,
 # creating a DataFrame that contains a list of data files to ingest. The ingest directory is the directory
 # path in the apsviz-timeseriesdb database container.
@@ -138,7 +146,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
         cur.execute("""BEGIN""")
 
         # Run query
-        cur.execute("""SELECT file_name
+        cur.execute("""SELECT dir_path, file_name
                        FROM drf_harvest_data_file_meta
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
                        source_archive = %(sourcearchive)s AND ingested = False
@@ -146,19 +154,20 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
                     {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['file_name'])
+        df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name'])
  
         # Close cursor and database connection
         cur.close()
         conn.close()
 
         # Return Pandas dataframe
-        if inputSourceName == 'adcirc':
-            # Limit to 100 files at a time
-            return(df.head(100))
-        else:
-            # Limit to 50 files at a time
-            return(df.head(50))
+        #if inputSourceName == 'adcirc':
+        #    # Limit to 100 files at a time
+        #    return(df.head(100))
+        #else:
+        #    # Limit to 50 files at a time
+        #    return(df.head(50))
+        return(df)
 
     # If exception log error
     except (Exception, psycopg2.DatabaseError) as error:
@@ -213,7 +222,7 @@ def ingestHarvestDataFileMeta(ingestDir, databaseDir):
 # ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column "ingested", in the 
 # drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the directory path in the 
 # apsviz-timeseriesdb database container.
-def ingestData(databaseDir, inputDataSource, inputSourceName, inputSourceArchive):
+def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive):
     # Get DataFrame the contains list of data files that need to be ingested
     dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
@@ -221,8 +230,9 @@ def ingestData(databaseDir, inputDataSource, inputSourceName, inputSourceArchive
     for index, row in dfDirFiles.iterrows():
         # Get name of file, that needs to be ingested, from DataFrame, and create data_copy file name and output path
         # (databasePathFile) outsaved to the DataIngesting directory area where is the be ingested using the copy command.
-        ingestFile = row[0]
+        ingestFile = row[1]
         databasePathFile = databaseDir+'data_copy_'+ingestFile
+        ingestPathFile = ingestDir+'data_copy_'+ingestFile
 
         try:
             # Create connection to database and get cursor
@@ -284,6 +294,10 @@ def ingestData(databaseDir, inputDataSource, inputSourceName, inputSourceArchive
         # If exception log error
         except (Exception, psycopg2.DatabaseError) as error:
             logger.info(error)
+
+        # Remove ingest data file after ingesting it.
+        logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
+        os.remove(ingestPathFile)
 
 # This function takes not input, and creates the drf_gauge_station_source_data view.
 def createView():
@@ -409,7 +423,7 @@ def main(args):
         logger.info('Ingested input file information.')
     elif inputTask.lower() == 'data':
         logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
-        ingestData(databaseDir, inputDataSource, inputSourceName, inputSourceArchive)
+        ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive)
         logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
     elif inputTask.lower() == 'view':
         logger.info('Creating view.')
