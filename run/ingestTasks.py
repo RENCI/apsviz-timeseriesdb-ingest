@@ -6,7 +6,7 @@ import argparse
 import glob
 import os
 import sys
-import psycopg2
+import psycopg
 import pandas as pd
 from pathlib import Path
 from dotenv import load_dotenv
@@ -19,7 +19,7 @@ load_dotenv()
 def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -40,24 +40,23 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
         conn.close()
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function takes an input directory and an ingest directory as input. The input directory is used to search for geom 
 # station files that are to be ingested. The ingest directory is used to define the path of the file to be ingested. The 
 # ingest directory is the directory path in the apsviz-timeseriesdb database container.
-def ingestStations(ingestDir, databaseDir):
+def ingestStations(ingestDir):
     # Create list of geom files, to be ingested by searching the input directory for geom files.
     inputFiles = glob.glob(ingestDir+"stations/geom_*.csv")
 
     # Loop thru geom file list, ingesting each one 
     for geomFile in inputFiles:
         # Define the ingest path and file using the ingest directory and the geom file name
-        databasePathFile = databaseDir+'stations/'+Path(geomFile).parts[-1]
- 
+
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -66,11 +65,10 @@ def ingestStations(ingestDir, databaseDir):
             cur.execute("""BEGIN""")
 
             # Run query
-            cur.execute("""COPY drf_gauge_station(station_name,lat,lon,tz,gauge_owner,location_name,location_type,country,state,county,geom)
-                           FROM %(ingest_path_file)s
-                           DELIMITER ','
-                           CSV HEADER""",
-                        {'ingest_path_file': databasePathFile})
+            with open(geomFile, "r") as f:
+                with cur.copy("COPY drf_gauge_station (station_name,lat,lon,tz,gauge_owner,location_name,location_type,country,state,county,geom) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    while data := f.read(100):
+                        copy.write(data)
 
             # Commit ingest
             conn.commit()
@@ -80,7 +78,7 @@ def ingestStations(ingestDir, databaseDir):
             conn.close()
 
         # If exception log error
-        except (Exception, psycopg2.DatabaseError) as error:
+        except (Exception, psycopg.DatabaseError) as error:
             logger.info(error)
 
         # Remove station data file after ingesting it.
@@ -90,18 +88,15 @@ def ingestStations(ingestDir, databaseDir):
 # This function takes an input directory and ingest directory as input. It uses the input directory to search for source  
 # csv files, that were created by the createIngestSourceMeta.py program. It uses the ingest directory to define the path
 # of the file that is to be ingested. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
-def ingestSourceData(ingestDir, databaseDir):
+def ingestSourceData(ingestDir):
     # Create list of source files, to be ingested by searching the input directory for source files.
     inputFiles = glob.glob(ingestDir+"source_*.csv")
 
     # Loop thru source file list, ingesting each one
     for sourceFile in inputFiles:
-        # Define the ingest path and file using the ingest directory and the source file name
-        databasePathFile = databaseDir+Path(sourceFile).parts[-1]
-
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -109,12 +104,11 @@ def ingestSourceData(ingestDir, databaseDir):
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
             cur.execute("""BEGIN""")
 
-            # Run query
-            cur.execute("""COPY drf_gauge_source(station_id,data_source,source_name,source_archive,units)
-                           FROM %(ingest_path_file)s
-                           DELIMITER ','
-                           CSV HEADER""",
-                        {'ingest_path_file': databasePathFile})
+            # Run ingest query
+            with open(sourceFile, "r") as f:
+                with cur.copy("COPY drf_gauge_source (station_id,data_source,source_name,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    while data := f.read(100):
+                        copy.write(data)
 
             # Commit ingest
             conn.commit()
@@ -124,7 +118,7 @@ def ingestSourceData(ingestDir, databaseDir):
             conn.close()
 
         # If exception log error
-        except (Exception, psycopg2.DatabaseError) as error:
+        except (Exception, psycopg.DatabaseError) as error:
             logger.info(error)
 
         # Remove source data file after ingesting it.
@@ -137,7 +131,7 @@ def ingestSourceData(ingestDir, databaseDir):
 def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -170,23 +164,19 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
         return(df)
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function takes an input directory and ingest directory as input. It uses the input directory to seach for
 # harvest_files that need to be ingested. It uses the ingest directory to define the path of the harvest_file
 # to ingesting. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
-def ingestHarvestDataFileMeta(ingestDir, databaseDir):
+def ingestHarvestDataFileMeta(ingestDir):
     inputFiles = glob.glob(ingestDir+"harvest_files_*.csv")
 
     for infoFile in inputFiles:
-        # Create list of data info files, to be ingested by searching the input directory for data info files.
-        # databaseDir is the path in apsviz-timeseriesdb container, which starts the /home
-        databasePathFile = databaseDir+Path(infoFile).parts[-1]
-
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -194,12 +184,11 @@ def ingestHarvestDataFileMeta(ingestDir, databaseDir):
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
             cur.execute("""BEGIN""")
 
-            # Run query
-            cur.execute("""COPY drf_harvest_data_file_meta(dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,ingested,overlap_past_file_date_time)
-                           FROM %(ingest_path_file)s
-                           DELIMITER ','
-                           CSV HEADER""",
-                        {'ingest_path_file': databasePathFile})
+            # Run ingest query
+            with open(infoFile, "r") as f:
+                with cur.copy("COPY drf_harvest_data_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    while data := f.read(100):
+                        copy.write(data)
 
             # Commit ingest
             conn.commit()
@@ -209,7 +198,7 @@ def ingestHarvestDataFileMeta(ingestDir, databaseDir):
             conn.close()
 
         # If exception log error
-        except (Exception, psycopg2.DatabaseError) as error:
+        except (Exception, psycopg.DatabaseError) as error:
             logger.info(error)
 
         # Remove harvest meta file after ingesting it.
@@ -217,7 +206,7 @@ def ingestHarvestDataFileMeta(ingestDir, databaseDir):
         os.remove(infoFile)
 
 # This function takes an ingest directory and input dataset as input, and uses them to run the getHarvestDataFileMeta
-# function and define the databasePathFile variable. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
+# function. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
 # that contains a list of data files, that are queried from the drf_harvest_data_file_meta table. These files are then 
 # ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column "ingested", in the 
 # drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the directory path in the 
@@ -228,15 +217,12 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
 
     # Loop thru DataFrame ingesting each data file 
     for index, row in dfDirFiles.iterrows():
-        # Get name of file, that needs to be ingested, from DataFrame, and create data_copy file name and output path
-        # (databasePathFile) outsaved to the DataIngesting directory area where is the be ingested using the copy command.
         ingestFile = row[1]
-        databasePathFile = databaseDir+'data_copy_'+ingestFile
         ingestPathFile = ingestDir+'data_copy_'+ingestFile
 
         try:
             # Create connection to database and get cursor
-            conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
             cur = conn.cursor()
 
             # Set enviromnent
@@ -245,34 +231,32 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
             cur.execute("""BEGIN""")
 
             if inputDataSource == 'air_barometer':
-                # Run query
-                cur.execute("""COPY drf_gauge_data(source_id,timemark,time,air_pressure)
-                               FROM %(ingest_path_file)s
-                               DELIMITER ','
-                               CSV HEADER""",
-                            {'ingest_path_file': databasePathFile})
+                # Run ingest query
+                with open(ingestPathFile, "r") as f:
+                    with cur.copy("COPY drf_gauge_data (source_id,timemark,time,air_pressure) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
 
                 # Commit ingest
                 conn.commit()
 
             elif inputDataSource == 'wind_anemometer':
-                # Run query
-                cur.execute("""COPY drf_gauge_data(source_id,timemark,time,wind_speed)
-                               FROM %(ingest_path_file)s
-                               DELIMITER ','
-                               CSV HEADER""",
-                            {'ingest_path_file': databasePathFile})
+                # Run ingest query
+                with open(ingestPathFile, "r") as f:
+                    with cur.copy("COPY drf_gauge_data (source_id,timemark,time,wind_speed) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
+
 
                 # Commit ingest
                 conn.commit()
 
             else:
-                # Run query
-                cur.execute("""COPY drf_gauge_data(source_id,timemark,time,water_level)
-                               FROM %(ingest_path_file)s
-                               DELIMITER ','
-                               CSV HEADER""",
-                            {'ingest_path_file': databasePathFile})
+                # Run ingest query
+                with open(ingestPathFile, "r") as f:
+                    with cur.copy("COPY drf_gauge_data (source_id,timemark,time,water_level) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
 
                 # Commit ingest
                 conn.commit()
@@ -292,7 +276,7 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
             conn.close()
 
         # If exception log error
-        except (Exception, psycopg2.DatabaseError) as error:
+        except (Exception, psycopg.DatabaseError) as error:
             logger.info(error)
 
         # Remove ingest data file after ingesting it.
@@ -303,7 +287,7 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
 def createView():
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -346,7 +330,7 @@ def createView():
         conn.close()
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # Main program function takes args as input, which contains the inputDir, databaseDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive values.
@@ -411,15 +395,15 @@ def main(args):
         logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputLocationType+'.')
     elif inputTask.lower() == 'ingeststations':
         logger.info('Ingesting station data.')
-        ingestStations(ingestDir, databaseDir)
+        ingestStations(ingestDir)
         logger.info('Ingested station data.')
     elif inputTask.lower() == 'ingestsource':
         logger.info('Ingesting source data.')
-        ingestSourceData(ingestDir, databaseDir)
+        ingestSourceData(ingestDir)
         logger.info('ingested source data.')
     elif inputTask.lower() == 'file':
         logger.info('Ingesting input file information.')
-        ingestHarvestDataFileMeta(ingestDir, databaseDir)
+        ingestHarvestDataFileMeta(ingestDir)
         logger.info('Ingested input file information.')
     elif inputTask.lower() == 'data':
         logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')

@@ -116,7 +116,7 @@ def addMeta(ingestDir, outputFile):
     df=df.reindex(columns=newColsOrder)
 
     # Write dataframe to csv file 
-    df.to_csv(ingestDir+'source_'+outputFile, index=False)
+    df.to_csv(ingestDir+'source_'+outputFile, index=False, header=False)
 
 # Main program function takes args as input, which contains the ingestDir, and outputFile values.
 @logger.catch

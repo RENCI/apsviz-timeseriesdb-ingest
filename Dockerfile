@@ -48,7 +48,7 @@ FROM python:3.9-slim
 RUN apt-get update
 
 # install basic apps
-Run apt-get install -qy vim cron
+RUN apt-get install -qy vim cron
 
 # clear out the apt cache
 RUN apt-get clean

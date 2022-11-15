@@ -133,7 +133,7 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     df.drop(columns=['station_name'], inplace=True)
 
     # Write dataframe to csv file
-    df.to_csv(ingestDir+'data_copy_'+inputFile, index=False)
+    df.to_csv(ingestDir+'data_copy_'+inputFile, index=False, header=False)
 
 # This function takes as input a directory input path, a directory output path and a dataset variable. It 
 # generates and list of input filenames, and uses them to run the addMeta function above.

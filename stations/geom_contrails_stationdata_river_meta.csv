@@ -1,4 +1,3 @@
-station_name,lat,lon,tz,gauge_owner,location_name,location_type,country,state,county,geom
 0023,36.1736,-81.7458,gmt,NCEM,Watauga River near Foscoe Intellisense,river,us,nc,Watauga,0101000020E6100000D656EC2FBB6F54C0F54A598638164240
 0043,34.633611,-79.037778,gmt,NCEM,Lumber River at WTP Intake,river,us,nc,Robeson,0101000020E610000088A06AF46AC253C064B14D2A1A514140
 0048,36.215135,-81.682531,gmt,NCEM,Boone Cr. at Rivers St at Appalachian State,river,us,nc,Watauga,0101000020E610000065E08096AE6B54C0CB9C2E8B891B4240

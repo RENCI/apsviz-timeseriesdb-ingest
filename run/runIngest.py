@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 import shutil
-import psycopg2
+import psycopg
 import subprocess
 import pandas as pd
 from dotenv import load_dotenv
@@ -20,7 +20,7 @@ load_dotenv()
 def getSourceMeta():
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -42,12 +42,12 @@ def getSourceMeta():
         return(df)
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function runs createHarvestFileMeta.py, which creates harvest meta data files, that are ingested into the drf_harvest_data_file_meta table, 
 # in the database, by running ingestTasks.py using --inputTask File.
-def runHarvestFile(harvestDir, ingestDir, databaseDir):
+def runHarvestFile(harvestDir, ingestDir):
     # get source meta
     df = getSourceMeta()
 
@@ -56,7 +56,7 @@ def runHarvestFile(harvestDir, ingestDir, databaseDir):
     for index, row in df.iterrows():
         program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
 
-    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--databaseDir',databaseDir,'--inputTask','File'])
+    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','File'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -82,14 +82,14 @@ def runDataCreate(ingestDir):
         logger.info('Ran '+" ".join(program))
 
 # This function runs ingestTasks.py with --inputTask Data, ingest gauge data into the drf_gauge_data table, in the database.
-def runDataIngest(ingestDir, databaseDir):
+def runDataIngest(ingestDir):
     # get source meta
     df = getSourceMeta()
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--databaseDir',databaseDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -98,12 +98,12 @@ def runDataIngest(ingestDir, databaseDir):
         logger.info('Ran '+" ".join(program))
 
 # This functions creates and ingest the harvest files, and data in sequence
-def runSequenceIngest(harvestDir, ingestDir, databaseDir):
-    runHarvestFile(harvestDir, ingestDir, databaseDir)
+def runSequenceIngest(harvestDir, ingestDir):
+    runHarvestFile(harvestDir, ingestDir)
     runDataCreate(ingestDir)
-    runDataIngest(ingestDir, databaseDir)
+    runDataIngest(ingestDir)
 
-# Main program function takes args as input, which contains the harvestDir, ingestDir, databaseDir, and inputTask variables
+# Main program function takes args as input, which contains the harvestDir, ingestDir, and inputTask variables
 @logger.catch
 def main(args):
     # Add logger
@@ -129,21 +129,13 @@ def main(args):
     else:
         sys.exit('Incorrect ingestDir')
 
-    # Check if ingestDir argument exist. This argument is used in runIngestStations.
-    if args.databaseDir is None:
-        databaseDir = ''
-    elif args.databaseDir is not None:
-        databaseDir = os.path.join(args.databaseDir, '')
-    else:
-        sys.exit('Incorrect databaseDir')
-
     # Get input task
     inputTask = args.inputTask
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
     if inputTask.lower() == 'file':
         logger.info('Run input file information.')
-        runHarvestFile(harvestDir, ingestDir, databaseDir)
+        runHarvestFile(harvestDir, ingestDir)
         logger.info('Ran input file information.')
     elif inputTask.lower() == 'datacreate':
         logger.info('Run data create.')
@@ -151,11 +143,11 @@ def main(args):
         logger.info('Ran data create.')
     elif inputTask.lower() == 'dataingest':
         logger.info('Run data ingest.')
-        runDataIngest(ingestDir, databaseDir)
+        runDataIngest(ingestDir)
         logger.info('Ran data ingest.')
     elif inputTask.lower() == 'sequenceingest':
         logger.info('Run sequence ingest.')
-        runSequenceIngest(harvestDir, ingestDir, databaseDir)
+        runSequenceIngest(harvestDir, ingestDir)
         logger.info('Ran sequence ingest.')
 
 
@@ -167,7 +159,6 @@ if __name__ == "__main__":
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--harvestDIR", "--harvestDir", help="Harvest directory path", action="store", dest="harvestDir", required=False)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
-    parser.add_argument("--databaseDIR", "--databaseDir", help="Database directory path", action="store", dest="databaseDir", required=False)
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['File','DataCreate','DataIngest','SequenceIngest'], required=True)
 
     # Parse arguments

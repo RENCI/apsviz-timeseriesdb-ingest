@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 import shutil
-import psycopg2
+import psycopg
 import subprocess
 import pandas as pd
 from dotenv import load_dotenv
@@ -17,13 +17,13 @@ load_dotenv()
 
 # This function moves the station data files in /nru/home/stations to the directory /data/DataIngesting/DAILY_INGEST/, and then ingests them 
 # into the drf_gauge_station table. 
-def runIngestStations(ingestDir, databaseDir):
+def runIngestStations(ingestDir):
     # Move station meta files to the /data/DataIngesting/DAILY_INGEST/
     logger.info('Copy stations directory to '+ingestDir)
     shutil.copytree('/home/nru/stations', ingestDir+'stations', dirs_exist_ok=True)
 
     # Create list of program commands
-    program_list = [['python','ingestTasks.py','--ingestDir',ingestDir,'--databaseDir',databaseDir,'--inputTask','IngestStations']]
+    program_list = [['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','IngestStations']]
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -53,7 +53,7 @@ def runIngestSourceMeta():
 def getSourceMeta():
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -75,12 +75,12 @@ def getSourceMeta():
         return(df)
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function runs createIngestSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source table, 
 # in the database, by running ingestTasks.py using --inputTask Sourc_data.
-def runIngestSource(ingestDir, databaseDir):
+def runIngestSource(ingestDir):
     # get source meta
     df = getSourceMeta()
 
@@ -89,7 +89,7 @@ def runIngestSource(ingestDir, databaseDir):
     for index, row in df.iterrows():
         program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--outputFile',row['source_name']+'_stationdata_'+row['source_archive']+'_'+row['location_type']+'_'+row['data_source']+'_meta.csv'])
 
-    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--databaseDir',databaseDir,'--inputTask','ingestSource'])
+    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSource'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -109,12 +109,12 @@ def runCreateView():
         logger.info('Ran '+" ".join(program))
 
 # This functions ingest the stations, creates and ingest the source in sequence
-def runSequenceIngest(ingestDir, databaseDir):
-    runIngestStations(ingestDir, databaseDir)
+def runSequenceIngest(ingestDir):
+    runIngestStations(ingestDir)
     runIngestSourceMeta()
-    runIngestSource(ingestDir, databaseDir)
+    runIngestSource(ingestDir)
 
-# Main program function takes args as input, which contains the ingestDir, databaseDir, inputTask as variables.
+# Main program function takes args as input, which contains the ingestDir, inputTask as variables.
 @logger.catch
 def main(args):
     # Add logger
@@ -132,21 +132,13 @@ def main(args):
     else:
         sys.exit('Incorrect ingestDir')
 
-    # Check if ingestDir argument exist. This argument is used in runIngestStations.
-    if args.databaseDir is None:
-        databaseDir = ''
-    elif args.databaseDir is not None:
-        databaseDir = os.path.join(args.databaseDir, '')
-    else:
-        sys.exit('Incorrect databaseDir')
-
     # Get input task
     inputTask = args.inputTask
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
     if inputTask.lower() == 'ingeststations':
         logger.info('Run ingest station data.')
-        runIngestStations(ingestDir, databaseDir)
+        runIngestStations(ingestDir)
         logger.info('Ran ingest station data.')
     elif inputTask.lower() == 'ingestsourcemeta':
         logger.info('Run source meta.')
@@ -154,7 +146,7 @@ def main(args):
         logger.info('Ran source meta.')
     elif inputTask.lower() == 'ingestsource':
         logger.info('Run source data.')
-        runIngestSource(ingestDir, databaseDir)
+        runIngestSource(ingestDir)
         logger.info('Ran source data.')
     elif inputTask.lower() == 'view':
         logger.info('Run create view.')
@@ -162,7 +154,7 @@ def main(args):
         logger.info('Ran create view.')
     elif inputTask.lower() == 'sequenceingest':
         logger.info('Run sequence ingest.')
-        runSequenceIngest(ingestDir, databaseDir)
+        runSequenceIngest(ingestDir)
         logger.info('Ran sequence ingest.')
 
 # Run main function 
@@ -172,7 +164,6 @@ if __name__ == "__main__":
 
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
-    parser.add_argument("--databaseDIR", "--databaseDir", help="Database directory path", action="store", dest="databaseDir", required=False)
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','IngestSourceMeta','IngestSource','View', 'SequenceIngest'], required=True)
 
     # Parse arguments

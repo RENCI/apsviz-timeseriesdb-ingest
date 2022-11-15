@@ -1,4 +1,3 @@
-station_name,lat,lon,tz,gauge_owner,location_name,location_type,country,state,county,geom
 2695535,32.369999,-64.695,gmt,NOAA/NOS,Bermuda Biological Station,tidal,bm,,Saint George's,0101000020E610000014AE47E17A2C50C0BF4692205C2F4040
 2695540,32.373306,-64.703306,gmt,NOAA/NOS,"Bermuda, St. Georges Island",tidal,bm,,Saint George's,0101000020E610000028452BF7022D50C046B3B27DC82F4040
 8410140,44.904598,-66.982903,gmt,NOAA/NOS,Eastport,tidal,us,me,Washington,0101000020E6100000FA08FCE1E7BE50C0750305DEC9734640
