@@ -93,13 +93,13 @@ where xxxx.xxxx.xxx is your server.
 
 To ingest the station data and source data run the command below in the /home/nru directory:
 
-python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest 
+python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest 
 
 #### Ingest data
 
 To ingest the gauge data run the command below in the /home/nru directory:
 
-python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest
+python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest
 
 ### Ingest The Long Way
 
@@ -107,7 +107,7 @@ python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingest
 
 To ingest the station meta data run the command below in the /home/nru directory:
 
-python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask IngestStations
+python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask IngestStations
 
 This will ingest the station data in the stations directory into the drf_gauge_station table in the database.
 
@@ -119,7 +119,7 @@ python prepare4Ingest.py --inputTask IngestSourceMeta
 
 This will ingest meta data on the data sources that will be used as argparse input when running runIngest.py. The next step is to ingest the source data into the drf_gauge_source table. To do this run the following command:
 
-python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask IngestSource
+python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask IngestSource
 
 This will create Source data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_gauge_source table in the database.
 
@@ -127,7 +127,7 @@ This will create Source data files in /data/DataIngesting/DAILY_INGEST and then 
 
 To create and ingest the harvest file meta data run the following command:
 
-python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask File 
+python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask File 
 
 This will create Harvest meta data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_harvest_data_file_meta  table in the database.
 
@@ -141,7 +141,7 @@ This will create data files in /data/DataIngesting/DAILY_INGEST/.
 
 The next step is the ingest them by running the following command:
 
-python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask DataIngest
+python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask DataIngest
 
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
 
@@ -161,7 +161,7 @@ where nnnn is the source name (e.g. adcirc), aaaaaa is the source archive (e.g. 
 
 Finally run the following command to ingest that data into the drf_gauge_source table in the database:
 
-python ingestTasks.py --databaseDir /home/DataIngesting/DAILY_INGEST/ --inputTask Data --inputDataSource ddddddddddd--inputSourceName nnnn --inputSourceArchive aaaaaa is the source archive i(e.g. renci).
+python ingestTasks.py --inputTask Data --inputDataSource ddddddddddd--inputSourceName nnnn --inputSourceArchive aaaaaa is the source archive i(e.g. renci).
 
 where dddddddddd is the data source (e.g. namforecast_ec95d), nnnn is the source name (e.g. adcirc), and aaaaaa is the source archive (e.g. renci).
 
