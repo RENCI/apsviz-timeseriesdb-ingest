@@ -9,6 +9,10 @@ The gauge data that is being ingested cans currently be accessed from the apsviz
 
 /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ 
 
+On Sterling using k8s the directory path is:
+
+/data/ast-run-harvester/
+
 It was generated using the software in the ADCIRC Support Tools (AST) repo, which can be downloaded from:  
 
 https://github.com/RENCI/AST
@@ -65,6 +69,8 @@ From within the apsviz_timeseriesdb_ingest shell make the following directories:
 
 mkdir -p /data/DataIngesting/DAILY_INGEST
 
+This does not have to be down when running on k8s.
+
 If you are running on you local machine also make sure you have downloaded the harvest files from the directory:
 
 /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/
@@ -72,6 +78,10 @@ If you are running on you local machine also make sure you have downloaded the h
 on the apsviz-timeseriesdb.edc.renci.org VM, to the same location that you added as a volume when create the container, so that when you are in the container the following directory exits:
 
 /data/DataIngesting/DAILY_HARVESTING/
+
+On Sterling, using k8s, check if this directory exits:
+
+/data/ast-run-harvester/
  
 ## Ingest Data into Database
 
@@ -95,15 +105,25 @@ To ingest the station data and source data run the command below in the /home/nr
 
 python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest 
 
+On Sterling, using k8s, the command would be:
+
+python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
+
 #### Ingest data
 
 To ingest the gauge data run the command below in the /home/nru directory:
 
 python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest
 
+On Sterling, using k8s, the command would be:
+
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
+
 ### Ingest The Long Way
 
 #### Ingest Station Data 
+
+If running the commands below on Sterling, using k8s, replace the directory paths with the /data/ast-run-harvester/, and /data/ast-run-ingester/ directory paths, where appropriate.
 
 To ingest the station meta data run the command below in the /home/nru directory:
 
