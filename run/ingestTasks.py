@@ -18,26 +18,22 @@ load_dotenv()
 # The variables in this table are then used as inputs in runIngest.py 
 def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType):
     try:
-        # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
-        cur = conn.cursor()
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+            cur = conn.cursor()
 
-        # Set enviromnent
-        cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-        cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-        cur.execute("""BEGIN""")
+            # Set enviromnent
+            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
-        # Run query
-        cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, location_type)
-                       VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(locationtype)s)""",
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'locationtype': inputLocationType})
+            # Run query
+            cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, location_type)
+                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(locationtype)s)""",
+                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'locationtype': inputLocationType})
 
-        # Commit ingest
-        conn.commit()
-
-        # Close cursor and database connection
-        cur.close()
-        conn.close()
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
@@ -50,40 +46,36 @@ def ingestStations(ingestDir):
     # Create list of geom files, to be ingested by searching the input directory for geom files.
     inputFiles = glob.glob(ingestDir+"stations/geom_*.csv")
 
-    # Loop thru geom file list, ingesting each one 
-    for geomFile in inputFiles:
-        # Define the ingest path and file using the ingest directory and the geom file name
+    # Define the ingest path and file using the ingest directory and the geom file name
 
-        try:
-            # Create connection to database and get cursor
-            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+    try:
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
             cur.execute("""SET CLIENT_ENCODING TO UTF8""")
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-            cur.execute("""BEGIN""")
 
-            # Run query
-            with open(geomFile, "r") as f:
-                with cur.copy("COPY drf_gauge_station (station_name,lat,lon,tz,gauge_owner,location_name,location_type,country,state,county,geom) FROM STDIN WITH (FORMAT CSV)") as copy:
-                    while data := f.read(100):
-                        copy.write(data)
+            # Loop thru geom file list, ingesting each one
+            for geomFile in inputFiles:
+                # Run query
+                with open(geomFile, "r") as f:
+                    with cur.copy("COPY drf_gauge_station (station_name,lat,lon,tz,gauge_owner,location_name,location_type,country,state,county,geom) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
 
-            # Commit ingest
-            conn.commit()
- 
+                # Remove station data file after ingesting it.
+                logger.info('Remove station data file: '+geomFile+' after ingesting it')
+                os.remove(geomFile)
+
             # Close cursor and database connection
             cur.close()
             conn.close()
 
-        # If exception log error
-        except (Exception, psycopg.DatabaseError) as error:
-            logger.info(error)
-
-        # Remove station data file after ingesting it.
-        logger.info('Remove station data file: '+geomFile+' after ingesting it')
-        os.remove(geomFile)
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
 
 # This function takes an input directory and ingest directory as input. It uses the input directory to search for source  
 # csv files, that were created by the createIngestSourceMeta.py program. It uses the ingest directory to define the path
@@ -92,76 +84,71 @@ def ingestSourceData(ingestDir):
     # Create list of source files, to be ingested by searching the input directory for source files.
     inputFiles = glob.glob(ingestDir+"source_*.csv")
 
-    # Loop thru source file list, ingesting each one
-    for sourceFile in inputFiles:
-        try:
-            # Create connection to database and get cursor
-            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+    try:
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
             cur.execute("""SET CLIENT_ENCODING TO UTF8""")
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-            cur.execute("""BEGIN""")
 
-            # Run ingest query
-            with open(sourceFile, "r") as f:
-                with cur.copy("COPY drf_gauge_source (station_id,data_source,source_name,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
-                    while data := f.read(100):
-                        copy.write(data)
+            # Loop thru source file list, ingesting each one
+            for sourceFile in inputFiles:
+                # Run ingest query
+                with open(sourceFile, "r") as f:
+                    with cur.copy("COPY drf_gauge_source (station_id,data_source,source_name,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
 
-            # Commit ingest
-            conn.commit()
+                # Remove source data file after ingesting it.
+                logger.info('Remove source data file: '+sourceFile+' after ingesting it')
+                os.remove(sourceFile)
 
             # Close cursor and database connection
             cur.close()
             conn.close()
 
-        # If exception log error
-        except (Exception, psycopg.DatabaseError) as error:
-            logger.info(error)
-
-        # Remove source data file after ingesting it.
-        logger.info('Remove source data file: '+sourceFile+' after ingesting it')
-        os.remove(sourceFile)
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
 
 # This function takes an dataset name as input and uses it to query the drf_harvest_data_file_meta table,
 # creating a DataFrame that contains a list of data files to ingest. The ingest directory is the directory
 # path in the apsviz-timeseriesdb database container.
 def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive):
     try:
-        # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
-        cur = conn.cursor()
+        # Create connection to database, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD']) as conn:
+            cur = conn.cursor()
 
-        # Set enviromnent
-        cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-        cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-        cur.execute("""BEGIN""")
+            # Set enviromnent
+            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
-        # Run query
-        cur.execute("""SELECT dir_path, file_name
-                       FROM drf_harvest_data_file_meta
-                       WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                       source_archive = %(sourcearchive)s AND ingested = False
-                       ORDER BY data_date_time""",
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
+            # Run query
+            cur.execute("""SELECT dir_path, file_name
+                           FROM drf_harvest_data_file_meta
+                           WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
+                           source_archive = %(sourcearchive)s AND ingested = False
+                           ORDER BY data_date_time""",
+                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
 
-        # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name'])
+            # convert query output to Pandas dataframe
+            df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name'])
  
-        # Close cursor and database connection
-        cur.close()
-        conn.close()
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
 
-        # Return Pandas dataframe
-        #if inputSourceName == 'adcirc':
-        #    # Limit to 100 files at a time
-        #    return(df.head(100))
-        #else:
-        #    # Limit to 50 files at a time
-        #    return(df.head(50))
-        return(df)
+            # Return Pandas dataframe
+            #if inputSourceName == 'adcirc':
+            #    # Limit to 100 files at a time
+            #    return(df.head(100))
+            #else:
+            #    # Limit to 50 files at a time
+            #    return(df.head(50))
+            return(df)
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
@@ -173,37 +160,33 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 def ingestHarvestDataFileMeta(ingestDir):
     inputFiles = glob.glob(ingestDir+"harvest_files_*.csv")
 
-    for infoFile in inputFiles:
-        try:
-            # Create connection to database and get cursor
-            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+    try:
+        # Create connection to databaseset, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
             cur.execute("""SET CLIENT_ENCODING TO UTF8""")
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-            cur.execute("""BEGIN""")
 
-            # Run ingest query
-            with open(infoFile, "r") as f:
-                with cur.copy("COPY drf_harvest_data_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
-                    while data := f.read(100):
-                        copy.write(data)
+            for infoFile in inputFiles:
+                # Run ingest query
+                with open(infoFile, "r") as f:
+                    with cur.copy("COPY drf_harvest_data_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
 
-            # Commit ingest
-            conn.commit()
+                # Remove harvest meta file after ingesting it.
+                logger.info('Remove harvest meta file: '+infoFile+' after ingesting it')
+                os.remove(infoFile)
 
             # Close cursor and database connection
             cur.close()
             conn.close()
 
-        # If exception log error
-        except (Exception, psycopg.DatabaseError) as error:
-            logger.info(error)
-
-        # Remove harvest meta file after ingesting it.
-        logger.info('Remove harvest meta file: '+infoFile+' after ingesting it')
-        os.remove(infoFile)
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
 
 # This function takes an ingest directory and input dataset as input, and uses them to run the getHarvestDataFileMeta
 # function. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
@@ -215,119 +198,103 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
     # Get DataFrame the contains list of data files that need to be ingested
     dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
-    # Loop thru DataFrame ingesting each data file 
-    for index, row in dfDirFiles.iterrows():
-        ingestFile = row[1]
-        ingestPathFile = ingestDir+'data_copy_'+ingestFile
-
-        try:
-            # Create connection to database and get cursor
-            conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+    try:
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
             cur.execute("""SET CLIENT_ENCODING TO UTF8""")
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-            cur.execute("""BEGIN""")
 
-            if inputDataSource == 'air_barometer':
-                # Run ingest query
-                with open(ingestPathFile, "r") as f:
-                    with cur.copy("COPY drf_gauge_data (source_id,timemark,time,air_pressure) FROM STDIN WITH (FORMAT CSV)") as copy:
-                        while data := f.read(100):
-                            copy.write(data)
-
-                # Commit ingest
-                conn.commit()
-
-            elif inputDataSource == 'wind_anemometer':
-                # Run ingest query
-                with open(ingestPathFile, "r") as f:
-                    with cur.copy("COPY drf_gauge_data (source_id,timemark,time,wind_speed) FROM STDIN WITH (FORMAT CSV)") as copy:
-                        while data := f.read(100):
-                            copy.write(data)
+            # Loop thru DataFrame ingesting each data file
+            for index, row in dfDirFiles.iterrows():
+                ingestFile = row[1]
+                ingestPathFile = ingestDir+'data_copy_'+ingestFile
 
 
-                # Commit ingest
-                conn.commit()
+                if inputDataSource == 'air_barometer':
+                    # Run ingest query
+                    with open(ingestPathFile, "r") as f:
+                        with cur.copy("COPY drf_gauge_data (source_id,timemark,time,air_pressure) FROM STDIN WITH (FORMAT CSV)") as copy:
+                            while data := f.read(100):
+                                copy.write(data)
 
-            else:
-                # Run ingest query
-                with open(ingestPathFile, "r") as f:
-                    with cur.copy("COPY drf_gauge_data (source_id,timemark,time,water_level) FROM STDIN WITH (FORMAT CSV)") as copy:
-                        while data := f.read(100):
-                            copy.write(data)
+                elif inputDataSource == 'wind_anemometer':
+                    # Run ingest query
+                    with open(ingestPathFile, "r") as f:
+                        with cur.copy("COPY drf_gauge_data (source_id,timemark,time,wind_speed) FROM STDIN WITH (FORMAT CSV)") as copy:
+                            while data := f.read(100):
+                                copy.write(data)
 
-                # Commit ingest
-                conn.commit()
+                else:
+                    # Run ingest query
+                    with open(ingestPathFile, "r") as f:
+                        with cur.copy("COPY drf_gauge_data (source_id,timemark,time,water_level) FROM STDIN WITH (FORMAT CSV)") as copy:
+                            while data := f.read(100):
+                                copy.write(data)
 
-            # Run update 
-            cur.execute("""UPDATE drf_harvest_data_file_meta
-                           SET ingested = True
-                           WHERE file_name = %(update_file)s
-                           """,
-                        {'update_file': ingestFile})
+                # Run update 
+                cur.execute("""UPDATE drf_harvest_data_file_meta
+                               SET ingested = True
+                               WHERE file_name = %(update_file)s
+                               """,
+                            {'update_file': ingestFile})
 
-            # Commit update 
-            conn.commit()
+
+                # Remove ingest data file after ingesting it.
+                logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
+                os.remove(ingestPathFile)
 
             # Close cursor and database connection
             cur.close()
             conn.close()
 
-        # If exception log error
-        except (Exception, psycopg.DatabaseError) as error:
-            logger.info(error)
-
-        # Remove ingest data file after ingesting it.
-        logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
-        os.remove(ingestPathFile)
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
 
 # This function takes not input, and creates the drf_gauge_station_source_data view.
 def createView():
     try:
-        # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
-        cur = conn.cursor()
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+            cur = conn.cursor()
 
-        # Set enviromnent
-        cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-        cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-        cur.execute("""BEGIN""")
+            # Set enviromnent
+            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
-        # Run query
-        cur.execute("""CREATE VIEW drf_gauge_station_source_data AS
-                       SELECT d.obs_id AS obs_id,
-                              s.source_id AS source_id,
-                              g.station_id AS station_id,
-                              g.station_name AS station_name,
-                              d.timemark AS timemark,
-                              d.time AS time,
-                              d.water_level AS water_level,
-                              d.wind_speed AS wind_speed,
-                              d.air_pressure AS air_pressure, 
-                              g.tz AS tz,
-                              g.gauge_owner AS gauge_owner,
-                              s.data_source AS data_source,
-                              s.source_name AS source_name,
-                              s.source_archive AS source_archive,
-                              s.units AS units,
-                              g.location_name AS location_name,
-                              g.location_type AS location_type,
-                              g.country AS country,
-                              g.state AS state,
-                              g.county AS county,
-                              g.geom AS geom
-                       FROM drf_gauge_data d
-                       INNER JOIN drf_gauge_source s ON s.source_id=d.source_id
-                       INNER JOIN drf_gauge_station g ON s.station_id=g.station_id""")
+            # Run query
+            cur.execute("""CREATE VIEW drf_gauge_station_source_data AS
+                           SELECT d.obs_id AS obs_id,
+                                  s.source_id AS source_id,
+                                  g.station_id AS station_id,
+                                  g.station_name AS station_name,
+                                  d.timemark AS timemark,
+                                  d.time AS time,
+                                  d.water_level AS water_level,
+                                  d.wind_speed AS wind_speed,
+                                  d.air_pressure AS air_pressure, 
+                                  g.tz AS tz,
+                                  g.gauge_owner AS gauge_owner,
+                                  s.data_source AS data_source,
+                                  s.source_name AS source_name,
+                                  s.source_archive AS source_archive,
+                                  s.units AS units,
+                                  g.location_name AS location_name,
+                                  g.location_type AS location_type,
+                                  g.country AS country,
+                                  g.state AS state,
+                                  g.county AS county,
+                                  g.geom AS geom
+                           FROM drf_gauge_data d
+                           INNER JOIN drf_gauge_source s ON s.source_id=d.source_id
+                           INNER JOIN drf_gauge_station g ON s.station_id=g.station_id""")
 
-        # Commit ingest
-        conn.commit()
-
-        # Close cursor and database connection
-        cur.close()
-        conn.close()
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
