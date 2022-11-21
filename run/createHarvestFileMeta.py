@@ -8,7 +8,7 @@ import sys
 import os
 import re
 import datetime
-import psycopg2
+import psycopg
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -22,7 +22,7 @@ load_dotenv()
 def getFileDateTime(inputFile):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -48,7 +48,7 @@ def getFileDateTime(inputFile):
         return(df)
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function takes source as input, and returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, 
@@ -56,7 +56,7 @@ def getFileDateTime(inputFile):
 def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
        
         # Set enviromnent 
@@ -83,7 +83,7 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
         return(df)
 
     # If exception log error    
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function takes an input directory path and input dataset, and uses them to create a file list

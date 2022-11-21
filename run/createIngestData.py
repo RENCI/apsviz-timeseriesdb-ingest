@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # Import python modules
@@ -7,10 +7,9 @@ import os
 import sys
 import glob
 import re
-import psycopg2
+import psycopg
 import pandas as pd
 import numpy as np
-from psycopg2.extensions import AsIs
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -21,7 +20,7 @@ load_dotenv()
 def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -52,16 +51,16 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
         return(df)
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function takes as input the data_source (hsofs...), and a list of station_id(s), and returns source_id(s) for    
 # model data from the drf_gauge_source table in the apsviz_gauges database. This funciton specifically gets source_id(s) for
 # model data, such as from ADCIRC. The data_source, such is hsofs, is the grid that is used in the ADCIRC run.
-def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tuples):
+def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent 
@@ -74,9 +73,9 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tu
                        s.data_source AS data_source, s.source_name AS source_name, s.source_archive AS source_archive
                        FROM drf_gauge_station g INNER JOIN drf_gauge_source s ON s.station_id=g.station_id
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                       source_archive = %(sourcearchive)s AND station_name IN %(stationtuples)s
+                       source_archive = %(sourcearchive)s AND station_name = ANY(%(stationlist)s) 
                        ORDER BY station_name""",
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'stationtuples': AsIs(station_tuples)})
+                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'stationlist': station_list})
 
         # convert query output to Pandas dataframe
         dfstations = pd.DataFrame(cur.fetchall(), columns=['source_id','station_id','station_name','data_source','source_name','source_archive'])
@@ -89,7 +88,7 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tu
         return(dfstations)
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function takes as input a directory input path, directory output path and a filename, and returns a csv 
@@ -108,10 +107,10 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     df.insert(0,'source_id', '')
    
     # Extract list of stations from dataframe for querying the database, and get source_archive name from filename.
-    station_tuples = tuple(sorted([str(x) for x in df['station_name'].unique().tolist()]))
+    station_list = [sorted([str(x) for x in df['station_name'].unique().tolist()])]
 
     # Run getSourceID function to get the source_id(s)
-    dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_tuples)
+    dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list)
  
     # Get the timemark frome the the data filename 
     datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
@@ -129,7 +128,7 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     for index, row in dfstations.iterrows():
         df.loc[df['station_name'] == row['station_name'], 'source_id'] = row['source_id']
 
-    # Drom station_name column from dataframe
+    # Drop station_name column from dataframe
     df.drop(columns=['station_name'], inplace=True)
 
     # Write dataframe to csv file

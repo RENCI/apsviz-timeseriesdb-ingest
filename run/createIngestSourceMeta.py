@@ -3,11 +3,10 @@
 
 # Import python modules
 import argparse
-import psycopg2
+import psycopg
 import sys
 import os
 import pandas as pd
-from psycopg2.extensions import AsIs
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -18,7 +17,7 @@ load_dotenv()
 def getStationID(locationType):
     try:
         # Create connection to database and get cursor
-        conn = psycopg2.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent 
@@ -43,7 +42,7 @@ def getStationID(locationType):
         return(df)
 
     # If exception log error
-    except (Exception, psycopg2.DatabaseError) as error:
+    except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
 # This function takes a input a directory path and outputFile, and used them to read the input file
