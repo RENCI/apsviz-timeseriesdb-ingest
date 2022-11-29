@@ -110,6 +110,7 @@ def runCreateView():
 
 # This functions ingest the stations, creates and ingest the source in sequence
 def runSequenceIngest(ingestDir):
+    runCreateView()
     runIngestStations(ingestDir)
     runIngestSourceMeta()
     runIngestSource(ingestDir)

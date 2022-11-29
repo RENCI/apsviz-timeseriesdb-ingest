@@ -85,18 +85,6 @@ On Sterling, using k8s, check if this directory exits:
  
 ## Ingest Data into Database
 
-### Create View
-
-To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
-
-python prepare4Ingest.py --inputTask View
-
-This will create a view (drf_gauge_station_source_data) that is accessible through the Django REST Framework API:
-
-http://xxxx.xxxx.xxx/api/gauge_station_source_data/
-
-where xxxx.xxxx.xxx is your server.
-
 ### Ingest The Short Way
 
 #### Prepare Ingest
@@ -120,6 +108,18 @@ On Sterling, using k8s, the command would be:
 python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
 
 ### Ingest The Long Way
+
+#### Create View
+
+To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
+
+python prepare4Ingest.py --inputTask View
+
+This will create a view (drf_gauge_station_source_data) that is accessible through the Django REST Framework API:
+
+http://xxxx.xxxx.xxx/api/gauge_station_source_data/
+
+where xxxx.xxxx.xxx is your server.
 
 #### Ingest Station Data 
 
