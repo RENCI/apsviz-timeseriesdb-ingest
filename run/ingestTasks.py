@@ -14,6 +14,37 @@ from loguru import logger
 
 load_dotenv()
 
+# This function is used to delete duplicate records in the observation data. The observation data has duplicate records with the 
+# same timestamp, but different timemarks because they are from different harvest data files.
+def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime):
+    try:
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'],
+                             host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'],
+                             password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+            cur = conn.cursor()
+    
+            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
+   
+            cur.execute("""DELETE FROM
+                               drf_gauge_data a
+                                   USING drf_gauge_data b,
+                                         drf_gauge_source s
+                           WHERE
+                               s.data_source = %(datasource)s AND s.source_name = %(sourcename)s AND s.source_archive = %(sourcearchive)s AND
+                               a.time >= %(mintime)s AND a.time <= %(maxtime)s AND
+                               s.source_id=b.source_id AND
+                               a.obs_id < b.obs_id AND
+                               a.time = b.time AND
+                               s.source_id=a.source_id""",
+                        {'datasource': inputDataSource,'sourcename': inputSourceName,'sourcearchive': inputSourceArchive, 'mintime': minTime, 'maxtime': maxTime})
+
+            cur.close()
+            conn.close()
+
+    except (Exception, psycopg.DatabaseError) as error:
+        print(error)
+
 # This function takes data source, source name, and source archive as input. It ingest these variables into the source meta table (drf_source_meta).
 # The variables in this table are then used as inputs in runIngest.py 
 def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType):
@@ -127,7 +158,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
-            cur.execute("""SELECT dir_path, file_name, data_date_time
+            cur.execute("""SELECT dir_path, file_name
                            FROM drf_harvest_data_file_meta
                            WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
                            source_archive = %(sourcearchive)s AND ingested = False
@@ -135,7 +166,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
                         {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
 
             # convert query output to Pandas dataframe
-            df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name','timemark'])
+            df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name'])
  
             # Close cursor and database connection
             cur.close()
@@ -188,103 +219,6 @@ def ingestHarvestDataFileMeta(ingestDir):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def getPreviousTimemark(inputDataSource, inputSourceName, inputSourceArchive, inputTimeMark):
-    try:
-        # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], 
-                             host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], 
-                             password=os.environ['SQL_PASSWORD']) as conn:
-            cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-
-            # Run query
-            cur.execute("""SELECT * FROM
-                               (SELECT data_date_time, data_begin_time, data_end_time, file_name,
-                                       LEAD(data_date_time) OVER (ORDER BY file_name desc, data_date_time asc) AS previous_timemark
-                               FROM drf_harvest_data_file_meta WHERE data_source = %(datasource)s AND source_name = %(sourcename)s and source_archive = %(sourcearchive)s
-                               ) x
-                           WHERE %(timemark)s IN (data_date_time)""",
-                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'timemark': inputTimeMark})
-
-            # convert query output to Pandas dataframe
-            df = pd.DataFrame(cur.fetchall(), columns=['data_date_time','data_begin_time','data_end_time','file_name','previous_timemark'])
-
-            # Close cursor and database connection
-            cur.close()
-            conn.close()
-
-            # Return Pandas dataframe
-            return(df)
-
-    # If exception log error
-    except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-
-def querySourceIdTimemarkTime(sourceID, timemark):
-    try:
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], 
-                             host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], 
-                             password=os.environ['SQL_PASSWORD']) as conn:
-            cur = conn.cursor()
-        
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-            cur.execute("""BEGIN""")
-        
-            cur.execute("""SELECT source_id, timemark, time, water_level, wind_speed, air_pressure
-                           FROM drf_gauge_data
-                           WHERE source_id = %(sourceid)s AND timemark = %(timemark)s
-                           ORDER BY time""", 
-                        {'sourceid': sourceID, 'timemark': timemark})
-
-            df = pd.DataFrame(cur.fetchall(), columns=['source_id','timemark','time','water_level',
-                                                       'wind_speed','air_pressure'])
-
-            cur.close()
-            conn.close()
-
-            return(df)
-
-    except (Exception, psycopg.DatabaseError) as error:
-        print(error)
-
-def deleteStationSourceTimemarkTime(sourceID, timeMark, time_list):
-    try:
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], 
-                             host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], 
-                             password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
-            cur = conn.cursor()
-        
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-    
-            cur.execute("""DELETE FROM drf_gauge_data
-                           WHERE source_id = %(sourceid)s AND timemark = %(timemark)s AND 
-                           time = ANY(%(timelist)s)""", 
-                        {'sourceid': sourceID,'timemark': timeMark,'timelist': time_list})
-
-            cur.close()
-            conn.close()
-
-    except (Exception, psycopg.DatabaseError) as error:
-        print(error)
-
-def runSourceIdTimemarks(sourceID, inputTimeMark, previousTimeMark): 
-    dfInputTM = querySourceIdTimemarkTime(sourceID, inputTimeMark)
-    dfPreviousTM = querySourceIdTimemarkTime(sourceID, previousTimeMark)
-    dfTM_diff = dfInputTM.loc[dfInputTM['time'].isin(dfPreviousTM['time'])]
-    if dfTM_diff.size == 0:
-        time_list = [str(x) for x in dfPreviousTM['time'].tolist()]
-        deleteStationSourceTimemarkTime(sourceID, previousTimeMark, time_list)
-        #logger.info('No difference between data for timemarks '+str(inputTimeMark)+' and timemark '+str(previousTimeMark)+'.')
-    else:
-        time_list = [str(x) for x in dfTM_diff['time'].tolist()]
-        deleteStationSourceTimemarkTime(sourceID, previousTimeMark, time_list)
-        #logger.info('There is a difference between data for timemarks '+str(inputTimeMark)+' and timemark '+str(previousTimeMark)+'.')
-
 # This function takes an ingest directory and input dataset as input, and uses them to run the getHarvestDataFileMeta
 # function. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
 # that contains a list of data files, that are queried from the drf_harvest_data_file_meta table. These files are then 
@@ -307,8 +241,8 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
             # Loop thru DataFrame ingesting each data file
             for index, row in dfDirFiles.iterrows():
                 ingestFile = row[1]
-                inputTimeMark = row[2]
                 ingestPathFile = ingestDir+'data_copy_'+ingestFile
+
 
                 if inputDataSource == 'air_barometer':
                     # Run ingest query
@@ -331,26 +265,28 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
                             while data := f.read(100):
                                 copy.write(data)
 
-                # Remove duplicate times from previous timemark
-                if inputDataSource == 'tidal_gauge' and inputSourceName == 'noaa':
+                # Remove duplicate times, in the observation data, from previous timemark files
+                if inputSourceName != 'adcirc':
+                    # Get min and max times from observation data files
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].max()
+
                     logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
-                                +', and  input timemark: '+str(inputTimeMark)+'.')
- 
-                    previousTimeMark = getPreviousTimemark(inputDataSource, inputSourceName, inputSourceArchive, 
-                                                           inputTimeMark)['previous_timemark'].to_string(index=False)
+                                +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
 
-                    if previousTimeMark == 'None':
-                        logger.info('There is no previous timemark for input timemark: '+str(inputTimeMark)+'.')
-                    else:
-                        logger.info('Removing duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
-                                    +', and  input timemark: '+str(inputTimeMark)+'.')
-                        sourceIDS = list(pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['source_id'].unique())
+                    # Delete duplicate times
+                    deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime)
 
-                        for sourceID in sourceIDS:
-                            runSourceIdTimemarks(int(sourceID), inputTimeMark, previousTimeMark)
+                    logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+
                 else:
-                    logger.info('Data source '+inputDataSource+', with source name '+inputSourceName
-                                +', and  input timemark: '+str(inputTimeMark)+' does not need duplicate times removed.')
+                    # Get min and max times from adcirc data files
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].max()
+
+                    logger.info('Data source '+inputDataSource+', with source name '+inputSourceName+', and source archive '+inputSourceArchive
+                                +', with min time: '+str(minTime)+' and max time '+str(maxTime)+' does not need duplicate times removed.')
 
                 # Run update 
                 cur.execute("""UPDATE drf_harvest_data_file_meta
