@@ -9,11 +9,7 @@ import shutil
 import psycopg
 import subprocess
 import pandas as pd
-from dotenv import load_dotenv
 from loguru import logger
-
-# import .env file
-load_dotenv()
 
 # This function is used by the runHarvestFile(), runDataCreate(), and runDataIngest() functions to query the drf_source_meta table, in the
 # database, and get argparse input for those function

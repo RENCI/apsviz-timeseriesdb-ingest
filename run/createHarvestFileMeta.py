@@ -12,10 +12,7 @@ import psycopg
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from dotenv import load_dotenv
 from loguru import logger
-
-load_dotenv()
 
 # This function queries the drf_harvest_data_file_meta table using a file_name, an pulls out the 
 # file_name, and if the file_name exists in the table.

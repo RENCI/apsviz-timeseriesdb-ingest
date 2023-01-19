@@ -9,10 +9,7 @@ import sys
 import psycopg
 import pandas as pd
 from pathlib import Path
-from dotenv import load_dotenv
 from loguru import logger
-
-load_dotenv()
 
 # This function is used to delete duplicate records in the observation data. The observation data has duplicate records with the 
 # same timestamp, but different timemarks because they are from different harvest data files.

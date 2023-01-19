@@ -10,10 +10,7 @@ import re
 import psycopg
 import pandas as pd
 import numpy as np
-from dotenv import load_dotenv
 from loguru import logger
-
-load_dotenv()
 
 # This function takes a dataset name as input, and uses it to query the drf_harvest_data_file_met table, creating a list
 # of filenames. The list is converted to a DataFrame and returned.
