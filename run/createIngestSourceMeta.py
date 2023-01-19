@@ -7,10 +7,7 @@ import psycopg
 import sys
 import os
 import pandas as pd
-from dotenv import load_dotenv
 from loguru import logger
-
-load_dotenv()
 
 # This function takes a gauge location type (COASTAL, TIDAL or RIVERS), and uses it to query the drf_gauge_station table, 
 # and return a list of station id(s), and station names.

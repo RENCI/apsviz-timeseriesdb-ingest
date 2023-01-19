@@ -9,10 +9,7 @@ import sys
 import psycopg
 import pandas as pd
 from pathlib import Path
-from dotenv import load_dotenv
 from loguru import logger
-
-load_dotenv()
 
 # This function takes data source, source name, and source archive as input. It ingest these variables into the source meta table (drf_source_meta).
 # The variables in this table are then used as inputs in runIngest.py 

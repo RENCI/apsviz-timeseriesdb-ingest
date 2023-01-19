@@ -9,11 +9,7 @@ import shutil
 import psycopg
 import subprocess
 import pandas as pd
-from dotenv import load_dotenv
 from loguru import logger
-
-# import .env file
-load_dotenv()
 
 # This function moves the station data files in /nru/home/stations to the directory /data/DataIngesting/DAILY_INGEST/, and then ingests them 
 # into the drf_gauge_station table. 
