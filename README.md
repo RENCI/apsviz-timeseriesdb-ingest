@@ -23,7 +23,7 @@ To install apsviz-timeseriesdb-ingest you first need to clone it:
 
 git clone https://github.com/RENCI/apsviz-timeseriesdb-ingest.git
 
-Next edit the run/env file adding a password to the line:
+Next edit the createEnvVars.sh file adding a password to the line:
 
 SQL_PASSWORD=xxxxxx
 
