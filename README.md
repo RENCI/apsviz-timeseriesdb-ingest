@@ -181,8 +181,8 @@ where the --ingestDir /xxx/xxx-xxxxx-xxxx/ is the ingest directory such as /data
 
 Finally run the following command to ingest that data into the drf_gauge_source table in the database:
 
-python ingestTasks.py --inputTask Data --inputDataSource ddddddddddd--inputSourceName nnnn --inputSourceArchive aaaaaa is the source archive i(e.g. renci).
+python createIngestSourceMeta.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputDataSource xxxxx_xxx --inputSourceName xxxxx --inputSourceArchive xxxxx --inputUnits x --inputLocationType xxxxx 
 
-where dddddddddd is the data source (e.g. namforecast_ec95d), nnnn is the source name (e.g. adcirc), and aaaaaa is the source archive (e.g. renci).
+where the --ingestDir /xxx/xxx-xxxxx-xxxx/ is the ingest directory such as /data/ast-run-ingester/, the --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, the --inputSourceName xxxxx is the source name such as adcirc, the --inputSourceArchive xxxxx is the source archive such as renci, the --inputLocationType xxxxx is the location type such as tidal, and --inputUnits x is the variables units.
 
 The source is now ready to be used in ingesting data.
