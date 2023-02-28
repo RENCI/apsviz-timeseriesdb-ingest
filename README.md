@@ -169,15 +169,15 @@ This will ingest the data files, created in the above command, into the drf_gaug
 
 To add a new source, first create the source meta, and ingest it into the drf_source_meta table by running the following command:
 
-python ingestTasks.py --inputDataSource xxxxx_xxx --inputSourceName xxxxxx --inputSourceArchive xxxxxx --inputLocationType xxxxxx --inputTask Source_meta
+python ingestTasks.py --inputDataSource xxxxx_xxx --inputSourceName xxxxxx --inputSourceArchive xxxxxx --inputSourceVariable xxxxx_xxxxx --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx --inputLocationType xxxxxx --inputUnits x --inputTask Source_meta
 
-where the --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, the --inputSourceName xxxxxx is the source name such as adcirc, the --inputSourceArchive xxxxxx is the source archive such as renci, and the --inputLocationType xxxxxx is the location type such as tidal.
+where the --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, the --inputSourceName xxxxxx is the source name such as adcirc, the --inputSourceArchive xxxxxx is the source archive such as renci, the --inputSourceVariable xxxxx_xxxxx is the source variable name such as water_level, the --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx is the input file name prefix such as ndbc_stationdata_wind_speed, the --inputLocationType xxxxxx is the location type such as tidal, and --inputUnits x is the variables units.
 
 In the next step create the source data files that will be ingested into the drf_gauge_source table by running the following command:
 
-python createIngestSourceMeta.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --outputFile nnnn_stationdata_aaaaaa_llllllll_dddddddddd_meta.csv
+python createIngestSourceMeta.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputDataSource xxxxx_xxx --inputSourceName xxxxx --inputSourceArchive xxxxx --inputUnits x --inputLocationType xxxxx 
 
-where nnnn is the source name (e.g. adcirc), aaaaaa is the source archive (e.g. renci), llllllll is the location type (e.g. tidal), and dddddddddd is the data source (e.g. namforecast_ec95d).
+where the --ingestDir /xxx/xxx-xxxxx-xxxx/ is the ingest directory such as /data/ast-run-ingester/, the --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, the --inputSourceName xxxxx is the source name such as adcirc, the --inputSourceArchive xxxxx is the source archive such as renci, the --inputLocationType xxxxx is the location type such as tidal, and --inputUnits x is the variables units.
 
 Finally run the following command to ingest that data into the drf_gauge_source table in the database:
 
