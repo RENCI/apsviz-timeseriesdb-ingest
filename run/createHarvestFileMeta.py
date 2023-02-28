@@ -85,53 +85,16 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
 
 # This function takes an input directory path and input dataset, and uses them to create a file list
 # that is ingested into the drf_harvest_data_file_meta table, and used to ingest the data files.
-def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive):
-    # Define inputDataset
-    if inputSourceName == 'adcirc':
-        inputDataset = inputSourceName+'_stationdata'
-    else:
-        inputDataset = inputSourceArchive+'_stationdata'
-
+def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix):
     # Search for files in the harvestDir that have inputDataset name in them, and generate a list of files found
-    if inputDataSource == 'tidal_gauge':
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_water_level_*.csv")
-        if len(dirInputFiles) == 0:
-            logger.info('Search for old NOAA file name')
-            dirInputFiles = glob.glob(harvestDir+inputDataset+"_[!meta]*.csv")
-        else:
-            logger.info('Search for new NOAA file name which includes water_level in the name')
-    elif inputDataSource == 'tidal_predictions':
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_predictions_*.csv")
-    elif inputDataSource == 'air_barometer':
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_air_pressure_*.csv")
-    elif inputDataSource == 'ocean_buoy':
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_wave_height_*.csv")
-    elif inputDataSource == 'wind_anemometer':
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_wind_speed_*.csv")
-    elif inputDataSource == 'coastal_gauge':
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_coastal_*.csv")
-        if len(dirInputFiles) == 0:
-            logger.info('Search for old Contrails file name which uses COASTAL in the name')
-            dirInputFiles = glob.glob(harvestDir+inputDataset+"_COASTAL_*.csv")
-        else:
-            logger.info('Search for new contails file format which uses coastal the name')
-    elif inputDataSource == 'river_gauge':
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_river_*.csv")
-        if len(dirInputFiles) == 0:
-            logger.info('Search for old contrails file name which uses RIVERS in the name')
-            dirInputFiles = glob.glob(harvestDir+inputDataset+"_RIVERS_*.csv")
-        else:
-            logger.info('Search for new contrails file format which uses river in the name')
-    else:
-        logger.info('Get inputDataSource name '+inputDataSource)
-        dirInputFiles = glob.glob(harvestDir+inputDataset+"_"+inputSourceArchive.upper()+"_"+inputDataSource.upper()+"_*.csv")
- 
+    dirInputFiles = glob.glob(harvestDir+inputFilenamePrefix+"_*.csv")
+
     # Define outputList variable
     outputList = []
 
     # Loop through dirOutputFiles, generate new variables and add them to outputList
     for dirInputFile in dirInputFiles:
-        dir_path = dirInputFile.split(inputDataset)[0]
+        dir_path = dirInputFile.split(inputFilenamePrefix)[0]
         file_name = Path(dirInputFile).parts[-1] 
 
         datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',file_name) 
@@ -188,11 +151,12 @@ def main(args):
     inputDataSource = args.inputDataSource
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
+    inputFilenamePrefix = args.inputFilenamePrefix
 
-    logger.info('Start processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
+    logger.info('Start processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+', with filename prefix '+inputFilenamePrefix+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    df, first_time, last_time = createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive)
+    df, first_time, last_time = createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix)
 
     if pd.isnull(first_time) and pd.isnull(last_time):
         logger.info('No new files for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
@@ -202,13 +166,13 @@ def main(args):
 
         # Create output file name
         if inputSourceName == 'adcirc':
-            outputFile = 'harvest_files_'+inputSourceName+'_stationdata_'+inputSourceArchive+'_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+            outputFile = 'harvest_files_'+inputSourceName+'_stationdata_'+inputSourceArchive+'_'+inputDataSource+'_'+inputFilenamePrefix+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
         else:
-            outputFile = 'harvest_files_'+inputSourceArchive+'_stationdata_'+inputDataSource+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+            outputFile = 'harvest_files_'+inputSourceArchive+'_stationdata_'+inputDataSource+'_'+inputFilenamePrefix+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
 
         # Write DataFrame containing list of files to a csv file
         df.to_csv(ingestDir+outputFile, index=False, header=False)
-        logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
+        logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', source archive '+inputSourceArchive+', and source variable'+inputFilenamePrefix+'.')
 
 # Run main function takes ingestDir, and outputFile as input.
 if __name__ == "__main__":
@@ -221,6 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','tidal_gauge','tidal_predictions','ocean_buoy','coastal_gauge','river_gauge','wind_anemometer','air_barometer'], required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
+    parser.add_argument("--inputFilenamePrefix", help="Input source variable name", action="store", dest="inputFilenamePrefix", required=True)
 
     # Parse input arguments
     args = parser.parse_args()

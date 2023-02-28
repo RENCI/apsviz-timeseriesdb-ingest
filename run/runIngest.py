@@ -11,7 +11,7 @@ import subprocess
 import pandas as pd
 from loguru import logger
 
-# This function is used by the runHarvestFile(), runDataCreate(), and runDataIngest() functions to query the drf_source_meta table, in the
+# This function is used by the runIngestSource() function to query the drf_source_meta table, in the
 # database, and get argparse input for those function
 def getSourceMeta():
     try:
@@ -25,10 +25,10 @@ def getSourceMeta():
         cur.execute("""BEGIN""")
 
         # Run query
-        cur.execute("""SELECT data_source, source_name, source_archive, location_type FROM drf_source_meta""")
+        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, units FROM drf_source_meta""")
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'location_type'])
+        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 'filename_prefix', 'location_type', 'units'])
 
         # Close cursor and database connection
         cur.close()
@@ -50,15 +50,15 @@ def runHarvestFile(harvestDir, ingestDir):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
 
     program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','File'])
 
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
+        output = subprocess.run(program, shell=False)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be ingested into the 
 # database using the runDataIngest function. 
@@ -74,8 +74,8 @@ def runDataCreate(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
+        output = subprocess.run(program, shell=False)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function runs ingestTasks.py with --inputTask Data, ingest gauge data into the drf_gauge_data table, in the database.
 def runDataIngest(ingestDir):
@@ -85,13 +85,13 @@ def runDataIngest(ingestDir):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'], '--inputSourceVariable',row['source_variable']])
 
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
+        output = subprocess.run(program, shell=False)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This functions creates and ingest the harvest files, and data in sequence
 def runSequenceIngest(harvestDir, ingestDir):

@@ -24,8 +24,8 @@ def runIngestStations(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
+        output = subprocess.run(program, shell=False)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This programs reads the source meta information from source_meta.csv, and ingests it into the drf_source_meta table. The drf_source_meta
 # table is used by runIngestSource(), by runing getSourceMeta(), to get input variables for createIngestSourceMeta.py
@@ -36,13 +36,13 @@ def runIngestSourceMeta():
     program_list = []
     # data_source,source_name,source_archive,location_type
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputLocationType',row['location_type'],'--inputTask','Source_meta'])
+        program_list.append(['python','ingestTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--inputUnits',row['units'],'--inputTask','Source_meta'])
 
     # Run programe list using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
+        output = subprocess.run(program, shell=False)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function is used by the runIngestSource() function to query the drf_source_meta table, in the 
 # database, and get argparse input for those function
@@ -58,10 +58,10 @@ def getSourceMeta():
         cur.execute("""BEGIN""")
 
         # Run query
-        cur.execute("""SELECT data_source, source_name, source_archive, location_type FROM drf_source_meta""")
+        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, units FROM drf_source_meta""")
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'location_type'])
+        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 'filename_prefix', 'location_type', 'units'])
 
         # Close cursor and database connection
         cur.close()
@@ -83,26 +83,26 @@ def runIngestSource(ingestDir):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--outputFile',row['source_name']+'_stationdata_'+row['source_archive']+'_'+row['location_type']+'_'+row['data_source']+'_meta.csv'])
+        program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputUnits',row['units'],'--inputLocationType',row['location_type']])
 
     program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSource'])
 
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
+        output = subprocess.run(program, shell=False)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function runs ingestTasks.py with --inputTask View, creating a view (drf_gauge_station_source_data) that combines the drf_gauge_station, 
 # drf_gauge_source, and drf_gauge_data tables.
 def runCreateView():
     # Create list of program commands
     program_list = [['python','ingestTasks.py','--inputTask','View']]
-
+ 
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        subprocess.call(program)
-        logger.info('Ran '+" ".join(program))
+        output = subprocess.run(program, shell=False)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This functions ingest the stations, creates and ingest the source in sequence
 def runSequenceIngest(ingestDir):
@@ -117,7 +117,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'runIngest.log', level='DEBUG')
+    logger.add(log_path+'prepare4Ingest.log', level='DEBUG')
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

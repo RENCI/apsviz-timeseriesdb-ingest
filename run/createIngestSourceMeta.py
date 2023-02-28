@@ -44,66 +44,14 @@ def getStationID(locationType):
 
 # This function takes a input a directory path and outputFile, and used them to read the input file
 # and add station_id(s) that are extracted from the drf_gauge_station table in theapsviz_gauges database.
-def addMeta(ingestDir, outputFile):
-    # Extract list of stations from dataframe for query database using the getStationID function
-    locationType = outputFile.split('_')[3]
+def addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputUnits, inputLocationType):
+    df = getStationID(inputLocationType)
 
-    df = getStationID(locationType)
+    df['data_source'] = inputDataSource
+    df['source_name'] = inputSourceName
+    df['source_archive'] = inputSourceArchive
+    df['units'] = inputUnits
 
-    # Get source name from outputFilee
-    source = outputFile.split('_')[0]
-
-    # Check if source is ADCIRC, contrails or noaa, and make appropriate additions to DataFrame 
-    if source == 'adcirc':
-        # Get source_name and data_source from outputFile, and add them to the dataframe along
-        # with the source_archive value
-        df['data_source'] = outputFile.split('_')[4].lower()+'_'+outputFile.split('_')[5].lower()
-        df['source_name'] = source
-        df['source_archive'] = outputFile.split('_')[2].lower() 
-        df['units'] = 'm'
-    elif source == 'ncem':
-        # Add data_source, source_name, and source_archive to dataframe
-        location_type = outputFile.split('_')[3].lower()
-        df['data_source'] = location_type+'_gauge'
-        df['source_name'] = source
-        df['source_archive'] = 'contrails'
-        df['units'] = 'm'
-    elif source == 'noaa':
-        # Add data_source, source_name, and source_archive to dataframe
-        gtype = outputFile.split('_')[5].lower()
-        if gtype == 'gauge':
-            df['data_source'] = 'tidal_gauge'
-            df['units'] = 'm'
-        elif gtype == 'predictions':
-            df['data_source'] = 'tidal_predictions'
-            df['units'] = 'm'
-        elif gtype == 'barometer':
-            df['data_source'] = 'air_barometer'
-            df['units'] = 'mb'
-        else:
-            sys.exit(1)
-
-        df['source_name'] = source
-        df['source_archive'] = source
-
-    elif source == 'ndbc':
-        gtype = outputFile.split('_')[5].lower()
-        if gtype == 'buoy':
-            # Add data_source, source_name, and source_archive to dataframe
-            df['data_source'] = 'ocean_buoy'
-            df['units'] = 'm'
-        elif gtype == 'anemometer':
-            df['data_source'] = 'wind_anemometer'
-            df['units'] = 'mps'
-        else:
-            sys.exit(1)
-
-        df['source_name'] = source
-        df['source_archive'] = source
-    else:
-        # If source in incorrect log message and exit
-        sys.exit('Incorrect source')
- 
     # Drop station_name from DataFrame 
     df.drop(columns=['station_name'], inplace=True)
 
@@ -112,7 +60,8 @@ def addMeta(ingestDir, outputFile):
     df=df.reindex(columns=newColsOrder)
 
     # Write dataframe to csv file 
-    df.to_csv(ingestDir+'source_'+outputFile, index=False, header=False)
+    outputFile = 'source_'+inputSourceName+'_stationdata_'+inputSourceArchive+'_'+inputLocationType+'_'+inputDataSource+'_meta.csv'
+    df.to_csv(ingestDir+outputFile, index=False, header=False)
 
 # Main program function takes args as input, which contains the ingestDir, and outputFile values.
 @logger.catch
@@ -126,13 +75,17 @@ def main(args):
 
     # Extract args variables
     ingestDir = os.path.join(args.ingestDir, '')
-    outputFile = args.outputFile
+    inputDataSource = args.inputDataSource
+    inputSourceName = args.inputSourceName
+    inputSourceArchive = args.inputSourceArchive
+    inputUnits = args.inputUnits
+    inputLocationType = args.inputLocationType
 
-    logger.info('Start processing source data for file '+outputFile+'.')
+    logger.info('Start processing source data for data source '+inputDataSource+', with source name '+inputSourceName+', source archive '+inputSourceArchive+', and location type '+inputLocationType+'.')
 
     # Run addMeta function
-    addMeta(ingestDir, outputFile)
-    logger.info('Finished processing source data for file '+outputFile+'.')
+    addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputUnits, inputLocationType)
+    logger.info('Finished processing source data for file data source '+inputDataSource+', with source name '+inputSourceName+', source archive '+inputSourceArchive+', and location type '+inputLocationType+'.')
 
 # Run main function takes ingestDir, and outputFile as input.
 if __name__ == "__main__":
@@ -141,7 +94,11 @@ if __name__ == "__main__":
 
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Output directory path", action="store", dest="ingestDir", required=True)
-    parser.add_argument("--outputFile", action="store", help="Output file name", dest="outputFile", required=True)
+    parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','tidal_gauge','tidal_predictions','ocean_buoy','coastal_gauge','river_gauge','wind_anemometer','air_barometer'], required=True)
+    parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
+    parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True) 
+    parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=True)
+    parser.add_argument("--inputLocationType", help="Input location type", action="store", dest="inputLocationType", required=True)
 
     # Parse input arguments
     args = parser.parse_args()

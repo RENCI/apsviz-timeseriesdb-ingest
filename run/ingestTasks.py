@@ -7,13 +7,48 @@ import glob
 import os
 import sys
 import psycopg
+from psycopg import sql
 import pandas as pd
 from pathlib import Path
 from loguru import logger
 
+# This function is used to delete duplicate records in the observation data. The observation data has duplicate records with the 
+# same timestamp, but different timemarks because they are from different harvest data files.
+def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime):
+    try:
+        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'],
+                             host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'],
+                             password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+            cur = conn.cursor()
+    
+            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
+   
+            cur.execute("""DELETE FROM
+                               drf_gauge_data a
+                                   USING drf_gauge_data b,
+                                         drf_gauge_source s
+                           WHERE
+                               s.data_source = %(datasource)s AND s.source_name = %(sourcename)s AND s.source_archive = %(sourcearchive)s AND
+                               a.time >= %(mintime)s AND a.time <= %(maxtime)s AND
+                               s.source_id=b.source_id AND
+                               a.obs_id < b.obs_id AND
+                               a.time = b.time AND
+                               s.source_id=a.source_id""",
+                        {'datasource': inputDataSource,'sourcename': inputSourceName,'sourcearchive': inputSourceArchive, 'mintime': minTime, 'maxtime': maxTime})
+
+            cur.close()
+            conn.close()
+
+    except (Exception, psycopg.DatabaseError) as error:
+        print(error)
+
 # This function takes data source, source name, and source archive as input. It ingest these variables into the source meta table (drf_source_meta).
 # The variables in this table are then used as inputs in runIngest.py 
-def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType):
+def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits):
+    logger.info('Ingest source meta for data source '+inputDataSource+', with source name '+inputSourceName+', source archive '+inputSourceArchive+
+                ', and location type'+ inputLocationType)
+
     try:
         # Create connection to database, set autocommit, and get cursor
         with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
@@ -24,9 +59,9 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
-            cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, location_type)
-                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(locationtype)s)""",
-                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'locationtype': inputLocationType})
+            cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, source_variable, filename_prefix, location_type, units)
+                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s, %(filenamevariable)s, %(locationtype)s, %(units)s)""",
+                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'units': inputUnits})
 
             # Close cursor and database connection
             cur.close()
@@ -191,7 +226,8 @@ def ingestHarvestDataFileMeta(ingestDir):
 # ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column "ingested", in the 
 # drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the directory path in the 
 # apsviz-timeseriesdb database container.
-def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive):
+def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
+    logger.info('Begin ingesting data source '+inputDataSource+', with source name '+inputSourceName+', source variable '+inputSourceVariable+' and source archive '+inputSourceArchive)
     # Get DataFrame the contains list of data files that need to be ingested
     dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
@@ -208,28 +244,46 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
             for index, row in dfDirFiles.iterrows():
                 ingestFile = row[1]
                 ingestPathFile = ingestDir+'data_copy_'+ingestFile
+                logger.info('Ingest file: '+ingestPathFile)
 
+                with open(ingestPathFile, "r") as f:
+                    with cur.copy(sql.SQL("""COPY drf_gauge_data (source_id,timemark,time,{}) 
+                                             FROM STDIN WITH (FORMAT CSV)""").format(sql.Identifier(inputSourceVariable))) as copy:
+                        while data := f.read(100):
+                            copy.write(data)
 
-                if inputDataSource == 'air_barometer':
-                    # Run ingest query
-                    with open(ingestPathFile, "r") as f:
-                        with cur.copy("COPY drf_gauge_data (source_id,timemark,time,air_pressure) FROM STDIN WITH (FORMAT CSV)") as copy:
-                            while data := f.read(100):
-                                copy.write(data)
+                # Remove duplicate times, in the observation data, from previous timemark files
+                if inputSourceName != 'adcirc':
+                    # Get min and max times from observation data files
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].max()
 
-                elif inputDataSource == 'wind_anemometer':
-                    # Run ingest query
-                    with open(ingestPathFile, "r") as f:
-                        with cur.copy("COPY drf_gauge_data (source_id,timemark,time,wind_speed) FROM STDIN WITH (FORMAT CSV)") as copy:
-                            while data := f.read(100):
-                                copy.write(data)
+                    logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
 
-                else:
-                    # Run ingest query
-                    with open(ingestPathFile, "r") as f:
-                        with cur.copy("COPY drf_gauge_data (source_id,timemark,time,water_level) FROM STDIN WITH (FORMAT CSV)") as copy:
-                            while data := f.read(100):
-                                copy.write(data)
+                    # Delete duplicate times
+                    deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime)
+
+                    logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+
+                elif inputSourceName == 'adcirc':
+                    # Get min and max times from adcirc data files
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].max()
+
+                    if inputDataSource[0:7] == 'nowcast':
+                        logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                    +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+
+                        # Delete duplicate times
+                        deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime)
+
+                        logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                    +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+                    else:
+                        logger.info('Data source '+inputDataSource+', with source name '+inputSourceName+', and source archive '+inputSourceArchive
+                                    +', with min time: '+str(minTime)+' and max time '+str(maxTime)+' does not need duplicate times removed.')
 
                 # Run update 
                 cur.execute("""UPDATE drf_harvest_data_file_meta
@@ -263,7 +317,7 @@ def createView():
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
-            cur.execute("""CREATE VIEW drf_gauge_station_source_data AS
+            cur.execute("""CREATE or REPLACE VIEW drf_gauge_station_source_data AS
                            SELECT d.obs_id AS obs_id,
                                   s.source_id AS source_id,
                                   g.station_id AS station_id,
@@ -271,8 +325,10 @@ def createView():
                                   d.timemark AS timemark,
                                   d.time AS time,
                                   d.water_level AS water_level,
+                                  d.wave_height AS wave_height,
                                   d.wind_speed AS wind_speed,
-                                  d.air_pressure AS air_pressure, 
+                                  d.air_pressure AS air_pressure,
+                                  d.flow_volume AS flow_volume, 
                                   g.tz AS tz,
                                   g.gauge_owner AS gauge_owner,
                                   s.data_source AS data_source,
@@ -280,6 +336,7 @@ def createView():
                                   s.source_archive AS source_archive,
                                   s.units AS units,
                                   g.location_name AS location_name,
+                                  g.apsviz_station AS apsviz_station,
                                   g.location_type AS location_type,
                                   g.country AS country,
                                   g.state AS state,
@@ -345,6 +402,20 @@ def main(args):
     else:
         sys.exit('Incorrect inputSourceArchive')
 
+    if args.inputSourceVariable is None:
+        input = ''
+    elif args.inputSourceVariable is not None:
+        inputSourceVariable = args.inputSourceVariable
+    else:
+        sys.exit('Incorrect inputSourceVariable')
+
+    if args.inputFilenamePrefix is None:
+        input = ''
+    elif args.inputFilenamePrefix is not None:
+        inputFilenamePrefix = args.inputFilenamePrefix
+    else:
+        sys.exit('Incorrect inputFilenamePrefix')
+
     if args.inputLocationType is None:
         inputLocationType = ''
     elif args.inputLocationType is not None:
@@ -352,11 +423,19 @@ def main(args):
     else:
         sys.exit('Incorrect inputLocationType')
 
+    if args.inputUnits is None:
+        inputUnits = ''
+    elif args.inputUnits is not None:
+        inputUnits = args.inputUnits
+    else:
+        sys.exit('Incorrect inputUnits')
+
+
     # Check if inputTask if file, station, source, data or view, and run appropriate function
     if inputTask.lower() == 'source_meta':
-        logger.info('Ingesting source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputLocationType+'.')
-        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType)
-        logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputLocationType+'.')
+        logger.info('Ingesting source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
+        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits)
+        logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
     elif inputTask.lower() == 'ingeststations':
         logger.info('Ingesting station data.')
         ingestStations(ingestDir)
@@ -370,9 +449,9 @@ def main(args):
         ingestHarvestDataFileMeta(ingestDir)
         logger.info('Ingested input file information.')
     elif inputTask.lower() == 'data':
-        logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
-        ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive)
-        logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive+'.')
+        logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+'.')
+        ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable)
+        logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+'.')
     elif inputTask.lower() == 'view':
         logger.info('Creating view.')
         createView()
@@ -389,8 +468,11 @@ if __name__ == "__main__":
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['Source_meta','IngestStations','ingestSource', 'File','Data','View'], required=True)
     parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", choices=['namforecast_hsofs','nowcast_hsofs','namforecast_ec95d','nowcast_ec95d','coastal_gauge','river_gauge','tidal_gauge','tidal_predictions','ocean_buoy','air_barometer','wind_anemometer'], required=False)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=False)
-    parser.add_argument("--inputSourceArchive", help="Input source archive to be processed", action="store", dest="inputSourceArchive", choices=['contrails','renci','noaa','ndbc'], required=False)
-    parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", choices=['tidal','river','coastal','ocean'], required=False)
+    parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=False)
+    parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=False)
+    parser.add_argument("--inputFilenamePrefix", help="Input filename variables", action="store", dest="inputFilenamePrefix", required=False)
+    parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=False)
+    parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=False)
 
     # Parse arguments
     args = parser.parse_args()
