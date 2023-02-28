@@ -75,7 +75,7 @@ def getSourceMeta():
         logger.info(error)
 
 # This function runs createIngestSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source table, 
-# in the database, by running ingestTasks.py using --inputTask Sourc_data.
+# in the database, by running ingestTasks.py using --inputTask Source_data.
 def runIngestSource(ingestDir):
     # get source meta
     df = getSourceMeta()
