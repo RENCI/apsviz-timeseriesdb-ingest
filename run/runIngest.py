@@ -57,7 +57,7 @@ def runHarvestFile(harvestDir, ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False)
+        output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be ingested into the 
@@ -74,7 +74,7 @@ def runDataCreate(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False)
+        output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function runs ingestTasks.py with --inputTask Data, ingest gauge data into the drf_gauge_data table, in the database.
@@ -90,7 +90,7 @@ def runDataIngest(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False)
+        output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This functions creates and ingest the harvest files, and data in sequence

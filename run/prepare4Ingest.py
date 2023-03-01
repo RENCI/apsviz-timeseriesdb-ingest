@@ -24,7 +24,7 @@ def runIngestStations(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False)
+        output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This programs reads the source meta information from source_meta.csv, and ingests it into the drf_source_meta table. The drf_source_meta
@@ -41,7 +41,7 @@ def runIngestSourceMeta():
     # Run programe list using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False)
+        output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function is used by the runIngestSource() function to query the drf_source_meta table, in the 
@@ -90,7 +90,7 @@ def runIngestSource(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False)
+        output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function runs ingestTasks.py with --inputTask View, creating a view (drf_gauge_station_source_data) that combines the drf_gauge_station, 
@@ -101,7 +101,7 @@ def runCreateView():
  
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False)
+        output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This functions ingest the stations, creates and ingest the source in sequence
