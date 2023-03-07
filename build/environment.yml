@@ -6,4 +6,3 @@ dependencies:
   - psycopg=3.1.4
   - pandas=1.5.1
   - loguru=0.6.0
-  - python-dotenv
