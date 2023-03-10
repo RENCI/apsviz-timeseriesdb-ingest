@@ -1,9 +1,9 @@
 # apsviz-timeseriesdb-ingest 
-The software, in this repo, is used to ingest gauge data from NOAA, NCEM, NDBC, and ADICIRC. To begin ingesting data, you first need to install the apsviz-timeseriesdb repo which can bet downloaded from:  
+The software, in this repo, is used to ingest observation station data (tidal and river gauges, buoy) from NOAA, NCEM, and NDBC, as well ADCIRC model data georeferenced to those observation stations. To begin ingesting data, you first need to install the apsviz-timeseriesdb repo which can bet downloaded from:  
 
 https://github.com/RENCI/apsviz-timeseriesdb  
 
-Follow the installation instructions for that repo. It creates and postgesql database, that serves data using a Django Rest Framework (DRF) app. 
+Follow the installation instructions for that repo. It creates and PostgreSQL database, that serves data using a Django Rest Framework (DRF) app. 
 
 The gauge data that is being ingested cans currently be accessed from the apsviz-timeseriesdb.edc.renci.org VM in the following directory:   
 
@@ -19,6 +19,9 @@ https://github.com/RENCI/AST
 
 ## Install apsviz-timeseriesdb-ingest
 
+The below instructions are for deploying to your local machine, a VM, or a machine other than the Sterling Kubernetes cluster. 
+Deployment to the Sterling Kubernetes cluster is explained at the bottom of this README.
+
 To install apsviz-timeseriesdb-ingest you first need to clone it:
 
 git clone https://github.com/RENCI/apsviz-timeseriesdb-ingest.git
@@ -29,7 +32,9 @@ SQL_PASSWORD=xxxxxx
 
 where you change xxxxxx to the password that is used to access the database in apsviz-timeseriesdb. 
 
-Then change your directory to apsviz-timeseriesdb-ingest/build:
+This file contains the env variables to be able to access the PostgreSQL database.
+
+At this point change your directory to apsviz-timeseriesdb-ingest/build:
 
 cd apsviz-timeseriesdb-ingest/build
 
@@ -51,7 +56,7 @@ The xxxx represent directories in your directory path, so replace them with the 
 
 createcontainer.sh latest
 
-The value 'latest' in the above commands is the version of the docker image and container you are creating. You can use values other than 'latest', but make sure you use the same values in all the commands.
+he value 'latest' in the above commands is the version of the docker image and container you are creating. You can use values other than 'latest', but make sure you use the same values in all the commands.
 
 The next step is to make a network link to apsviz-timeseriesdb_default. This step will enable you to access the apsviz-timeseriesdb database. Before taking this step you have to install apsviz-timeseriesdb. If you have not install apsviz-timeseriesdb go to the following URL for instructions:
 
@@ -65,17 +70,28 @@ At this point things are installed, and you can access the apsviz_timeseriesdb_i
 
 ./root_shell.sh latest
 
-From within the apsviz_timeseriesdb_ingest shell make the following directories:
+However, before doing that copy the createEnvVars.sh, you edited, to the container using the following command:
+
+docker cp ../run/createEnvVars.sh apsviz_timeseriesdb_ingest_latest:/home/nru/
+
+Then when you access the container run the following command to create the env variables to access the PostgreSQL database:
+
+source ./createEnvVars.sh
+
+The env variables are already set on the Sterling Kubernetes cluster, so the above commands are not required.
+
+Next from within the apsviz_timeseriesdb_ingest shell make the following directories:
 
 mkdir -p /data/DataIngesting/DAILY_INGEST
 
-This does not have to be down when running on k8s.
+This does not have to be down when running on the Sterling Kubernetes cluster.
 
-If you are running on you local machine also make sure you have downloaded the harvest files from the directory:
+If you are running on your local machine make sure you have downloaded the harvest files from the directory:
 
 /projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/
 
-on the apsviz-timeseriesdb.edc.renci.org VM, to the same location that you added as a volume when create the container, so that when you are in the container the following directory exits:
+on the apsviz-timeseriesdb.edc.renci.org VM, to the same location that you added as a volume when create the container, so 
+that when you are in the container the following directory exits:
 
 /data/DataIngesting/DAILY_HARVESTING/
 
@@ -133,11 +149,13 @@ This will ingest the station data in the stations directory into the drf_gauge_s
 
 #### Create and Ingest Source Data
 
-To ingest the source data, first run the source_meta.bin file:
+To ingest the source data, first ingest the source meta using the following command:
 
 python prepare4Ingest.py --inputTask IngestSourceMeta
 
-This will ingest meta data on the data sources that will be used as argparse input when running runIngest.py. The next step is to ingest the source data into the drf_gauge_source table. To do this run the following command:
+This will ingest meta data, containing information on the data sources, into the drf_source_meta table. This meta data will be used as argparse input when running prepare4Ingest.py and runIngest.py. 
+
+The next step is to ingest the source data into the drf_gauge_source table. To do this run the following command:
 
 python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask IngestSource
 
@@ -159,7 +177,7 @@ python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask Da
 
 This will create data files in /data/DataIngesting/DAILY_INGEST/.
 
-The next step is the ingest them by running the following command:
+The next step is to ingest the files by running the following command:
 
 python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask DataIngest
 
@@ -171,18 +189,35 @@ To add a new source, first create the source meta, and ingest it into the drf_so
 
 python ingestTasks.py --inputDataSource xxxxx_xxx --inputSourceName xxxxxx --inputSourceArchive xxxxxx --inputSourceVariable xxxxx_xxxxx --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx --inputLocationType xxxxxx --inputUnits x --inputTask Source_meta
 
-where the --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, the --inputSourceName xxxxxx is the source name such as adcirc, the --inputSourceArchive xxxxxx is the source archive such as renci, the --inputSourceVariable xxxxx_xxxxx is the source variable name such as water_level, the --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx is the input file name prefix such as ndbc_stationdata_wind_speed, the --inputLocationType xxxxxx is the location type such as tidal, and --inputUnits x is the variables units.
+where: 
+  * --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, 
+  * --inputSourceName xxxxxx is the source name such as adcirc, 
+  * --inputSourceArchive xxxxxx is the source archive such as renci, 
+  * --inputSourceVariable xxxxx_xxxxx is the source variable name such as water_level, 
+  * --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx is the input file name prefix such as adcirc_stationdata_RENCI_NAMFORECAST_EC95D_FORECAST, 
+  * --inputLocationType xxxxxx is the location type such as tidal, and 
+  * --inputUnits x is the variables units such as m for meters.
 
 In the next step create the source data files that will be ingested into the drf_gauge_source table by running the following command:
 
 python createIngestSourceMeta.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputDataSource xxxxx_xxx --inputSourceName xxxxx --inputSourceArchive xxxxx --inputUnits x --inputLocationType xxxxx 
 
-where the --ingestDir /xxx/xxx-xxxxx-xxxx/ is the ingest directory such as /data/ast-run-ingester/, the --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, the --inputSourceName xxxxx is the source name such as adcirc, the --inputSourceArchive xxxxx is the source archive such as renci, the --inputLocationType xxxxx is the location type such as tidal, and --inputUnits x is the variables units.
+where:
+  * --ingestDir /xxx/xxx-xxxxx-xxxx/ is the ingest directory such as /data/ast-run-ingester/, 
+  * --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, 
+  * --inputSourceName xxxxx is the source name such as adcirc, 
+  * --inputSourceArchive xxxxx is the source archive such as renci, 
+  * --inputLocationType xxxxx is the location type such as tidal, and 
+  * --inputUnits x is the variables units such a m for meters.
 
 Finally run the following command to ingest that data into the drf_gauge_source table in the database:
 
 python ingestTasks.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputTask ingestSource
 
-where the --ingestDir /xxx/xxx-xxxxx-xxxx/ is the ingest directory such as /data/ast-run-ingester/
+where the --ingestDir /xxx/xxxxxxx/xxxxxxxx/ is the ingest directory such as /data/DataIngesting/DAILY_INGEST/
 
 The source is now ready to be used in ingesting data.
+
+## Deploying To The Sterling Kubernetes Cluster
+
+Deploying on the Sterling Kubernetes cluster is done using GitHub Actions which pushes the docker image to the RENCI Harbor docker repository. A YAML file, with Kubernetes configurations, is then used to deploy as a pod on Sterling.
