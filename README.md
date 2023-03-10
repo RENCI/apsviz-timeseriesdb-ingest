@@ -1,5 +1,7 @@
 # apsviz-timeseriesdb-ingest 
-The software, in this repo, is used to ingest observation station data (tidal and river gauges, buoy) from NOAA, NCEM, and NDBC, as well ADCIRC model data georeferenced to those observation stations. To begin ingesting data, you first need to install the apsviz-timeseriesdb repo which can bet downloaded from:  
+The software, in this repo, is used to ingest observation station data (tidal and river gauges, buoy) from NOAA, NCEM, and NDBC, as well as ADCIRC model data georeferenced to those observation stations. 
+
+To begin ingesting data, you first need to install the apsviz-timeseriesdb repo which can bet downloaded from:  
 
 https://github.com/RENCI/apsviz-timeseriesdb  
 
