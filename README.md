@@ -222,4 +222,4 @@ The source is now ready to be used in ingesting data.
 
 ## Deploying To The Sterling Kubernetes Cluster
 
-Deploying on the Sterling Kubernetes cluster is done using GitHub Actions which pushes the docker image to the RENCI Harbor docker repository. A YAML file, with Kubernetes configurations, is then used to deploy as a pod on Sterling.
+Deploying on the Sterling k8s  cluster is done using GitHub Actions which pushes the docker image to the RENCI Harbor docker repository. A YAML file, with Kubernetes configurations, is then used to deploy as a pod on Sterling.
