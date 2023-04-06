@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # Import python modules
@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 from loguru import logger
 
-# This function takes a dataset name as input, and uses it to query the drf_harvest_data_file_met table, creating a list
+# This function takes as input a data source, source name and source archive, and uses them to query the drf_harvest_data_file_met table, creating a list
 # of filenames. The list is converted to a DataFrame and returned.
 def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
     try:
@@ -51,9 +51,8 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes as input the data_source (hsofs...), and a list of station_id(s), and returns source_id(s) for    
-# model data from the drf_gauge_source table in the apsviz_gauges database. This funciton specifically gets source_id(s) for
-# model data, such as from ADCIRC. The data_source, such is hsofs, is the grid that is used in the ADCIRC run.
+# This function takes as input a data source, source name, source archive and a list of station_id(s), and returns source_id(s) for    
+# model data from the drf_gauge_source table in the apsviz_gauges database. 
 def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list):
     try:
         # Create connection to database and get cursor
@@ -88,11 +87,11 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_li
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes as input a directory input path, directory output path and a filename, and returns a csv 
-# file that containes gauge data. the function uses the getObsSourceID and getModelSourceID functions above to get
-# a list of existing source ids that it includes in the gauge data to enable joining the gauge data table with 
-# gauge source table. The function adds a timemark, that it gets from the input file name. The timemark values can
-# be used to uniquely query an ADCIRC  model run.
+# This function takes as input the harvest directory path, ingest directory path, filename, data source, source name, and source archive. 
+# It returns a csv file that containes gauge data. The function uses the getSourceID function above to get a list of existing source 
+# ids that it includes in the gauge data to enable joining the gauge data (drf_gauge_data) table with  gauge source (drf_gauge_source)
+# table. The function adds a timemark, that it gets from the input file name. The timemark values can be used to uniquely query an 
+# ADCIRC forecast model run.
 def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive):
     # Read input file, convert column name to lower case, rename station column to station_name, convert its data 
     # type to string, and add timemark and source_id columns
@@ -109,14 +108,18 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     # Run getSourceID function to get the source_id(s)
     dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list)
  
-    # Get the timemark frome the the data filename 
+    # Get the timemark frome the the data filename NEED TO DEAL WITH HURRICANE AND ENSEMBLES
     datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
-    if re.search('forecast', inputDataSource):
-        # If the inputDataSource has forecast in its name get the second datetime in the filename
-        df['timemark'] = datetimes[1]
-    elif re.search('nowcast', inputDataSource):
-        # If the inputDataSource has nowcast in its name get the third datetime in the filename
-        df['timemark'] = datetimes[2]
+    if inputSourceName == 'adcirc':
+        if re.search('forecast', inputDataSource):
+            # If the inputDataSource has forecast in its name get the first datetime in the filename
+            df['timemark'] = datetimes[0]
+        elif re.search('nowcast', inputDataSource):
+            # If the inputDataSource has nowcast in its name get the third datetime in the filename
+            df['timemark'] = datetimes[2]
+        else:
+            # If the inputDataSource is a hurricane for ensemble  get the second datetime in the filename
+            df['timemark'] = datetimes[1]
     else:
         # If the inputDataSource does not have forecast or  nowcast in its name get the first datetime in the filename
         df['timemark'] = datetimes[0] 
@@ -131,7 +134,7 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     # Write dataframe to csv file
     df.to_csv(ingestDir+'data_copy_'+inputFile, index=False, header=False)
 
-# This function takes as input a directory input path, a directory output path and a dataset variable. It 
+# This function takes as input the ingest directory path, data source, source name, and source archive It 
 # generates and list of input filenames, and uses them to run the addMeta function above.
 def processData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
     dfDirFiles = getInputFiles(inputDataSource, inputSourceName, inputSourceArchive) 
@@ -175,5 +178,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args)
-
 

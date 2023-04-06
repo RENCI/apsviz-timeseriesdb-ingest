@@ -252,11 +252,11 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
                         while data := f.read(100):
                             copy.write(data)
 
-                # Remove duplicate times, in the observation data, from previous timemark files
+                # Remove duplicate times, in the observation data, from previous timemark files WHY water_level!
                 if inputSourceName != 'adcirc':
                     # Get min and max times from observation data files
-                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].min()
-                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].max()
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].max()
 
                     logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
                                 +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
@@ -269,8 +269,8 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
 
                 elif inputSourceName == 'adcirc':
                     # Get min and max times from adcirc data files
-                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].min()
-                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','water_level'])['time'].max()
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].max()
 
                     if inputDataSource[0:7] == 'nowcast':
                         logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName

@@ -14,8 +14,8 @@ import numpy as np
 from pathlib import Path
 from loguru import logger
 
-# This function queries the drf_harvest_data_file_meta table using a file_name, an pulls out the 
-# file_name, and if the file_name exists in the table.
+# This function queries the drf_harvest_data_file_meta table using a file_name as input, and if the filename exists in the table it pulls out the 
+# directory path, file name, and weather the file has been ingested or not.
 def getFileDateTime(inputFile):
     try:
         # Create connection to database and get cursor
@@ -48,7 +48,7 @@ def getFileDateTime(inputFile):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes source as input, and returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, 
+# This function takes source information as input, and returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, 
 # that have been ingested.
 def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
     try:
@@ -83,8 +83,9 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes an input directory path and input dataset, and uses them to create a file list
-# that is ingested into the drf_harvest_data_file_meta table, and used to ingest the data files.
+# This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
+# It uses them to create a file list that is then ingested into the drf_harvest_data_file_meta table, and used to ingest the
+# data files.
 def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix):
     # Search for files in the harvestDir that have inputDataset name in them, and generate a list of files found
     dirInputFiles = glob.glob(harvestDir+inputFilenamePrefix+"_*.csv")
