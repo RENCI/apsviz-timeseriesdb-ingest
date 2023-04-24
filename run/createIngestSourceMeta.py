@@ -42,7 +42,7 @@ def getStationID(locationType):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-NEED TO CHECK THIS FUNCTION
+# NEED TO CHECK THIS FUNCTION
 # This function takes a input a directory path and outputFile, and used them to read the input file
 # and add station_id(s) that are extracted from the drf_gauge_station table in theapsviz_gauges database.
 def addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputUnits, inputLocationType):
