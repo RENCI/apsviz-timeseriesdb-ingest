@@ -19,7 +19,7 @@ def runIngestStations(ingestDir):
     shutil.copytree('/home/nru/stations', ingestDir+'stations', dirs_exist_ok=True)
 
     # Create list of program commands
-    program_list = [['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','IngestStations']]
+    program_list = [['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestStations']]
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -28,7 +28,7 @@ def runIngestStations(ingestDir):
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This programs reads the source meta information from source_meta.csv, and ingests it into the drf_source_meta table. The drf_source_meta
-# table is used by runIngestSource(), by runing getSourceMeta(), to get input variables for createIngestSourceMeta.py
+# table is used by runIngestSourceData(), by runing getSourceMeta(), to get input variables for createIngestSourceMeta.py
 def runIngestSourceMeta():
     # Create list of program commands for ingesting source meta
     df = pd.read_csv('/home/nru/source_meta.csv', index_col=False)
@@ -36,7 +36,7 @@ def runIngestSourceMeta():
     program_list = []
     # data_source,source_name,source_archive,location_type
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--inputUnits',row['units'],'--inputTask','Source_meta'])
+        program_list.append(['python','ingestTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--inputUnits',row['units'],'--inputTask','ingestSourceMeta'])
 
     # Run programe list using subprocess
     for program in program_list:
@@ -44,7 +44,7 @@ def runIngestSourceMeta():
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function is used by the runIngestSource() function to query the drf_source_meta table, in the 
+# This function is used by the runIngestSourceData() function to query the drf_source_meta table, in the 
 # database, and get argparse input for those function
 def getSourceMeta():
     try:
@@ -75,8 +75,8 @@ def getSourceMeta():
         logger.info(error)
 
 # This function runs createIngestSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source table, 
-# in the database, by running ingestTasks.py using --inputTask Source_data.
-def runIngestSource(ingestDir):
+# in the database, by running ingestTasks.py using --inputTask ingestSourceData.
+def runIngestSourceData(ingestDir):
     # get source meta
     df = getSourceMeta()
 
@@ -85,7 +85,7 @@ def runIngestSource(ingestDir):
     for index, row in df.iterrows():
         program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputUnits',row['units'],'--inputLocationType',row['location_type']])
 
-    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSource'])
+    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -93,11 +93,11 @@ def runIngestSource(ingestDir):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function runs ingestTasks.py with --inputTask View, creating a view (drf_gauge_station_source_data) that combines the drf_gauge_station, 
+# This function runs ingestTasks.py with --inputTask createView, creating a view (drf_gauge_station_source_data) that combines the drf_gauge_station, 
 # drf_gauge_source, and drf_gauge_data tables.
 def runCreateView():
     # Create list of program commands
-    program_list = [['python','ingestTasks.py','--inputTask','View']]
+    program_list = [['python','ingestTasks.py','--inputTask','createView']]
  
     for program in program_list:
         logger.info('Run '+" ".join(program))
@@ -109,7 +109,7 @@ def runSequenceIngest(ingestDir):
     runCreateView()
     runIngestStations(ingestDir)
     runIngestSourceMeta()
-    runIngestSource(ingestDir)
+    runIngestSourceData(ingestDir)
 
 # Main program function takes args as input, which contains the ingestDir, inputTask as variables.
 @logger.catch
@@ -121,19 +121,12 @@ def main(args):
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
-    # Check if ingestDir argument exist. This argument is used in runIngestStations.
-    if args.ingestDir is None:
-        ingestDir = ''
-    elif args.ingestDir is not None:
-        ingestDir = os.path.join(args.ingestDir, '')
-    else:
-        sys.exit('Incorrect ingestDir')
-
     # Get input task
     inputTask = args.inputTask
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
     if inputTask.lower() == 'ingeststations':
+        ingestDir = os.path.join(args.ingestDir, '')
         logger.info('Run ingest station data.')
         runIngestStations(ingestDir)
         logger.info('Ran ingest station data.')
@@ -141,15 +134,17 @@ def main(args):
         logger.info('Run source meta.')
         runIngestSourceMeta()
         logger.info('Ran source meta.')
-    elif inputTask.lower() == 'ingestsource':
+    elif inputTask.lower() == 'ingestsourcedata':
+        ingestDir = os.path.join(args.ingestDir, '')
         logger.info('Run source data.')
-        runIngestSource(ingestDir)
+        runIngestSourceData(ingestDir)
         logger.info('Ran source data.')
-    elif inputTask.lower() == 'view':
+    elif inputTask.lower() == 'createview':
         logger.info('Run create view.')
         runCreateView()
         logger.info('Ran create view.')
     elif inputTask.lower() == 'sequenceingest':
+        ingestDir = os.path.join(args.ingestDir, '')
         logger.info('Run sequence ingest.')
         runSequenceIngest(ingestDir)
         logger.info('Ran sequence ingest.')
@@ -160,9 +155,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','IngestSourceMeta','IngestSource','View', 'SequenceIngest'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','ingestSourceMeta','ingestSourceData','createView', 'SequenceIngest'], required=True)
 
+    # get runScript argument to use in if statement
+    args = parser.parse_known_args()[0]
+
+    if args.inputTask.lower() == 'ingeststations':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+    elif args.inputTask.lower() == 'ingestsourcedata':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+    elif args.inputTask.lower() == 'sequenceingest':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+ 
     # Parse arguments
     args = parser.parse_args()
 

@@ -364,95 +364,49 @@ def main(args):
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
-    # Extract args variables
-    if args.ingestDir is None:
-        ingestDir = ''
-    elif args.ingestDir is not None:
-        ingestDir = os.path.join(args.ingestDir, '')
-    else:
-        sys.exit('Incorrect ingestDir')
-
-    if args.databaseDir is None:
-        databaseDir = ''
-    elif args.databaseDir is not None:
-        databaseDir = os.path.join(args.databaseDir, '')
-    else:
-        sys.exit('Incorrect databaseDir')
-
     inputTask = args.inputTask
 
-    if args.inputDataSource is None:
-        inputDataSource = ''
-    elif args.inputDataSource is not None:
-        inputDataSource = args.inputDataSource
-    else:
-        sys.exit('Incorrect inputDataSource')
-
-    if args.inputSourceName is None:
-        inputSourceName = ''
-    elif args.inputSourceName is not None:
-        inputSourceName = args.inputSourceName
-    else:
-        sys.exit('Incorrect inputSourceName')
-
-    if args.inputSourceArchive is None:
-        inputSourceArchive = ''
-    elif args.inputSourceArchive is not None:
-        inputSourceArchive = args.inputSourceArchive
-    else:
-        sys.exit('Incorrect inputSourceArchive')
-
-    if args.inputSourceVariable is None:
-        input = ''
-    elif args.inputSourceVariable is not None:
-        inputSourceVariable = args.inputSourceVariable
-    else:
-        sys.exit('Incorrect inputSourceVariable')
-
-    if args.inputFilenamePrefix is None:
-        input = ''
-    elif args.inputFilenamePrefix is not None:
-        inputFilenamePrefix = args.inputFilenamePrefix
-    else:
-        sys.exit('Incorrect inputFilenamePrefix')
-
-    if args.inputLocationType is None:
-        inputLocationType = ''
-    elif args.inputLocationType is not None:
-        inputLocationType = args.inputLocationType
-    else:
-        sys.exit('Incorrect inputLocationType')
-
-    if args.inputUnits is None:
-        inputUnits = ''
-    elif args.inputUnits is not None:
-        inputUnits = args.inputUnits
-    else:
-        sys.exit('Incorrect inputUnits')
-
-
     # Check if inputTask if file, station, source, data or view, and run appropriate function
-    if inputTask.lower() == 'source_meta':
+    if inputTask.lower() == 'ingestsourcemeta':
+        inputDataSource = args.inputDataSource
+        inputSourceName = args.inputSourceName
+        inputSourceArchive = args.inputSourceArchive
+        inputSourceVariable = args.inputSourceVariable
+        inputFilenamePrefix = args.inputFilenamePrefix
+        inputLocationType = args.inputLocationType
+        inputUnits = args.inputUnits
         logger.info('Ingesting source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
         ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits)
         logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
     elif inputTask.lower() == 'ingeststations':
+        ingestDir = os.path.join(args.ingestDir, '')
         logger.info('Ingesting station data.')
         ingestStations(ingestDir)
         logger.info('Ingested station data.')
-    elif inputTask.lower() == 'ingestsource':
+    elif inputTask.lower() == 'ingestsourcedata':
+        ingestDir = os.path.join(args.ingestDir, '')
         logger.info('Ingesting source data.')
         ingestSourceData(ingestDir)
         logger.info('ingested source data.')
-    elif inputTask.lower() == 'file':
+    elif inputTask.lower() == 'ingestharvestdatafilemeta':
+        ingestDir = os.path.join(args.ingestDir, '')
         logger.info('Ingesting input file information.')
         ingestHarvestDataFileMeta(ingestDir)
         logger.info('Ingested input file information.')
-    elif inputTask.lower() == 'data':
+    elif inputTask.lower() == 'ingestdata':
+        ingestDir = os.path.join(args.ingestDir, '')
+        if args.databaseDir:
+            databaseDir = os.path.join(args.databaseDir, '')
+        else:
+            databaseDir = ''
+        inputDataSource = args.inputDataSource
+        inputSourceName = args.inputSourceName
+        inputSourceArchive = args.inputSourceArchive
+        inputSourceVariable = args.inputSourceVariable
         logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+'.')
         ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable)
         logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+'.')
-    elif inputTask.lower() == 'view':
+    elif inputTask.lower() == 'createview':
         logger.info('Creating view.')
         createView()
         logger.info('Created view.')
@@ -463,16 +417,33 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
-    parser.add_argument("--databaseDIR", "--databaseDir", help="Database directory path", action="store", dest="databaseDir", required=False)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['Source_meta','IngestStations','ingestSource', 'File','Data','View'], required=True)
-    parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=False)
-    parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=False)
-    parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=False)
-    parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=False)
-    parser.add_argument("--inputFilenamePrefix", help="Input filename variables", action="store", dest="inputFilenamePrefix", required=False)
-    parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=False)
-    parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=False)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestSourceMeta','ingestStations','ingestSourceData', 'ingestHarvestDataFileMeta','ingestData','createView'], required=True)
+
+    # get runScript argument to use in if statement
+    args = parser.parse_known_args()[0]
+
+    if args.inputTask.lower() == 'ingestsourcemeta':
+        parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
+        parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
+        parser.add_argument("--inputFilenamePrefix", help="Input filename variables", action="store", dest="inputFilenamePrefix", required=True)
+        parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
+        parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=True)
+    elif args.inputTask.lower() == 'ingeststations':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+    elif args.inputTask.lower() == 'ingestsourcedata':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+    elif args.inputTask.lower() == 'ingestharvestdatafilemeta':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+    elif args.inputTask.lower() == 'ingestdata':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
+        parser.add_argument("--databaseDIR", "--databaseDir", help="Database directory path", action="store", dest="databaseDir", required=False)
+        parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
+
 
     # Parse arguments
     args = parser.parse_args()

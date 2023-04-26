@@ -42,7 +42,7 @@ def getSourceMeta():
         logger.info(error)
 
 # This function runs createHarvestFileMeta.py, which creates harvest meta data files, that are ingested into the drf_harvest_data_file_meta table, 
-# in the database, by running ingestTasks.py using --inputTask File.
+# in the database, by running ingestTasks.py using --inputTask ingestHarvestDataFileMeta.
 def runHarvestFile(harvestDir, ingestDir):
     # get source meta
     df = getSourceMeta()
@@ -52,7 +52,7 @@ def runHarvestFile(harvestDir, ingestDir):
     for index, row in df.iterrows():
         program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
 
-    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','File'])
+    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -77,7 +77,7 @@ def runDataCreate(ingestDir):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function runs ingestTasks.py with --inputTask Data, ingest gauge data into the drf_gauge_data table, in the database.
+# This function runs ingestTasks.py with --inputTask ingestData, ingest gauge data into the drf_gauge_data table, in the database.
 def runDataIngest(ingestDir):
     # get source meta
     df = getSourceMeta()
@@ -85,7 +85,7 @@ def runDataIngest(ingestDir):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','Data','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'], '--inputSourceVariable',row['source_variable']])
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestData','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'], '--inputSourceVariable',row['source_variable']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -129,7 +129,7 @@ def main(args):
     inputTask = args.inputTask
 
     # Check if inputTask if file, station, source, data or view, and run appropriate function
-    if inputTask.lower() == 'file':
+    if inputTask.lower() == 'ingestharvestdatafilemeta':
         logger.info('Run input file information.')
         runHarvestFile(harvestDir, ingestDir)
         logger.info('Ran input file information.')
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     # Optional argument which requires a parameter (eg. -d test)
     parser.add_argument("--harvestDIR", "--harvestDir", help="Harvest directory path", action="store", dest="harvestDir", required=False)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=False)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['File','DataCreate','DataIngest','SequenceIngest'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestHarvestDataFileMeta','DataCreate','DataIngest','SequenceIngest'], required=True)
 
     # Parse arguments
     args = parser.parse_args()

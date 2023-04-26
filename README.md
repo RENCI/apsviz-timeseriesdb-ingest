@@ -131,7 +131,7 @@ python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-
 
 To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
 
-python prepare4Ingest.py --inputTask View
+python prepare4Ingest.py --inputTask createView
 
 This will create a view (drf_gauge_station_source_data) that is accessible through the Django REST Framework API:
 
@@ -157,19 +157,19 @@ This will ingest the station data in the stations directory into the drf_gauge_s
 
 To ingest the source data, first ingest the source meta using the following command:
 
-python prepare4Ingest.py --inputTask IngestSourceMeta
+python prepare4Ingest.py --inputTask ingestSourceMeta
 
 This will ingest meta data, containing information on the data sources, into the drf_source_meta table. This meta data will be used as argparse input when running prepare4Ingest.py and runIngest.py. 
 
 The next step is to ingest the source data into the drf_gauge_source table. To do this run the following command:
 
-python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask IngestSource
+python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask ingestSourceData
 
 This will create Source data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_gauge_source table in the database.
 
 On Sterling, using k8s, the command would be:
 
-python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask IngestSource
+python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask ingestSourceData
 
 This will create Source data files in /data/ast-run-ingester/ and then ingest them into the drf_gauge_source table in the database.
 
@@ -177,13 +177,13 @@ This will create Source data files in /data/ast-run-ingester/ and then ingest th
 
 To create and ingest the harvest file meta data run the following command:
 
-python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask File 
+python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask ingestHarvestDataFileMeta 
 
 This will create Harvest meta data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_harvest_data_file_meta  table in the database.
 
 On Sterling, using k8s, the command would be:
 
-python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask File
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta
 
 This will create Harvest meta data files in /data/ast-run-ingester and then ingest them into the drf_harvest_data_file_meta  table in the database.
 
@@ -240,7 +240,7 @@ where:
 
 Finally run the following command to ingest that data into the drf_gauge_source table in the database:
 
-python ingestTasks.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputTask ingestSource
+python ingestTasks.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputTask ingestSourceData
 
 where the --ingestDir /xxx/xxxxxxx/xxxxxxxx/ is the ingest directory such as /data/ast-run-ingester/
 
