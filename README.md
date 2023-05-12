@@ -195,7 +195,7 @@ where xxxx is the instance ID, dddddddddd is the start time of the model run, an
 
 #### Create and Ingest Data Files
 
-#####To create and ingest the observation data files first run the command:
+##### To create and ingest the observation data files first run the command:
 
 python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dateType obs --inputTask DataCreate
 
@@ -217,7 +217,7 @@ python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTa
 
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
 
-#####To create and ingest the ADCIRC model data files first run the command:
+##### To create and ingest the ADCIRC model data files first run the command:
 
 python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dateType model --inputTask DataCreate
 
