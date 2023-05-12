@@ -119,11 +119,11 @@ python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask Sequenc
 
 To ingest the gauge data run the command below in the /home/nru directory:
 
-python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest
+python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --dataType obs --inputTask SequenceIngest
 
 On Sterling, using k8s, the command would be:
 
-python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask SequenceIngest
 
 ### Ingest The Long Way
 
@@ -195,27 +195,49 @@ where xxxx is the instance ID, dddddddddd is the start time of the model run, an
 
 #### Create and Ingest Data Files
 
-To create and ingest the data files first run the command:
+#####To create and ingest the observation data files first run the command:
 
-python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask DataCreate
+python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dateType obs --inputTask DataCreate
 
 This will create data files in /data/DataIngesting/DAILY_INGEST/.
 
 On Sterling, using k8s, the command would be:
 
-python runIngest.py --ingestDir /data/ast-run-ingester/ --inputTask DataCreate
+python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask DataCreate
 
 This will create data files in /data/ast-run-ingester/.
 
 The next step is to ingest the files by running the following command:
 
-python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask DataIngest
+python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dataType obs --inputTask DataIngest
 
 On Sterling, using k8s, the command would be:
 
-python runIngest.py --ingestDir /data/ast-run-ingester/ --inputTask DataIngest
+python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask DataIngest
 
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
+
+#####To create and ingest the ADCIRC model data files first run the command:
+
+python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dateType model --inputTask DataCreate
+
+This will create data files in /data/DataIngesting/DAILY_INGEST/.
+
+On Sterling, using k8s, the command would be:
+
+python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType model --inputTask DataCreate
+
+This will create data files in /data/ast-run-ingester/.
+
+The next step is to ingest the files by running the following command:
+
+python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dataType model --inputTask DataIngest
+
+On Sterling, using k8s, the command would be:
+
+python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType model --inputTask DataIngest
+
+This will ingest the data files, created in the above command, into the drf_gauge_data table in the database.
 
 #### Add New Source
 
