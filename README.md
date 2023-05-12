@@ -7,11 +7,7 @@ https://github.com/RENCI/apsviz-timeseriesdb
 
 Follow the installation instructions for that repo. It creates and PostgreSQL database, that serves data using a Django Rest Framework (DRF) app. 
 
-The gauge data that is being ingested cans currently be accessed from the apsviz-timeseriesdb.edc.renci.org VM in the following directory:   
-
-/projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/ 
-
-On Sterling using k8s the directory path is:
+The gauge data that is being ingested can be accessed on Sterling using k8s the directory path is:
 
 /data/ast-run-harvester/
 
@@ -21,8 +17,11 @@ https://github.com/RENCI/AST
 
 ## Install apsviz-timeseriesdb-ingest
 
-The below instructions are for deploying to your local machine, a VM, or a machine other than the Sterling Kubernetes cluster. 
-Deployment to the Sterling Kubernetes cluster is explained at the bottom of this README.
+### Deploying To The Sterling Kubernetes Cluster
+
+Deploying on the Sterling k8s  cluster is done using GitHub Actions which pushes the docker image to the RENCI Harbor docker repository. A YAML file, with Kubernetes configurations, is then used to deploy as a pod on Sterling.
+
+### Installing on you local machine
 
 To install apsviz-timeseriesdb-ingest you first need to clone it:
 
@@ -84,18 +83,16 @@ The env variables are already set on the Sterling Kubernetes cluster, so the abo
 
 Next from within the apsviz_timeseriesdb_ingest shell make the following directories:
 
-mkdir -p /data/DataIngesting/DAILY_INGEST
+mkdir -p /data/ast-run-harvester
+mkdir -l /data/ast-run-ingester
 
 This does not have to be down when running on the Sterling Kubernetes cluster.
 
 If you are running on your local machine make sure you have downloaded the harvest files from the directory:
 
-/projects/ees/TDS/DataHarvesting/DAILY_HARVESTING/
+/data/ast-run-harvester/
 
-on the apsviz-timeseriesdb.edc.renci.org VM, to the same location that you added as a volume when create the container, so 
-that when you are in the container the following directory exits:
-
-/data/DataIngesting/DAILY_HARVESTING/
+on Sterling
 
 On Sterling, using k8s, check if this directory exits:
 
@@ -109,19 +106,11 @@ On Sterling, using k8s, check if this directory exits:
 
 To ingest the station data and source data run the command below in the /home/nru directory:
 
-python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask SequenceIngest 
-
-On Sterling, using k8s, the command would be:
-
 python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
 
 #### Ingest data
 
 To ingest the gauge data run the command below in the /home/nru directory:
-
-python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --dataType obs --inputTask SequenceIngest
-
-On Sterling, using k8s, the command would be:
 
 python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask SequenceIngest
 
@@ -145,10 +134,6 @@ If running the commands below on Sterling, using k8s, replace the directory path
 
 To ingest the station meta data run the command below in the /home/nru directory:
 
-python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask IngestStations
-
-On Sterling, using k8s, the command would be:
-
 python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask IngestStations
 
 This will ingest the station data in the stations directory into the drf_gauge_station table in the database.
@@ -163,12 +148,6 @@ This will ingest meta data, containing information on the data sources, into the
 
 The next step is to ingest the source data into the drf_gauge_source table. To do this run the following command:
 
-python prepare4Ingest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask ingestSourceData
-
-This will create Source data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_gauge_source table in the database.
-
-On Sterling, using k8s, the command would be:
-
 python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask ingestSourceData
 
 This will create Source data files in /data/ast-run-ingester/ and then ingest them into the drf_gauge_source table in the database.
@@ -176,12 +155,6 @@ This will create Source data files in /data/ast-run-ingester/ and then ingest th
 #### Create and Ingest Harvest File Meta Data
 
 To create and ingest the harvest file meta data, for observation data, run the following command:
-
-python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask ingestHarvestDataFileMeta 
-
-This will create Harvest meta data files in /data/DataIngesting/DAILY_INGEST and then ingest them into the drf_harvest_data_file_meta  table in the database.
-
-On Sterling, using k8s, the command would be:
 
 python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta
 
@@ -197,21 +170,11 @@ where xxxx is the instance ID, dddddddddd is the start time of the model run, an
 
 ##### To create and ingest the observation data files first run the command:
 
-python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dateType obs --inputTask DataCreate
-
-This will create data files in /data/DataIngesting/DAILY_INGEST/.
-
-On Sterling, using k8s, the command would be:
-
 python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask DataCreate
 
 This will create data files in /data/ast-run-ingester/.
 
 The next step is to ingest the files by running the following command:
-
-python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dataType obs --inputTask DataIngest
-
-On Sterling, using k8s, the command would be:
 
 python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask DataIngest
 
@@ -219,21 +182,11 @@ This will ingest the data files, created in the above command, into the drf_gaug
 
 ##### To create and ingest the ADCIRC model data files first run the command:
 
-python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dateType model --inputTask DataCreate
-
-This will create data files in /data/DataIngesting/DAILY_INGEST/.
-
-On Sterling, using k8s, the command would be:
-
 python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType model --inputTask DataCreate
 
 This will create data files in /data/ast-run-ingester/.
 
 The next step is to ingest the files by running the following command:
-
-python runIngest.py --ingestDir /data/DataIngesting/DAILY_INGEST/ --dataType model --inputTask DataIngest
-
-On Sterling, using k8s, the command would be:
 
 python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType model --inputTask DataIngest
 
@@ -273,7 +226,3 @@ python ingestTasks.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputTask ingestSourceD
 where the --ingestDir /xxx/xxxxxxx/xxxxxxxx/ is the ingest directory such as /data/ast-run-ingester/
 
 The source is now ready to be used in ingesting data.
-
-## Deploying To The Sterling Kubernetes Cluster
-
-Deploying on the Sterling k8s  cluster is done using GitHub Actions which pushes the docker image to the RENCI Harbor docker repository. A YAML file, with Kubernetes configurations, is then used to deploy as a pod on Sterling.

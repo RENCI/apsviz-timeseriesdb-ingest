@@ -45,7 +45,7 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
 
 # This function takes data source, source name, and source archive as input. It ingest these variables into the source meta table (drf_source_meta).
 # The variables in this table are then used as inputs in runIngest.py 
-def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits):
+def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputDataType, inputUnits):
     logger.info('Ingest source meta for data source '+inputDataSource+', with source name '+inputSourceName+', source archive '+inputSourceArchive+
                 ', and location type'+ inputLocationType)
 
@@ -59,9 +59,9 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
             cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
-            cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, source_variable, filename_prefix, location_type, units)
-                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s, %(filenamevariable)s, %(locationtype)s, %(units)s)""",
-                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'units': inputUnits})
+            cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units)
+                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s, %(filenamevariable)s, %(locationtype)s, %(datatype)s,  %(units)s)""",
+                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'datatype': inputDataType, 'units': inputUnits})
 
             # Close cursor and database connection
             cur.close()
@@ -374,9 +374,10 @@ def main(args):
         inputSourceVariable = args.inputSourceVariable
         inputFilenamePrefix = args.inputFilenamePrefix
         inputLocationType = args.inputLocationType
+        inputDataType = args.inputDataType
         inputUnits = args.inputUnits
         logger.info('Ingesting source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
-        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits)
+        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputDataType, inputUnits)
         logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
     elif inputTask.lower() == 'ingeststations':
         ingestDir = os.path.join(args.ingestDir, '')
@@ -429,6 +430,7 @@ if __name__ == "__main__":
         parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
         parser.add_argument("--inputFilenamePrefix", help="Input filename variables", action="store", dest="inputFilenamePrefix", required=True)
         parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
+        parser.add_argument("--inputDataType", help="Input data type to be processed", action="store", dest="inputDataType", required=True)
         parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=True)
     elif args.inputTask.lower() == 'ingeststations':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)

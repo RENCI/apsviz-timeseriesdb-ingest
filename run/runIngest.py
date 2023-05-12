@@ -14,7 +14,7 @@ from loguru import logger
 
 # This function is used by the runIngestSource() function to query the drf_source_meta table, in the
 # database, and get argparse input for those function
-def getSourceMeta():
+def getSourceMeta(dataType):
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -26,10 +26,11 @@ def getSourceMeta():
         cur.execute("""BEGIN""")
 
         # Run query
-        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, units FROM drf_source_meta""")
+        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units FROM drf_source_meta 
+                       WHERE data_type = %(datatype)s ORDER BY filename_prefix""", {'datatype': dataType})
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 'filename_prefix', 'location_type', 'units'])
+        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 'filename_prefix', 'location_type', 'data_type', 'units'])
 
         # Close cursor and database connection
         cur.close()
@@ -42,7 +43,7 @@ def getSourceMeta():
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function runs createHarvestFileMeta.py, which creates harvest meta data files, that are ingested into the drf_harvest_data_file_meta table, 
+# This function runs createHarvestDataFileMeta.py, which creates harvest meta data files, that are ingested into the drf_harvest_data_file_meta table, 
 # in the database, by running ingestTasks.py using --inputTask ingestHarvestDataFileMeta.
 def runHarvestFile(harvestDir, ingestDir, modelRunID):
     if modelRunID != None:
@@ -89,14 +90,14 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             program_list = []
             program_list.append(['python','ingestTasks.py','--inputDataSource',data_source,'--inputSourceName',source_name,'--inputSourceArchive',
                                  source_archive,'--inputSourceVariable',source_variable,'--inputFilenamePrefix',filename_prefix,'--inputLocationType',
-                                 location_type,'--inputUnits',units,'--inputTask','ingestSourceMeta'])
+                                 location_type,'--inputDataType','model','--inputUnits',units,'--inputTask','ingestSourceMeta'])
             program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',data_source,'--inputSourceName',
                                  source_name,'--inputSourceArchive',source_archive,'--inputUnits',units,'--inputLocationType',location_type])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
-            program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', 
+            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', 
                                  data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',filename_prefix_ta])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
- 
+
             # Run list of program commands using subprocess
             for program in program_list:
                 logger.info('Run '+" ".join(program))
@@ -108,7 +109,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             logger.info(data_source+','+source_name+','+source_archive+','+source_variable+','+
                         filename_prefix_ta+','+location_type+','+units)
             program_list = []
-            program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', data_source,'--inputSourceName',
+            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', data_source,'--inputSourceName',
                                  source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',filename_prefix_ta])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
@@ -120,13 +121,12 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
 
     else:
         # get source meta
-        df = getSourceMeta()
-        # Need to either remove ADCIRC forecast source from drf_source_meta, or add a column to indicate it's an ADCIRC forecast source.
+        df = getSourceMeta('obs')
 
         # Create list of program commands
         program_list = []
         for index, row in df.iterrows():
-            program_list.append(['python','createHarvestFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
+            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
 
         program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
@@ -138,9 +138,9 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
 
 # This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be ingested into the 
 # database using the runDataIngest function. 
-def runDataCreate(ingestDir):
+def runDataCreate(ingestDir, dataType):
     # get source meta
-    df = getSourceMeta()
+    df = getSourceMeta(dataType)
 
     # Create list of program commands
     program_list = []
@@ -154,9 +154,9 @@ def runDataCreate(ingestDir):
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This function runs ingestTasks.py with --inputTask ingestData, ingest gauge data into the drf_gauge_data table, in the database.
-def runDataIngest(ingestDir):
+def runDataIngest(ingestDir, dataType):
     # get source meta
-    df = getSourceMeta()
+    df = getSourceMeta(dataType)
 
     # Create list of program commands
     program_list = []
@@ -170,10 +170,10 @@ def runDataIngest(ingestDir):
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 # This functions creates and ingest the harvest files, and data in sequence
-def runSequenceIngest(harvestDir, ingestDir, modelRunID):
+def runSequenceIngest(harvestDir, ingestDir, dataType, modelRunID):
     runHarvestFile(harvestDir, ingestDir, modelRunID)
-    runDataCreate(ingestDir)
-    runDataIngest(ingestDir)
+    runDataCreate(ingestDir, dataType)
+    runDataIngest(ingestDir, dataType)
 
 # Main program function takes args as input, which contains the harvestDir, ingestDir, and inputTask variables
 @logger.catch
@@ -206,19 +206,22 @@ def main(args):
         logger.info('Ran input file information.')
     elif inputTask.lower() == 'datacreate':
         ingestDir = os.path.join(args.ingestDir, '')
+        dataType = args.dataType
         logger.info('Run data create.')
-        runDataCreate(ingestDir)
+        runDataCreate(ingestDir, dataType)
         logger.info('Ran data create.')
     elif inputTask.lower() == 'dataingest':
         ingestDir = os.path.join(args.ingestDir, '')
+        dataType = args.dataType
         logger.info('Run data ingest.')
-        runDataIngest(ingestDir)
+        runDataIngest(ingestDir, dataType)
         logger.info('Ran data ingest.')
     elif inputTask.lower() == 'sequenceingest':
         harvestDir = os.path.join(args.harvestDir, '')
         ingestDir = os.path.join(args.ingestDir, '')
+        dataType = args.dataType
         logger.info('Run sequence ingest.')
-        runSequenceIngest(harvestDir, ingestDir, modelRunID)
+        runSequenceIngest(harvestDir, ingestDir, dataType, modelRunID)
         logger.info('Ran sequence ingest.')
 
 
@@ -240,12 +243,15 @@ if __name__ == "__main__":
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'datacreate':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)
     elif args.inputTask.lower() == 'dataingest':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)
     elif args.inputTask.lower() == 'sequenceingest':
-        parser.add_argument("--modelRunID", "--modelRunId", help="Model run ID for ADCIRC forecast data", action="store", dest="modelRunID", required=False)
         parser.add_argument("--harvestDIR", "--harvestDir", help="Harvest directory path", action="store", dest="harvestDir", required=True)
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)
+        parser.add_argument("--modelRunID", "--modelRunId", help="Model run ID for ADCIRC forecast data", action="store", dest="modelRunID", required=False)
     else:
         logger.info(args.inputTask+' not correct')
 

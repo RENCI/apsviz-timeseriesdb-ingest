@@ -7,5 +7,5 @@ wind_anemometer,ndbc,ndbc,wind_speed,ndbc_stationdata_wind_speed,ocean,obs,mps
 air_barometer,ndbc,ndbc,air_pressure,ndbc_stationdata_air_pressure,ocean,obs,mb
 tidal_predictions,noaa,noaa,water_level,noaa_stationdata_predictions,tidal,obs,m
 tidal_gauge,noaa,noaa,water_level,noaa_stationdata_water_level,tidal,obs,m
-air_barometer,noaa,noaa,air_pressure,noaa_stationdata_air_pressure,tida,obs,mb
+air_barometer,noaa,noaa,air_pressure,noaa_stationdata_air_pressure,tidal,obs,mb
 wind_anemometer,noaa,noaa,wind_speed,noaa_stationdata_wind_speed,tidal,obs,mps
