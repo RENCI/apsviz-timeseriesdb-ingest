@@ -175,7 +175,7 @@ This will create Source data files in /data/ast-run-ingester/ and then ingest th
 
 #### Create and Ingest Harvest File Meta Data
 
-To create and ingest the harvest file meta data run the following command:
+To create and ingest the harvest file meta data, for observation data, run the following command:
 
 python runIngest.py --harvestDir /data/DataHarvesting/DAILY_HARVESTING/ --ingestDir /data/DataIngesting/DAILY_INGEST/ --inputTask ingestHarvestDataFileMeta 
 
@@ -186,6 +186,12 @@ On Sterling, using k8s, the command would be:
 python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta
 
 This will create Harvest meta data files in /data/ast-run-ingester and then ingest them into the drf_harvest_data_file_meta  table in the database.
+
+To create and ingest the harvest file meta data, for ADCIRC model data, run the following command:
+
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID xxxx-dddddddddd-mmmmmmmmmmm 
+
+where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this examle 4358-2023042312-namforecast shows.
 
 #### Create and Ingest Data Files
 

@@ -49,7 +49,7 @@ def runIngestSourceMeta():
 def getSourceMeta():
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -154,12 +154,13 @@ if __name__ == "__main__":
     """ This is executed when run from the command line """
     parser = argparse.ArgumentParser()
 
-    # Optional argument which requires a parameter (eg. -d test)
+    # Non optional argument, input task 
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','ingestSourceMeta','ingestSourceData','createView', 'SequenceIngest'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]
 
+    # Optional arguments
     if args.inputTask.lower() == 'ingeststations':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'ingestsourcedata':

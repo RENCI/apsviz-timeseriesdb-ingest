@@ -19,7 +19,7 @@ from loguru import logger
 def getFileDateTime(inputFile):
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -53,7 +53,7 @@ def getFileDateTime(inputFile):
 def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
         cur = conn.cursor()
        
         # Set enviromnent 
@@ -88,7 +88,7 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
 # data files.
 def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix):
     # Search for files in the harvestDir that have inputDataset name in them, and generate a list of files found
-    dirInputFiles = glob.glob(harvestDir+inputFilenamePrefix+"_*.csv")
+    dirInputFiles = glob.glob(harvestDir+inputFilenamePrefix+"*.csv")
 
     # Define outputList variable
     outputList = []

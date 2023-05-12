@@ -1,10 +1,4 @@
 data_source,source_name,source_archive,source_variable,filename_prefix,location_type,units
-al17_NHCOFCL_NCSC_SAB_V1.23,adcirc,renci,water_level,adcirc_al17_RENCI_NHCOFCL_NCSC_SAB_V1.23_FORECAST,tidal,m
-al17_NOWCAST_NCSC_SAB_V1.23,adcirc,renci,water_level,adcirc_al17_RENCI_NOWCAST_NCSC_SAB_V1.23_NOWCAST,tidal,m
-NAMFORECAST_EC95D,adcirc,renci,water_level,adcirc_nam_RENCI_NAMFORECAST_EC95D_FORECAST,tidal,m
-NAMFORECAST_NCSC_SAB_V1.23,adcirc,renci,water_level,adcirc_nam_RENCI_NAMFORECAST_NCSC_SAB_V1.23_FORECAST,tidal,m
-NOWCAST_EC95D_NOWCAST,adcirc,renci,water_level,adcirc_nam_RENCI_NOWCAST_EC95D_NOWCAST,tidal,m
-NOWCAST_NCSC_SAB_V1.23,adcirc,renci,water_level,adcirc_nam_RENCI_NOWCAST_NCSC_SAB_V1.23,tidal,m
 coastal_gauge,ncem,contrails,water_level,contrails_stationdata_coastal_water_level,coastal,m
 river_gauge,ncem,contrails,water_level,contrails_stationdata_river_water_level,river,m
 river_gauge,ncem,contrails,flow_volume,contrails_stationdata_river_flow_volume,river,m^3ps

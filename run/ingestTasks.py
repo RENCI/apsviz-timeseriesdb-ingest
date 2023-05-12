@@ -16,9 +16,9 @@ from loguru import logger
 # same timestamp, but different timemarks because they are from different harvest data files.
 def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime):
     try:
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'],
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'],
                              host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'],
-                             password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+                             password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
     
             cur.execute("""SET CLIENT_ENCODING TO UTF8""")
@@ -51,7 +51,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -82,7 +82,7 @@ def ingestStations(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -118,7 +118,7 @@ def ingestSourceData(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -151,7 +151,7 @@ def ingestSourceData(ingestDir):
 def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive):
     try:
         # Create connection to database, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -194,7 +194,7 @@ def ingestHarvestDataFileMeta(ingestDir):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -233,7 +233,7 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -309,7 +309,7 @@ def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSo
 def createView():
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_DATABASE'], user=os.environ['SQL_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent

@@ -1,6 +1,9 @@
 export SQL_ENGINE=timescale.db.backends.postgis
-export SQL_DATABASE=apsviz_gauges
-export SQL_USER=apsviz_ingester
-export SQL_PASSWORD=xxxxxxxx
+export SQL_ASGS_DATABASE=asgs_dashboard
+export SQL_ASGS_USER=asgs
+export SQL_ASGS_PASSWORD=xxxxxxxx
 export SQL_HOST=apsviz-timeseriesdb-db-1
 export SQL_PORT=5432
+export SQL_GAUGE_DATABASE=apsviz_gauges 
+export SQL_GAUGE_USER=apsviz_ingester
+export SQL_GAUGE_PASSWORD=xxxxxxxx
