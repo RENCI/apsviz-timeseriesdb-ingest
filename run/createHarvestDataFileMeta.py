@@ -105,6 +105,8 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
         data_begin_time = df['TIME'].min()
         data_end_time = df['TIME'].max()
 
+        # This step checks to see if begin_time, and end_time or null, and if they are it marks the file as being ingested
+        # This step was added to deal with some erroneous runs, and may be removed in the future.
         if pd.isnull(data_begin_time) and pd.isnull(data_end_time):
             ingested = 'True'
         else:
@@ -173,7 +175,7 @@ def main(args):
 
         # Write DataFrame containing list of files to a csv file
         df.to_csv(ingestDir+outputFile, index=False, header=False)
-        logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', source archive '+inputSourceArchive+', and source variable'+inputFilenamePrefix+'.')
+        logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', source archive '+inputSourceArchive+', and data filename prefix '+inputFilenamePrefix+'.')
 
 # Run main function takes ingestDir, and outputFile as input.
 if __name__ == "__main__":
@@ -186,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
-    parser.add_argument("--inputFilenamePrefix", help="Input source variable name", action="store", dest="inputFilenamePrefix", required=True)
+    parser.add_argument("--inputFilenamePrefix", help="Input data filename prefix", action="store", dest="inputFilenamePrefix", required=True)
 
     # Parse input arguments
     args = parser.parse_args()
