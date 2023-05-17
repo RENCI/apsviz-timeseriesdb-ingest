@@ -187,10 +187,10 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
         logger.info(error)
 
 # This function takes an input directory and ingest directory as input. It uses the input directory to seach for
-# harvest_files that need to be ingested. It uses the ingest directory to define the path of the harvest_file
+# harvest_data_files that need to be ingested. It uses the ingest directory to define the path of the harvest_file
 # to ingesting. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
 def ingestHarvestDataFileMeta(ingestDir):
-    inputFiles = glob.glob(ingestDir+"harvest_files_*.csv")
+    inputFiles = glob.glob(ingestDir+"harvest_data_files_*.csv")
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
@@ -220,6 +220,37 @@ def ingestHarvestDataFileMeta(ingestDir):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
+# This function takes an ingest directory, and input filename  as input. It uses the input filename, along with the input directory, 
+# to ingest the specified file into the drf_apsviz_station_file_meta directory. The ingest directory is the directory path in the 
+# apsviz-timeseriesdb database container.
+def ingestApsVizStationFileMeta(ingestDir, inputFilename):
+    try:
+        # Create connection to databaseset, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+            cur = conn.cursor()
+
+            # Set enviromnent
+            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
+
+            # Run ingest query
+            with open(ingestDir+inputFilename, "r") as f:
+                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,model_run_id,timemark,variable_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    while data := f.read(100):
+                        copy.write(data)
+
+            # Remove harvest meta file after ingesting it.
+            logger.info('Remove apsVis station meta file: '+inputFilename+' after ingesting it')
+            os.remove(ingestDir+inputFilename)
+
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
 # This function takes an ingest directory and input dataset as input, and uses them to run the getHarvestDataFileMeta
 # function. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
 # that contains a list of data files, that are queried from the drf_harvest_data_file_meta table. These files are then 
@@ -227,6 +258,91 @@ def ingestHarvestDataFileMeta(ingestDir):
 # drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the directory path in the 
 # apsviz-timeseriesdb database container.
 def ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
+    logger.info('Begin ingesting data source '+inputDataSource+', with source name '+inputSourceName+', source variable '+inputSourceVariable+' and source archive '+inputSourceArchive)
+    # Get DataFrame the contains list of data files that need to be ingested
+    dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
+
+    try:
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+            cur = conn.cursor()
+
+            # Set enviromnent
+            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
+            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
+
+            # Loop thru DataFrame ingesting each data file
+            for index, row in dfDirFiles.iterrows():
+                ingestFile = row[1]
+                ingestPathFile = ingestDir+'data_copy_'+ingestFile
+                logger.info('Ingest file: '+ingestPathFile)
+
+                with open(ingestPathFile, "r") as f:
+                    with cur.copy(sql.SQL("""COPY drf_gauge_data (source_id,timemark,time,{}) 
+                                             FROM STDIN WITH (FORMAT CSV)""").format(sql.Identifier(inputSourceVariable))) as copy:
+                        while data := f.read(100):
+                            copy.write(data)
+
+                # Remove duplicate times, in the observation data, from previous timemark files WHY water_level!
+                if inputSourceName != 'adcirc':
+                    # Get min and max times from observation data files
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].max()
+
+                    logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+
+                    # Delete duplicate times
+                    deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime)
+
+                    logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+
+                elif inputSourceName == 'adcirc':
+                    # Get min and max times from adcirc data files
+                    minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].min()
+                    maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].max()
+
+                    if inputDataSource[0:7] == 'nowcast':
+                        logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                    +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+
+                        # Delete duplicate times
+                        deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime)
+
+                        logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                                    +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
+                    else:
+                        logger.info('Data source '+inputDataSource+', with source name '+inputSourceName+', and source archive '+inputSourceArchive
+                                    +', with min time: '+str(minTime)+' and max time '+str(maxTime)+' does not need duplicate times removed.')
+
+                # Run update 
+                cur.execute("""UPDATE drf_harvest_data_file_meta
+                               SET ingested = True
+                               WHERE file_name = %(update_file)s
+                               """,
+                            {'update_file': ingestFile})
+
+
+                # Remove ingest data file after ingesting it.
+                logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
+                os.remove(ingestPathFile)
+
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
+# This function takes an ingest directory and input dataset as input, and uses them to run the getHarvestDataFileMeta
+# function. The getHarvestDataFileMeta function produces a DataFrame (dfDirFiles) 
+# that contains a list of data files, that are queried from the drf_harvest_data_file_meta table. These files are then 
+# ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column "ingested", in the 
+# drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the directory path in the 
+# apsviz-timeseriesdb database container.
+def ingestApsVizStationData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
     logger.info('Begin ingesting data source '+inputDataSource+', with source name '+inputSourceName+', source variable '+inputSourceVariable+' and source archive '+inputSourceArchive)
     # Get DataFrame the contains list of data files that need to be ingested
     dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
@@ -391,11 +507,30 @@ def main(args):
         logger.info('ingested source data.')
     elif inputTask.lower() == 'ingestharvestdatafilemeta':
         ingestDir = os.path.join(args.ingestDir, '')
-        logger.info('Ingesting input file information.')
+        logger.info('Ingesting input data file information.')
         ingestHarvestDataFileMeta(ingestDir)
-        logger.info('Ingested input file information.')
+        logger.info('Ingested input data file information.')
+    elif inputTask.lower() == 'ingestapsvizstationfilemeta':
+        ingestDir = os.path.join(args.ingestDir, '')
+        inputFilename = args.inputFilename
+        logger.info('Ingesting input apsViz station meta file information.')
+        ingestApsVizStationFileMeta(ingestDir, inputFilename)
+        logger.info('Ingested input apsViz station meta file information.')
     elif inputTask.lower() == 'ingestdata':
         ingestDir = os.path.join(args.ingestDir, '')
+        if args.databaseDir:
+            databaseDir = os.path.join(args.databaseDir, '')
+        else:
+            databaseDir = ''
+        inputDataSource = args.inputDataSource
+        inputSourceName = args.inputSourceName
+        inputSourceArchive = args.inputSourceArchive
+        inputSourceVariable = args.inputSourceVariable
+        logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+'.')
+        ingestData(ingestDir, databaseDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable)
+        logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+'.')
+    elif inputTask.lower() == 'ingestapsvizstationdata':
+        # PROBABLY DO NOT NEED ALL OF THIS. NEED TO CHECK AND TRIM DOWN.
         if args.databaseDir:
             databaseDir = os.path.join(args.databaseDir, '')
         else:
@@ -418,7 +553,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestSourceMeta','ingestStations','ingestSourceData', 'ingestHarvestDataFileMeta','ingestData','createView'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestSourceMeta','ingestStations','ingestSourceData', 'ingestHarvestDataFileMeta','ingestApsVizStationFileMeta','ingestData','ingestApsVizStationData','createView'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]
@@ -438,6 +573,9 @@ if __name__ == "__main__":
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'ingestharvestdatafilemeta':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+    elif args.inputTask.lower() == 'ingestapsvizstationfilemeta':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for apzViz station meta file", action="store", dest="inputFilename", required=True)
     elif args.inputTask.lower() == 'ingestdata':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
@@ -445,7 +583,13 @@ if __name__ == "__main__":
         parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
         parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=True)
         parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
-
+    elif args.inputTask.lower() == 'ingestapsvizstationdata':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
+        parser.add_argument("--databaseDIR", "--databaseDir", help="Database directory path", action="store", dest="databaseDir", required=False)
+        parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
 
     # Parse arguments
     args = parser.parse_args()

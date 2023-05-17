@@ -111,10 +111,10 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     # Get the timemark frome the the data filename NEED TO DEAL WITH HURRICANE AND ENSEMBLES
     datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
     if inputSourceName == 'adcirc':
-        if re.search('forecast', inputDataSource):
+        if re.search('forecast', inputDataSource.lower()):
             # If the inputDataSource has forecast in its name get the first datetime in the filename
             df['timemark'] = datetimes[0]
-        elif re.search('nowcast', inputDataSource):
+        elif re.search('nowcast', inputDataSource.lower()):
             # If the inputDataSource has nowcast in its name get the third datetime in the filename
             df['timemark'] = datetimes[2]
         else:
