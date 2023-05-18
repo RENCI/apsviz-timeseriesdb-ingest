@@ -247,16 +247,15 @@ def runDataIngest(ingestDir, dataType):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function creates the apsViz station data from the adcirc meta files, adding a timemark, model_run_id, variable type, and csv URL'
-# It gets this information from the from the drf_apsviz_station_file_meta table, but running the getApsVizStationInfo() function
-def runApsVizStationCreate(ingestDir, modelRunID):
+# This function creates and ingests the apsViz station data from the adcirc meta files, adding a timemark, model_run_id, variable type, 
+# and csv URL. It gets this information from the from the drf_apsviz_station_file_meta table, by running the getApsVizStationInfo() function
+def runApsVizStationCreateIngest(ingestDir, modelRunID):
     logger.info('Create apsViz station file data, for model run ID '+modelRunID+', to be ingested into the apsviz_station table ')
     df = getApsVizStationInfo(modelRunID) 
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        # NEED TO CHANGE INPUTS TO THE createIngestApsVizStationData.py COMMAND BELOW, USING WHAT IS in createIngestApsVizStationData.py
         # dir_path, file_name, data_date_time, data_source, source_name, source_archive, model_run_id, variable_type, csvurl, ingested
         program_list.append(['python','createIngestApsVizStationData.py','--harvestDir',row['dir_path'],'--ingestDir',ingestDir,
                              '--inputFilename',row['file_name'],'--modelRunID',row['model_run_id'],'--timeMark',str(row['timemark']),
@@ -268,17 +267,13 @@ def runApsVizStationCreate(ingestDir, modelRunID):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+' with output returncode '+str(output.returncode))
 
-# This function ingests the apsViz station data, created from the adcirc meta files.'
-def runApsVizStationIngest(ingestDir, modelRunID) :
     logger.info('Ingest apsViz station file data, for model run ID '+modelRunID+', into the apsviz_station table ')
-    df = getApsVizStationInfo(modelRunID)
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        # NEED TO CHANGE INPUTS TO THE ingestTask.py COMMAND BELOW, USING WHAT IS in ingestTask.py FOR ingestApsVizStationData:
-        # dir_path, file_name, data_date_time, data_source, source_name, source_archive, model_run_id, variable_type, csvurl, ingested
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestApsVizStationData','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'], '--inputSourceVariable',row['variable_type']])
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestApsVizStationData',
+                             '--ingestDir',ingestDir,'--inputFilename',row['file_name']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -340,18 +335,12 @@ def main(args):
         logger.info('Run data ingest.')
         runDataIngest(ingestDir, dataType)
         logger.info('Ran data ingest.')
-    elif inputTask.lower() == 'runapsvizstationcreate':
+    elif inputTask.lower() == 'runapsvizstationcreateingest':
         ingestDir = os.path.join(args.ingestDir, '')
         modelRunID = args.modelRunID
-        logger.info('Run apsViz station create for model run ID '+modelRunID+'.')
-        runApsVizStationCreate(ingestDir, modelRunID)
-        logger.info('Ran apsViz station create for model run ID '+modelRunID+'.')
-    elif inputTask.lower() == 'runapsvizstationingest':
-        ingestDir = os.path.join(args.ingestDir, '')
-        modelRunID = args.modelRunID
-        logger.info('Run apsViz station ingest for model run ID '+modelRunID+'.')
-        runApsVizStationIngest(ingestDir, modelRunID)
-        logger.info('Ran apsViz station ingest for model run ID '+modelRunID+'.') 
+        logger.info('Run apsViz station create-ingest for model run ID '+modelRunID+'.')
+        runApsVizStationCreateIngest(ingestDir, modelRunID)
+        logger.info('Ran apsViz station create-ingest for model run ID '+modelRunID+'.')
     elif inputTask.lower() == 'sequenceingest':
         harvestDir = os.path.join(args.harvestDir, '')
         ingestDir = os.path.join(args.ingestDir, '')
@@ -366,7 +355,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Non optional argument
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestHarvestDataFileMeta','DataCreate','DataIngest','runApsVizStationCreate','runApsVizStationIngest','SequenceIngest'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestHarvestDataFileMeta','DataCreate','DataIngest','runApsVizStationCreateIngest','SequenceIngest'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]
@@ -382,10 +371,7 @@ if __name__ == "__main__":
     elif args.inputTask.lower() == 'dataingest':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)
-    elif args.inputTask.lower() == 'runapsvizstationcreate':
-        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
-        parser.add_argument("--modelRunID", "--modelRunId", help="Model run ID for ADCIRC forecast data", action="store", dest="modelRunID", required=True)
-    elif args.inputTask.lower() == 'runapsvizstationingest':
+    elif args.inputTask.lower() == 'runapsvizstationcreateingest':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--modelRunID", "--modelRunId", help="Model run ID for ADCIRC forecast data", action="store", dest="modelRunID", required=True)
     elif args.inputTask.lower() == 'sequenceingest':
