@@ -289,8 +289,7 @@ def runSequenceIngest(harvestDir, ingestDir, dataType, modelRunID):
 
     if modelRunID != None:
         logger.info('Data type '+dataType+' needs apsViz stations ingest in case of modetype forecast, but not for nowcast')
-        runApsVizStationCreate(ingestDir, modelRunID) # Need to create this function in runIngest.py
-        runApsVizStationIngest(ingestDir, modelRunID) # Need to create this function in runIngest.py
+        runApsVizStationCreateIngest(ingestDir, modelRunID) 
     else:
        logger.info('Data type '+dataType+' does not need to have apsViz stations ingested')
 
