@@ -6,7 +6,6 @@ import argparse
 import os
 import sys
 import pandas as pd
-import geopandas as gpd
 from shapely.geometry import Point
 from shapely import wkb, wkt
 from loguru import logger
