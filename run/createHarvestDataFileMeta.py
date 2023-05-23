@@ -14,9 +14,14 @@ import numpy as np
 from pathlib import Path
 from loguru import logger
 
-# This function queries the drf_harvest_data_file_meta table using a file_name as input, and if the filename exists in the table it pulls out the 
-# directory path, file name, and weather the file has been ingested or not.
 def getFileDateTime(inputFile):
+    ''' Returns a DataFrame containing a list of directory paths, and files, from table drf_harvest_data_file_meta, and weather they have been ingested.
+        Parameters
+            inputFile: string
+                Name of input file
+        Returns
+            DataFrame
+    '''
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -48,9 +53,19 @@ def getFileDateTime(inputFile):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes source information as input, and returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, 
-# that have been ingested.
 def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
+    ''' Returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, with specified data source, source name,
+        and source_archive that have been ingested.
+        Parameters
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+        Returns
+            DataFrame
+    '''
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -85,8 +100,27 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
 
 # This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
 # It uses them to create a file list that is then ingested into the drf_harvest_data_file_meta table, and used to ingest the
-# data files.
+# data files. This function also returns first_time, and last_time which are used in cross checking the data.
 def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix):
+    ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_harvest_data_file_meta. It also returns
+        first_time, and last_time used for cross checking.
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputFilenamePrefix: string
+                Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob. 
+        Returns
+            DataFrame, first_time, last_time
+    '''
+
     # Search for files in the harvestDir that have inputDataset name in them, and generate a list of files found
     dirInputFiles = glob.glob(harvestDir+inputFilenamePrefix+"*.csv")
 
@@ -138,9 +172,28 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
     # Return DataFrame first time, and last time
     return(df, first_time, last_time)
 
-# Main program function takes args as input, which contains the ingestDir, and outputFile values.
 @logger.catch
 def main(args):
+    ''' Main program function takes args as input, starts logger, runs createFileList, and writes output to CSV file.
+        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runIngest.py
+        Parameters
+            args: dictionary 
+                contains the parameters listed below
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputFilenamePrefix: string
+                Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob. 
+        Returns
+            CSV file
+    '''
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
@@ -177,9 +230,25 @@ def main(args):
         df.to_csv(ingestDir+outputFile, index=False, header=False)
         logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', source archive '+inputSourceArchive+', and data filename prefix '+inputFilenamePrefix+'.')
 
-# Run main function takes ingestDir, and outputFile as input.
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
+    ''' Takes argparse inputs and passes theme to the main function
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputFilenamePrefix: string
+                Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
+        Returns
+            None
+    '''
+
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)

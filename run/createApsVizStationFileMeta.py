@@ -14,9 +14,20 @@ import numpy as np
 from pathlib import Path
 from loguru import logger
 
-# This function takes source information as input, and returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, 
-# that have been ingested.
 def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID):
+    ''' Returns a DataFrame containing a list of files, from table drf_apsviz_station_file_meta, that have been ingested.
+        Parameters
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...) 
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+        Returns
+            DataFrame
+    '''
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -49,11 +60,35 @@ def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchiv
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
-# It uses them to create a file list that is then ingested into the drf_harvest_data_file_meta table, and used to ingest the
-# data files.
 def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,modelRunID,timeMark,variableType,csvURL,dataDateTime):
-    # [--harvestDir,--ingestDir,--inputDataSource,--inputSourceName,--inputSourceArchive,--inputFilename,--modelRunID,--timeMark,--variableType,--csvURL,--dataDateTime]
+    ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_apsviz_station_file_meta. It also returns
+        first_time, and last_time used for cross checking.
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputFilename: string
+                The name of the input file
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            timeMark: datatime
+                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            variableType:
+                Type of variable (e.g., water_level)
+            csvURL:
+                URL to SQL function that queries db and returns CSV file of data
+            dataDateTime:
+                Date and time that represents the first date time in the input data file.
+        Returns
+            DataFrame, first_time, last_time
+    '''
 
     # Define outputList variable
     outputList = []
@@ -61,7 +96,7 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     # Define ingested as False
     ingested = False
 
-    # NEED TO START HERE TOMORROW MORNING. THERE IS STILL A LOT OF WORK TODO.
+    # Append variables to output list.
     outputList.append([harvestDir,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,modelRunID,timeMark,variableType,csvURL,ingested]) 
 
     # Convert outputList to a DataFrame
@@ -87,13 +122,43 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     # Return DataFrame first time, and last time
     return(df, first_time, last_time)
 
-# Main program function takes args as input, which contains the ingestDir, and outputFile values.
 @logger.catch
 def main(args):
+    ''' Main program function takes args as input, starts logger, runs createFileList, and writes output to CSV file. 
+        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runIngest.py
+        Parameters
+            args: dictionary 
+                contains the parameters listed below
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputFilename: string
+                The name of the input file
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            timeMark: datatime
+                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            variableType:
+                Type of variable (e.g., water_level)
+            csvURL:
+                URL to SQL function that queries db and returns CSV file of data
+            dataDateTime:
+                Date and time that represents the first date time in the input data file.
+        Returns
+            CSV file 
+    '''
+
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createHarvestFileMeta.log', level='DEBUG')
+    logger.add(log_path+'createApsVizStationFileMeta.log', level='DEBUG')
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
@@ -113,7 +178,6 @@ def main(args):
     logger.info('Start processing source station data for source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+', with filename prefix '+inputFilename+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    # [--harvestDir,--ingestDir,--inputDataSource,--inputSourceName,--inputSourceArchive,--inputFilename,--modelRunID,--timeMark,--variableType,--csvURL,--dataDateTime]
     df, first_time, last_time = createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,
                                                modelRunID,timeMark,variableType,csvURL,dataDateTime)
 
@@ -130,9 +194,34 @@ def main(args):
         df.to_csv(ingestDir+outputFile, index=False, header=False)
         logger.info('Finished processing source station meta data for file '+inputFilename+' with model run ID '+modelRunID+'.')
 
-# Run main function takes ingestDir, and outputFile as input.
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
+    ''' Takes argparse inputs and passes theme to the main function
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputFilename: string
+                The name of the input file
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            timeMark: datatime
+                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            variableType:
+                Type of variable (e.g., water_level)
+            csvURL:
+                URL to SQL function that queries db and returns CSV file of data
+            dataDateTime:
+                Date and time that represents the first date time in the input data file.
+        Returns
+            None
+    '''
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
@@ -147,8 +236,6 @@ if __name__ == "__main__":
     parser.add_argument("--variableType", help="Input source variable name", action="store", dest="variableType", required=True)
     parser.add_argument("--csvURL", help="Input URL to get CSV output file", action="store", dest="csvURL", required=True)
     parser.add_argument("--dataDateTime", help="Data date time from input harvest file", action="store", dest="dataDateTime", required=True)
-
-    # [--harvestDir,--ingestDir,--inputDataSource,--inputSourceName,--inputSourceArchive,--inputFilename,--modelRunID,--timeMark,--variableType,--csvURL,--dataDateTime]
 
     # Parse input arguments
     args = parser.parse_args()

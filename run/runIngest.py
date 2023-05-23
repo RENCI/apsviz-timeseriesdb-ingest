@@ -13,9 +13,15 @@ import pandas as pd
 import getDashboardMeta as gdm
 from loguru import logger
 
-# This function is used by the runIngestSource() function to query the drf_source_meta table, in the
-# database, and get argparse input for those function
 def getSourceMeta(dataType):
+    ''' Returns DataFrame containing source meta-data queried from the drf_source_meta table. 
+        Parameters
+            dataType: string
+                Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC.
+        Returns
+            DataFrame
+    '''
+
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -44,9 +50,15 @@ def getSourceMeta(dataType):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function take model run ID as input and outputs a DataFrame containing variables from the drf_apsviz_station_file_meta table
-# that are associated with the model run ID.
 def getApsVizStationInfo(modelRunID):
+    ''' Returns DataFrame containing variables from the drf_apsviz_station_file_meta table. It takes a model run ID as input.
+        Parameters
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db.
+        Returns
+            DataFrame
+    '''         
+
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -77,16 +89,27 @@ def getApsVizStationInfo(modelRunID):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-
-# This function runs createHarvestDataFileMeta.py, which creates harvest meta data files, that are ingested into the drf_harvest_data_file_meta table, 
-# in the database, by running ingestTasks.py using --inputTask ingestHarvestDataFileMeta.
 def runHarvestFile(harvestDir, ingestDir, modelRunID):
+    ''' This function runs createHarvestDataFileMeta.py, which creates harvest meta data files, that are ingested into the 
+        drf_harvest_data_file_meta table, in the database, by running ingestTasks.py using --inputTask ingestHarvestDataFileMeta.
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files. Used by the ingestHarvestDataFileMeta, and ingestHarvestDataFileMeta tasks.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db.
+        Returns
+            None, but it create harvest meta data files, that are then ingested into the drf_harvest_data_file_meta table.
+    '''
+
     if modelRunID != None:
         # Sources from drf_source_meta will not be used in this run
         logger.info('Process data for ADCIRC model run: '+modelRunID)
 
         # Get input file name, grid, timemark, and stormtrack
-        inputPathFileGrid = gdm.getInputFile(harvestDir,ingestDir,modelRunID)
+        inputPathFileGrid = gdm.getInputFileName(harvestDir,modelRunID)
         inputFile = inputPathFileGrid[0].split('/')[-1]
         grid = inputPathFileGrid[1]
         advisory = inputPathFileGrid[2]
@@ -123,7 +146,8 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
 
         # Check to see if source exists
         dfcheck = gdm.checkSourceMeta(filename_prefix)
-    
+   
+        # Check if dfcheck is empty. If it is a new source is added to the drf_source_meta table ,and then drf_gauge_source table. 
         if dfcheck.empty:
             # Log results
             logger.info('The following source does not exist in the drf_source_meta table:\n '+
@@ -132,7 +156,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             program_list = []
             program_list.append(['python','ingestTasks.py','--inputDataSource',data_source,'--inputSourceName',source_name,'--inputSourceArchive',
                                  source_archive,'--inputSourceVariable',source_variable,'--inputFilenamePrefix',filename_prefix,'--inputLocationType',
-                                 location_type,'--inputDataType','model','--inputUnits',units,'--inputTask','ingestSourceMeta'])
+                                 location_type,'--dataType','model','--inputUnits',units,'--inputTask','ingestSourceMeta'])
             program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',data_source,'--inputSourceName',
                                  source_name,'--inputSourceArchive',source_archive,'--inputUnits',units,'--inputLocationType',location_type])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
@@ -145,7 +169,6 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             if modeltype == 'FORECAST':
                 logger.info('Model type is FORECAST, so meta file, containing station location harvest file meta has to be ingested')
                 apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
-                # NEED TO CHECK FORMATING OF timemark
                 program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
                                      data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
                                      apsviz_station_meta_filename,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00','--variableType',source_variable,
@@ -214,9 +237,19 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             output = subprocess.run(program, shell=False, check=True)
             logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be ingested into the 
-# database using the runDataIngest function. 
 def runDataCreate(ingestDir, dataType):
+    ''' This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be 
+        ingested into the database using the runDataIngest function.
+        Parameters
+            dataType: string
+                Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+        Returns
+            None, but it runs createIngestData.py, which returns a CSV file
+    '''
+
     # get source meta
     df = getSourceMeta(dataType)
 
@@ -231,8 +264,18 @@ def runDataCreate(ingestDir, dataType):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function runs ingestTasks.py with --inputTask ingestData, ingest gauge data into the drf_gauge_data table, in the database.
 def runDataIngest(ingestDir, dataType):
+    ''' This function runs ingestTasks.py with --inputTask ingestData, ingest gauge data into the drf_gauge_data table, in the database. 
+        Parameters
+            dataType: string
+                Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.   
+        Returns
+            None, but it runs ingestTask.py, which ingest data into the drf_gauge_station table.
+    '''
+
     # get source meta
     df = getSourceMeta(dataType)
 
@@ -247,9 +290,20 @@ def runDataIngest(ingestDir, dataType):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function creates and ingests the apsViz station data from the adcirc meta files, adding a timemark, model_run_id, variable type, 
-# and csv URL. It gets this information from the from the drf_apsviz_station_file_meta table, by running the getApsVizStationInfo() function
 def runApsVizStationCreateIngest(ingestDir, modelRunID):
+    ''' This function creates and ingests the apsViz station data from the adcirc meta files, adding a timemark, model_run_id, 
+        variable type, and csv URL. It gets this information from the from the drf_apsviz_station_file_meta table, by running the 
+        getApsVizStationInfo() function
+        Parameters 
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. 
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db. 
+        Returns
+            None, but it runs createIngestApsVizStationData.py, which outputs a CSV file, and then it runs ingestTask.py
+            which ingest the CSV files into the drf_apsviz_station table.
+    ''' 
+
     logger.info('Create apsViz station file data, for model run ID '+modelRunID+', to be ingested into the apsviz_station table ')
     df = getApsVizStationInfo(modelRunID) 
 
@@ -281,8 +335,24 @@ def runApsVizStationCreateIngest(ingestDir, modelRunID):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This functions creates and ingest the harvest files, and data in sequence
 def runSequenceIngest(harvestDir, ingestDir, dataType, modelRunID):
+    ''' Runs the runHarvestFile(), runDataCreate(), and runDataIngest() functions in sequence. If modelRunID has a value
+        it also runs the runApsVizStationCreateIngest() function.
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files. Used by the ingestHarvestDataFileMeta, and ingestHarvestDataFileMeta tasks.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+            dataType: string
+                Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db. Used by ingestHarvestDataFileMeta,
+                runApsVizStationCreateIngest, and sequenceIngest.
+        Returns
+            None, but the functions it calls return values, described above.
+    '''
+
     runHarvestFile(harvestDir, ingestDir, modelRunID)
     runDataCreate(ingestDir, dataType)
     runDataIngest(ingestDir, dataType)
@@ -293,9 +363,31 @@ def runSequenceIngest(harvestDir, ingestDir, dataType, modelRunID):
     else:
        logger.info('Data type '+dataType+' does not need to have apsViz stations ingested')
 
-# Main program function takes args as input, which contains the harvestDir, ingestDir, and inputTask variables
 @logger.catch
 def main(args):
+    ''' Main program function takes args as input, starts logger, and runs specified task.
+        Parameters
+            args: dictionary
+                contains the parameters listed below.
+            inputTask: string
+                The type of task (ingestHarvestDataFileMeta, DataCreate, DataIngest, runApsVizStationCreateIngest,
+                SequenceIngest) to be perfomed. The type of inputTaks can change what other types of inputs runInget.py
+                requires. Below is a list of all inputs, with associated tasks.
+            harvestDir: string
+                Directory path to harvest data files. Used by the ingestHarvestDataFileMeta, and ingestHarvestDataFileMeta tasks.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db. Used by ingestHarvestDataFileMeta,
+                runApsVizStationCreateIngest, and sequenceIngest.
+            dataType: string
+                Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC. Used by
+                DataCreate, DataIngest, and SequenceIngest.
+        Returns
+            None
+    '''         
+
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
@@ -350,11 +442,32 @@ def main(args):
 
 # Run main function 
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
+    ''' Takes argparse inputs and passes theme to the main function
+        Parameters
+            inputTask: string
+                The type of task (ingestHarvestDataFileMeta, DataCreate, DataIngest, runApsVizStationCreateIngest,
+                SequenceIngest) to be perfomed. The type of inputTask can change what other types of inputs runInget.py
+                requires. Below is a list of all inputs, with associated tasks. 
+            harvestDir: string
+                Directory path to harvest data files. Used by the ingestHarvestDataFileMeta, and ingestHarvestDataFileMeta tasks.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate, 
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db. Used by ingestHarvestDataFileMeta,
+                runApsVizStationCreateIngest, and sequenceIngest. 
+            dataType: string 
+                Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC. Used by
+                DataCreate, DataIngest, and SequenceIngest.
+        Returns
+            None
+    '''         
+
     parser = argparse.ArgumentParser()
 
     # Non optional argument
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestHarvestDataFileMeta','DataCreate','DataIngest','runApsVizStationCreateIngest','SequenceIngest'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestHarvestDataFileMeta',
+                        'DataCreate','DataIngest','runApsVizStationCreateIngest','SequenceIngest'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]
@@ -366,7 +479,7 @@ if __name__ == "__main__":
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'datacreate':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
-        parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)
+        parser.add_argument("--dataType", "--datatype", help="Data type to be processed, model or obs", action="store", dest="dataType", required=True)
     elif args.inputTask.lower() == 'dataingest':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)

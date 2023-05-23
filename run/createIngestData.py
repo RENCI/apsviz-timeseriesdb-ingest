@@ -12,9 +12,19 @@ import pandas as pd
 import numpy as np
 from loguru import logger
 
-# This function takes as input a data source, source name and source archive, and uses them to query the drf_harvest_data_file_met table, creating a list
-# of filenames. The list is converted to a DataFrame and returned.
 def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
+    ''' Returns DataFrame containing a list of filenames, from the table drf_havest_data_file_meta, that have not been ingested yet.
+        Parameters
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+        Returns
+            DataFrame
+    '''
+
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -51,9 +61,21 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes as input a data source, source name, source archive and a list of station_id(s), and returns source_id(s) for    
-# model data from the drf_gauge_source table in the apsviz_gauges database. 
 def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list):
+    ''' Returns DataFrame containing source_id(s) for model data from the drf_gauge_source table in the apsviz_gauges database.
+        Parameters
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            station_list: list
+                List of stations to get source ids for
+        Returns
+            DataFrame
+    '''
+
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -87,12 +109,29 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_li
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function takes as input the harvest directory path, ingest directory path, filename, data source, source name, and source archive. 
-# It returns a csv file that containes gauge data. The function uses the getSourceID function above to get a list of existing source 
-# ids that it includes in the gauge data to enable joining the gauge data (drf_gauge_data) table with  gauge source (drf_gauge_source)
-# table. The function adds a timemark, that it gets from the input file name. The timemark values can be used to uniquely query an 
 # ADCIRC forecast model run.
 def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive):
+    ''' Returns CSV file that containes gauge data. The function uses the getSourceID function above to get a list of existing source
+        ids that it includes in the gauge data to enable joining the gauge data (drf_gauge_data) table with  gauge source (drf_gauge_source)
+        table. The function adds a timemark, that it gets from the input file name. The timemark values can be used to uniquely query an
+        ADCIRC forecast model run.
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputFile: string
+                Input file name
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+        Returns
+            CSV file 
+    '''
+
     # Read input file, convert column name to lower case, rename station column to station_name, convert its data 
     # type to string, and add timemark and source_id columns
     df = pd.read_csv(harvestDir+inputFile)
@@ -134,9 +173,21 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     # Write dataframe to csv file
     df.to_csv(ingestDir+'data_copy_'+inputFile, index=False, header=False)
 
-# This function takes as input the ingest directory path, data source, source name, and source archive It 
-# generates and list of input filenames, and uses them to run the addMeta function above.
 def processData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
+    ''' Runs getInputFiles, and then addMeta 
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+        Returns
+            None, runs getInputFiles(), and then addMeta() functions
+    '''
+
     dfDirFiles = getInputFiles(inputDataSource, inputSourceName, inputSourceArchive) 
  
     for index, row in dfDirFiles.iterrows():
@@ -145,9 +196,23 @@ def processData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive)
 
         addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive)
 
-# Main program function takes args as input, which contains the  ingestDir, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
 def main(args):
+    ''' Main program function takes args as input, starts logger, runs processData, 
+        Parameters
+            args: dictionary
+                contains the parameters listed below
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+        Returns
+            None, runs processData() function
+    '''
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
@@ -167,7 +232,20 @@ def main(args):
 
 # Run main function takes ingestDir, inputDataSource, inputSourceName, inputSourceArchiv as input.
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
+    ''' Takes argparse inputs and passes theme to the main function
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+        Returns
+            None
+    '''         
+
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)

@@ -11,9 +11,18 @@ import subprocess
 import pandas as pd
 from loguru import logger
 
-# This function moves the station data files in /nru/home/stations to the directory /data/DataIngesting/DAILY_INGEST/, and then ingests them 
-# into the drf_gauge_station table. 
 def runIngestStations(ingestDir):
+    ''' This function moves the station data files in /nru/home/stations to the directory /data/ast-run-ingester/, 
+        and then ingests them into the drf_gauge_station table.
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+        Returns
+            None, but it runs ingestTasks.py, which ingest station data from CSV files in /home/nru/stations into the 
+            drf_gauge_station table.
+    '''
+
     # Move station meta files to the /data/DataIngesting/DAILY_INGEST/
     logger.info('Copy stations directory to '+ingestDir)
     shutil.copytree('/home/nru/stations', ingestDir+'stations', dirs_exist_ok=True)
@@ -30,13 +39,23 @@ def runIngestStations(ingestDir):
 # This programs reads the source meta information from source_meta.csv, and ingests it into the drf_source_meta table. The drf_source_meta
 # table is used by runIngestSourceData(), by runing getSourceMeta(), to get input variables for createIngestSourceMeta.py
 def runIngestSourceMeta():
+    ''' This programs reads the source meta information from source_meta.csv, and ingests it into the drf_source_meta table. 
+        The drf_source_meta table is used by runIngestSourceData(), by runing getSourceMeta(), to get input variables for 
+        createIngestSourceMeta.py.
+        Parameters
+            None
+        Returns
+            None, but it runs ingestTasks.py, which ingest source meta data, from the CSV file /home/nru/source_meta.csv into the
+            drf_source_meta table.
+    '''
+
     # Create list of program commands for ingesting source meta
     df = pd.read_csv('/home/nru/source_meta.csv', index_col=False)
 
     program_list = []
     # data_source,source_name,source_archive,location_type
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--inputDataType',row['data_type'],'--inputUnits',row['units'],'--inputTask','ingestSourceMeta'])
+        program_list.append(['python','ingestTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--dataType',row['data_type'],'--inputUnits',row['units'],'--inputTask','ingestSourceMeta'])
 
     # Run programe list using subprocess
     for program in program_list:
@@ -44,9 +63,14 @@ def runIngestSourceMeta():
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function is used by the runIngestSourceData() function to query the drf_source_meta table, in the 
-# database, and get argparse input for those function
 def getSourceMeta():
+    ''' Returns a DataFrame containing source meta-data from the drf_source_meta table.
+        Parameters
+            None
+        Returns
+            DataFrame
+    '''
+
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -74,9 +98,18 @@ def getSourceMeta():
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# This function runs createIngestSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source table, 
-# in the database, by running ingestTasks.py using --inputTask ingestSourceData.
 def runIngestSourceData(ingestDir):
+    ''' This function runs createIngestSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source 
+        table, in the database, by running ingestTasks.py using --inputTask ingestSourceData.
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+        Returns
+            None, but it runs createIngestSourceMeta.py, which creates CSV files containing source meta-data, and then runs 
+            ingestTasks.py which ingest the CSV file into the drf_gauge_source table.
+    '''
+
     # get source meta
     df = getSourceMeta()
 
@@ -93,9 +126,15 @@ def runIngestSourceData(ingestDir):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This function runs ingestTasks.py with --inputTask createView, creating a view (drf_gauge_station_source_data) that combines the drf_gauge_station, 
-# drf_gauge_source, and drf_gauge_data tables.
 def runCreateView():
+    ''' This function runs ingestTasks.py with --inputTask createView, creating a view (drf_gauge_station_source_data) that combines 
+        the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables.
+        Parameters
+            None
+        Returns
+            None
+    ''' 
+
     # Create list of program commands
     program_list = [['python','ingestTasks.py','--inputTask','createView']]
  
@@ -104,16 +143,37 @@ def runCreateView():
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-# This functions ingest the stations, creates and ingest the source in sequence
 def runSequenceIngest(ingestDir):
+    ''' Runs the runCreateView(), runIngestStations(), runIngestSourceMetat(), and runIngestSourceData() functions in sequence. 
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+        Returns
+            None, but the functions it calls return values, described above.
+    '''
+
     runCreateView()
     runIngestStations(ingestDir)
     runIngestSourceMeta()
     runIngestSourceData(ingestDir)
 
-# Main program function takes args as input, which contains the ingestDir, inputTask as variables.
 @logger.catch
 def main(args):
+    ''' Main program function takes args as input, starts logger, and runs specified task.
+        Parameters
+            args: dictionary
+                contains the parameters listed below
+            inputTask: string
+                The type of task ('IngestStations','ingestSourceMeta','ingestSourceData','createView', 'SequenceIngest'
+                SequenceIngest) to be perfomed.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
+                DataIngest, runApsVizStationCreateIngest, SequenceIngest.
+        Returns
+            None
+    '''
+
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
@@ -151,11 +211,23 @@ def main(args):
 
 # Run main function 
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
+    ''' Takes argparse inputs and passes theme to the main function
+        Parameters
+            inputTask: string
+                The type of task ('IngestStations','ingestSourceMeta','ingestSourceData','createView', 'SequenceIngest'
+                SequenceIngest) to be perfomed. The type of inputTaks can change what other types of inputs prepare4Ingest.py
+                requires. Below is a list of all inputs, with associated tasks.
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. Used by ingestStations, ingestSourceData, and sequenceIngest.
+        Returns
+            None
+    '''         
+
     parser = argparse.ArgumentParser()
 
     # Non optional argument, input task 
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','ingestSourceMeta','ingestSourceData','createView', 'SequenceIngest'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','ingestSourceMeta',
+                        'ingestSourceData','createView', 'SequenceIngest'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]

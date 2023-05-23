@@ -9,9 +9,16 @@ import os
 import pandas as pd
 from loguru import logger
 
-# This function takes a gauge location type (COASTAL, TIDAL or RIVERS), and uses it to query the drf_gauge_station table, 
-# and return a list of station id(s), and station names.
 def getStationID(locationType):
+    ''' Returns a DataFrame containing a list of station ids and station names, based on the location type (COASTAL, TIDAL or RIVERS), 
+        from table drf_gauge_station.
+        Parameters
+            locationType: string
+                gauge location type (COASTAL, TIDAL, or RIVERS) 
+        Returns
+            DataFrame
+    '''
+
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
@@ -42,10 +49,27 @@ def getStationID(locationType):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-# NEED TO CHECK THIS FUNCTION
-# This function takes a input a directory path and outputFile, and used them to read the input file
-# and add station_id(s) that are extracted from the drf_gauge_station table in theapsviz_gauges database.
 def addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputUnits, inputLocationType):
+    ''' Returns a CSV file that containes source information specific to station IDs that have been extracted from the drf_gauge_station table.
+        The function adds additional source information (data source, source name, source archive, data units) to the station IDs. This 
+        information is latter ingested into table drf_gauge_source by running the ingestSourceData() function in ingetTask.py
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputUnits: string
+                Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
+            inputLocationType: string
+                gauge location type (COASTAL, TIDAL, or RIVERS)
+        Returns
+            CSV file
+    '''
+
     df = getStationID(inputLocationType)
 
     df['data_source'] = inputDataSource
@@ -67,6 +91,29 @@ def addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inp
 # Main program function takes args as input, which contains the ingestDir, and outputFile values.
 @logger.catch
 def main(args):
+    ''' Main program function takes args as input, starts logger, runs addMeta(), which writes output to CSV file.
+        The CSV file will be ingest into table drf_gauge_source when ingestSourceData() function is run in ingetTask.py
+        Parameters
+            args: dictionary
+                contains the parameters listed below
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputUnits: string
+                Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
+            inputLocationType: string
+                gauge location type (COASTAL, TIDAL, or RIVERS)
+        Returns
+            CSV file
+    '''
+
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
@@ -90,7 +137,24 @@ def main(args):
 
 # Run main function takes ingestDir, and outputFile as input.
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
+    ''' Takes argparse inputs and passes theme to the main function
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputUnits: string
+                Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
+            inputLocationType: string
+                Gauge location type (COASTAL, TIDAL, or RIVERS)
+        Returns
+            None
+    '''         
+
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)

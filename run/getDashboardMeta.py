@@ -12,11 +12,17 @@ logger.add(log_path+'getDashboardMeta.log', level='DEBUG')
 logger.add(sys.stdout, level="DEBUG")
 logger.add(sys.stderr, level="ERROR")
 
-# Function that queries the ASGS_Mon_config_item table, in the asgs_dashboard database,
-# using the public.get_adcirc_filename_variables SQL function with modelRunID as input, 
-# and returns a DataFrame with values for track_raw_fst, downloadurl, ADCIRCgrid, RunStartTime,
-# and advisory
 def getADCIRCFileNameVariables(modelRunID):
+    ''' Returns DataFrame containing a list of variables (track_raw_fst, downloadurl, ADCIRCgrid, RunStartTime, advisory), 
+        extracted from table ASGS_Mon_config_item, in the asgs_dashboard DB, using the public.get_adcirc_filename_variables 
+        SQL function with modelRunID as input. These variables are used to construct filenames.
+        Parameters
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+        Returns
+            DataFrame
+    '''
+
     try:
         # Create connection to database, set autocommit, and get cursor
         with psycopg.connect(dbname=os.environ['SQL_ASGS_DATABASE'], user=os.environ['SQL_ASGS_USER'], 
@@ -35,7 +41,6 @@ def getADCIRCFileNameVariables(modelRunID):
             # convert query output to Pandas dataframe
             #df = pd.DataFrame(cur.fetchall(), columns=['track_raw_fst'])
             df = pd.DataFrame.from_dict(cur.fetchall()[0], orient='columns')
-            #values = cur.fetchall()
 
             # Close cursor and database connection
             cur.close()
@@ -43,18 +48,25 @@ def getADCIRCFileNameVariables(modelRunID):
 
             # Return Pandas dataframe
             return(df)
-            #return(values)
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         print(error)
 
-# Function that takes as input a HarvestDir, ingestDir and modelRunID, 
-# and uses the modelRunID to query the ASGS_Mon_config_item table in the 
-# asgs_dashboard database to get variables that are then used to create 
-# a ADCIRC timeseries filename, that is retuned along with a grid value
-# timemark, and stormTrack
-def getInputFile(harvestDir,ingestDir,modelRunID ):
+def getInputFileName(harvestDir,modelRunID):
+    ''' Returns a file name, with directory path, that will be used to search for the file using glob. It uses 
+        the getADCIRCFileNameVariables(modelRunID) function to get a list of variables, by using a modelRunID 
+        to query the ASGS_Mon_config_item table in the  asgs_dashboard database. the variables are then used to 
+        construct a filename. 
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+        Returns
+            File name, with directory path.
+    '''
+
     # Get ADCIRC filename variables
     df = getADCIRCFileNameVariables(modelRunID)
     
@@ -118,9 +130,17 @@ def getInputFile(harvestDir,ingestDir,modelRunID ):
         else:
             return(modelRunID)
 
-# This function is used by the runIngestSource() function to query the drf_source_meta table, in the
-# database, and get argparse input for those function
 def checkSourceMeta(filename_prefix):
+    ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_meta, using a filename_prefix. This function
+        is used by the runHarvestFile() function, in runIngest.py, to see if a source exist. This is only done for ADCIRC source. If
+        the source does not exist than runHarvestFile() has a method for adding one. 
+        Parameters
+            inputFilenamePrefix: string
+                Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
+        Returns
+            DataFrame 
+    '''
+
     try:
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], 

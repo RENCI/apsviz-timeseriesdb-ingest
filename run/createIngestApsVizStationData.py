@@ -10,12 +10,30 @@ from shapely.geometry import Point
 from shapely import wkb, wkt
 from loguru import logger
 
-# This function takes as input the harvest directory path, ingest directory path, filename, data source, source name, and source archive.
-# It returns a csv file that containes station location data for the drf_apsviz_station table. The function adds a timemark, that it gets
-# from the input file name. The timemark values can be used to uniquely query an ADCIRC forecast model run. It also adds a model_run_id,
-# variable_type, and csv_url. The model_run_id specifies what model run the data is from, the variable type spcifies the variable (i.e.,
-# water_level), and the csvurl is the URL used to access that data from the apsViz interface.
 def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, modelRunID, timeMark, variableType, csvURL):
+    ''' Returns a csv file that containes station location data for the drf_apsviz_station table. The function adds a timemark, that it gets
+        from the input file name. The timemark values can be used to uniquely query an ADCIRC forecast model run. It also adds a model_run_id,
+        variable_type, and csv_url. The model_run_id specifies what model run the data is from, the variable type spcifies the variable (i.e.,
+        water_level), and the csvurl is the URL used to access that data from the apsViz interface.
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputFilename: string
+                The name of the input file
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            timeMark: datatime
+                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            variableType:
+                Type of variable (e.g., water_level)
+            csvURL:
+                URL to SQL function that queries db and returns CSV file of data
+        Returns
+            CSV file
+    '''
+
     # Create station meta filename from the input file name.
     apsviz_station_meta_filename = 'adcirc_'+"_".join(inputFilename.split('_')[1:])
 
@@ -52,6 +70,29 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, modelRunID, t
 # Main program function takes args as input, which contains the  ingestDir, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
 def main(args):
+    ''' Main program function takes args as input, starts logger, runs createFileList, and writes output to CSV file.
+        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runIngest.py
+        Parameters
+            args: dictionary 
+                contains the parameters listed below
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputFilename: string
+                The name of the input file
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            timeMark: datatime
+                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            variableType:
+                Type of variable (e.g., water_level)
+            csvURL:
+                URL to SQL function that queries db and returns CSV file of data
+        Returns
+            CSV file
+    '''
+
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
@@ -76,7 +117,26 @@ def main(args):
  
 # Run main function takes harvestDir, ingestDir, inputFilename, and timeMark as input.
 if __name__ == "__main__": 
-    """ This is executed when run from the command line """
+    ''' Takes argparse inputs and passes theme to the main function
+        Parameters
+            harvestDir: string
+                Directory path to harvest data files
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files
+            inputFilename: string
+                The name of the input file
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            timeMark: datatime
+                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            variableType:
+                Type of variable (e.g., water_level)
+            csvURL:
+                URL to SQL function that queries db and returns CSV file of data
+        Returns
+            None
+    '''
+
     parser = argparse.ArgumentParser()
 
     #'--modelRunID',row['model_run_id'],'--timeMark',row['timemark'],'--variableType', row['variable_type'],'--csvURL',row['csvurl']]
