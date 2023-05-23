@@ -1,27 +1,39 @@
 # apsviz-timeseriesdb-ingest 
 The software, in this repo, is used to ingest observation station data (tidal and river gauges, buoy) from NOAA, NCEM, and NDBC, as well as ADCIRC model data georeferenced to those observation stations. 
 
-To begin ingesting data, you first need to install the apsviz-timeseriesdb repo which can bet downloaded from:  
+The Python scripts used to process the data are:
 
-https://github.com/RENCI/apsviz-timeseriesdb  
+* prepare4Ingest.py - This script manages the ingestion of station (drf_gauge_station) and source data (drf_gauge_source).
+* createIngestSourceMeta.py - This script creates the source meta data.
+* runIngest.py - This script manages the ingestion of station observation data and model data.
+* ingestTasks.py - This script has functions that interact with the DB.
+* createHarvestDataFileMeta.py - This script creates meta-data about the harvest data files to be ingested. This meta-data is used to manage the ingest process.
+* createIngestData.py - This script creates the data files, from the original harvest data files, that are ingested into the drf_gauge_data table. It adds a source ID, and timemark to the original data.
+* createApsVizStationFileMeta.py - This script creates meta-data about the harvest meta files to be ingested. This meta-data is used to manage the ingest process.
+* createIngestApsVizStationData.py - This script creates the ApsViz Station data, from the harvest meta files, and ingest that data.
+* getDashboardMeta.py - This script interacts with variables from the ASGS_Mon_config_item table, in the asgs_dashboard DB, that are used to add ADCIRC model source automatically.
 
-Follow the installation instructions for that repo. It creates and PostgreSQL database, that serves data using a Django Rest Framework (DRF) app. 
+# Install apsviz-timeseriesdb-ingest
+
+To begin ingesting data, you first need to install the apsviz-timeseriesdb repo which can bet downloaded from:
+
+https://github.com/RENCI/apsviz-timeseriesdb
+
+Follow the installation instructions for that repo. It creates and PostgreSQL database, that serves data using a Django Rest Framework (DRF) app.
 
 The gauge data that is being ingested can be accessed on Sterling using k8s the directory path is:
 
 /data/ast-run-harvester/
 
-It was generated using the software in the ADCIRC Support Tools (AST) repo, which can be downloaded from:  
+It was generated using the software in the ADCIRC Support Tools (AST) repo, which can be downloaded from:
 
 https://github.com/RENCI/AST
 
-## Install apsviz-timeseriesdb-ingest
-
-### Deploying To The Sterling Kubernetes Cluster
+## Deploying To The Sterling Kubernetes Cluster
 
 Deploying on the Sterling k8s  cluster is done using GitHub Actions which pushes the docker image to the RENCI Harbor docker repository. A YAML file, with Kubernetes configurations, is then used to deploy as a pod on Sterling.
 
-### Installing on you local machine
+## Installing on you local machine
 
 To install apsviz-timeseriesdb-ingest you first need to clone it:
 
@@ -98,25 +110,31 @@ On Sterling, using k8s, check if this directory exits:
 
 /data/ast-run-harvester/
  
-## Ingest Data into Database
+# Ingest Data into Database
 
-### Ingest The Short Way
+## Ingest The Short Way
 
-#### Prepare Ingest
+### Prepare Ingest
 
 To ingest the station data and source data run the command below in the /home/nru directory:
 
 python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
 
-#### Ingest data
+### Ingest data
 
 To ingest the gauge data run the command below in the /home/nru directory:
 
 python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask SequenceIngest
 
-### Ingest The Long Way
+To ingest ADCIRC model data, for a specific modelRunID, run the command below:
 
-#### Create View
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --dataType model --modelRunID xxxx-dddddddddd-mmmmmmmmmmm
+
+where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-namforecast shows. 
+
+## Ingest The Long Way
+
+### Create View
 
 To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
 
@@ -128,7 +146,7 @@ http://xxxx.xxxx.xxx/api/gauge_station_source_data/
 
 where xxxx.xxxx.xxx is your server.
 
-#### Ingest Station Data 
+### Ingest Station Data 
 
 If running the commands below on Sterling, using k8s, replace the directory paths with the /data/ast-run-harvester/, and /data/ast-run-ingester/ directory paths, where appropriate.
 
@@ -138,7 +156,7 @@ python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask IngestS
 
 This will ingest the station data in the stations directory into the drf_gauge_station table in the database.
 
-#### Create and Ingest Source Data
+### Create and Ingest Source Data
 
 To ingest the source data, first ingest the source meta using the following command:
 
@@ -152,7 +170,7 @@ python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask ingestS
 
 This will create Source data files in /data/ast-run-ingester/ and then ingest them into the drf_gauge_source table in the database.
 
-#### Create and Ingest Harvest File Meta Data
+### Create and Ingest Harvest File Meta Data
 
 To create and ingest the harvest file meta data, for observation data, run the following command:
 
@@ -164,11 +182,19 @@ To create and ingest the harvest file meta data, for ADCIRC model data, run the 
 
 python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID xxxx-dddddddddd-mmmmmmmmmmm 
 
-where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this examle 4358-2023042312-namforecast shows.
+where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-namforecast shows.
 
-#### Create and Ingest Data Files
+### Create and Ingest ApsViz Station Data:
 
-##### To create and ingest the observation data files first run the command:
+The ApsViz station data is used by the ApsViz interface to display station that have data for a specific model run, so this station data is not the same station data in the drf_gauge_station table. The ApsViz station data is ingested into the drf_apsviz_station table, which contains additional columns, including the modelRunID and timemark, which the ApsViz interface uses. To create this data from the original harvest meta files, and ingest it into the drf_apsviz_station table run the following command: 
+
+python runIngest.py --ingestDir /data/ast-run-ingester/ --modelRunID xxxx-dddddddddd-mmmmmmmmmmm --inputTask runApsVizStationCreateIngest
+
+Where xxxx-dddddddddd-mmmmmmmmmmm is the same as described above.
+
+### Create and Ingest Data Files
+
+#### To create and ingest the observation data files first run the command:
 
 python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask DataCreate
 
@@ -180,7 +206,7 @@ python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTa
 
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
 
-##### To create and ingest the ADCIRC model data files first run the command:
+#### To create and ingest the ADCIRC model data files first run the command:
 
 python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType model --inputTask DataCreate
 
@@ -192,7 +218,7 @@ python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType model --input
 
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database.
 
-#### Add New Source
+### Add New Source
 
 To add a new source, first create the source meta, and ingest it into the drf_source_meta table by running the following command:
 
