@@ -319,7 +319,7 @@ def ingestApsVizStationFileMeta(ingestDir, inputFilename):
 
             # Run ingest query
             with open(ingestDir+inputFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,model_run_id,timemark,variable_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,variable_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
@@ -465,7 +465,7 @@ def ingestApsVizStationData(ingestDir, inputFilename):
 
             # Run ingest query
             with open(ingestDir+ingestFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,name,units,tz,owner,state,county,site,node,geom,timemark,model_run_id,variable_type,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,name,units,tz,owner,state,county,site,node,geom,timemark,model_run_id,data_source,grid_name,variable_type,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 

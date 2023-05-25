@@ -10,7 +10,7 @@ from shapely.geometry import Point
 from shapely import wkb, wkt
 from loguru import logger
 
-def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, modelRunID, timeMark, variableType, csvURL):
+def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, gridName, variableType, csvURL):
     ''' Returns a csv file that containes station location data for the drf_apsviz_station table. The function adds a timemark, that it gets
         from the input file name. The timemark values can be used to uniquely query an ADCIRC forecast model run. It also adds a model_run_id,
         variable_type, and csv_url. The model_run_id specifies what model run the data is from, the variable type spcifies the variable (i.e.,
@@ -22,10 +22,15 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, modelRunID, t
                 Directory path to ingest data files, created from the harvest files
             inputFilename: string
                 The name of the input file
+            timeMark: datatime 
+                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
             modelRunID: string
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
-            timeMark: datatime
-                Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
+                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+            gridName: string
+                Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...)
             variableType:
                 Type of variable (e.g., water_level)
             csvURL:
@@ -46,11 +51,14 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, modelRunID, t
     df.insert(0, 'geom', '')
     df.insert(0,'timemark', '')
     df.insert(0,'model_run_id', '')
+    df.insert(0,'data_source', '')
+    df.insert(0,'grid_name', '')
     df.insert(0,'variable_type', '')
     df.insert(0,'csvurl', '')
 
     # Reorder columns
-    df = df.loc[:, ["station_name","lat","lon","name","units","tz","owner","state","county","site","node","geom","timemark","model_run_id","variable_type","csvurl"]]
+    df = df.loc[:, ["station_name","lat","lon","name","units","tz","owner","state","county","site","node","geom","timemark","model_run_id","data_source",
+                    "grid_name","variable_type","csvurl"]]
    
     # Convert latitude and longitude to WKB geometry 
     coordinates = [Point(xy) for xy in zip(df.lon, df.lat)]
@@ -62,6 +70,8 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, modelRunID, t
     # Add model_run_id, timemark, variable_type, and csvurl values to specifies columns in DataFrame
     df['timemark'] = timeMark
     df['model_run_id'] = modelRunID
+    df['data_source'] = inputDataSource
+    df['grid_name'] = gridName
     df['variable_type'] = variableType
     df['csvurl'] = csvURL
 
@@ -81,10 +91,15 @@ def main(args):
                 Directory path to ingest data files, created from the harvest files
             inputFilename: string
                 The name of the input file
-            modelRunID: string
-                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
+                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+            gridName: string 
+                Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...)
             variableType:
                 Type of variable (e.g., water_level)
             csvURL:
@@ -104,14 +119,16 @@ def main(args):
     harvestDir = os.path.join(args.harvestDir, '')
     ingestDir = os.path.join(args.ingestDir, '')
     inputFilename = args.inputFilename 
-    modelRunID = args.modelRunID
     timeMark = args.timeMark
+    modelRunID = args.modelRunID
+    inputDataSource = args.inputDataSource
+    gridName = args.gridName
     variableType = args.variableType
     csvURL = args.csvURL
         
     logger.info('Start processing data from data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
                 modelRunID+', timemark '+timeMark+', variable type '+variableType+', and csvURL '+csvURL+'.')
-    addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, modelRunID, timeMark, variableType, csvURL)
+    addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, gridName, variableType, csvURL)
     logger.info('Finished processing data from data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
                 modelRunID+', timemark '+timeMark+', variable type '+variableType+', and csvURL '+csvURL+'.')
  
@@ -125,11 +142,15 @@ if __name__ == "__main__":
                 Directory path to ingest data files, created from the harvest files
             inputFilename: string
                 The name of the input file
-            modelRunID: string
-                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
-            variableType:
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
+                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+            gridName: string 
+                Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...) variableType:
                 Type of variable (e.g., water_level)
             csvURL:
                 URL to SQL function that queries db and returns CSV file of data
@@ -144,8 +165,10 @@ if __name__ == "__main__":
     parser.add_argument("--harvestDIR", "--harvestDir", help="Input directory path", action="store", dest="harvestDir", required=True)
     parser.add_argument("--ingestDIR", "--ingestDir", help="Output directory path", action="store", dest="ingestDir", required=True)
     parser.add_argument("--inputFilename", help="Input file name containing meta data on apsViz stations", action="store", dest="inputFilename", required=True)
+    parser.add_argument("--timeMark", help="Time model run started", action="store", dest="timeMark", required=True)
     parser.add_argument("--modelRunID", help="Model run ID for model run", action="store", dest="modelRunID", required=True)
-    parser.add_argument("--timeMark", help="Time model run started", action="store", dest="timeMark", required=True)           
+    parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
+    parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)
     parser.add_argument("--variableType", help="Type of variable (i.e., 'water_level')", action="store", dest="variableType", required=True)
     parser.add_argument("--csvURL", help="URL to SQL function that will retrieve a csv file", action="store", dest="csvURL", required=True)
 

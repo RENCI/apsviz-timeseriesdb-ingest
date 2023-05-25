@@ -60,7 +60,7 @@ def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchiv
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,modelRunID,timeMark,variableType,csvURL,dataDateTime):
+def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,gridName,modelRunID,timeMark,variableType,csvURL,dataDateTime):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_apsviz_station_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
@@ -76,6 +76,8 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputFilename: string
                 The name of the input file
+            gridName: string
+                Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...)
             modelRunID: string
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
@@ -97,11 +99,11 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     ingested = False
 
     # Append variables to output list.
-    outputList.append([harvestDir,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,modelRunID,timeMark,variableType,csvURL,ingested]) 
+    outputList.append([harvestDir,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,gridName,modelRunID,timeMark,variableType,csvURL,ingested]) 
 
     # Convert outputList to a DataFrame
     dfnew = pd.DataFrame(outputList, columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archve',
-                                              'model_run_id','timemark','source_variable','csv_url','ingested'])
+                                              'grid_name','model_run_id','timemark','source_variable','csv_url','ingested'])
 
     # Get DataFrame of existing list of files, in the database, that have been ingested.
     dfold = getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID)
@@ -141,6 +143,8 @@ def main(args):
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputFilename: string
                 The name of the input file
+            gridName: string
+                Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...)
             modelRunID: string
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
@@ -169,6 +173,7 @@ def main(args):
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputFilename = args.inputFilename
+    gridName = args.gridName
     modelRunID = args.modelRunID
     timeMark = args.timeMark
     variableType = args.variableType
@@ -179,7 +184,7 @@ def main(args):
 
     # Get DataFrame file list, and time variables by running the createFileList function
     df, first_time, last_time = createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,
-                                               modelRunID,timeMark,variableType,csvURL,dataDateTime)
+                                               gridName,modelRunID,timeMark,variableType,csvURL,dataDateTime)
 
     if pd.isnull(first_time) and pd.isnull(last_time):
         logger.info('No new files for station meta data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
@@ -209,6 +214,8 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputFilename: string
                 The name of the input file
+            gridName: string
+                Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...) 
             modelRunID: string
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
@@ -231,6 +238,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
     parser.add_argument("--inputFilename", help="Input file name", action="store", dest="inputFilename", required=True)
+    parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)
     parser.add_argument("--modelRunID", help="Input model run ID", action="store", dest="modelRunID", required=True)
     parser.add_argument("--timeMark", help="Timemark value for model run ID", action="store", dest="timeMark", required=True)
     parser.add_argument("--variableType", help="Input source variable name", action="store", dest="variableType", required=True)

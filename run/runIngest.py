@@ -70,13 +70,13 @@ def getApsVizStationInfo(modelRunID):
         cur.execute("""BEGIN""")
     
         # Run query
-        cur.execute("""SELECT dir_path, file_name, data_date_time, data_source, source_name, source_archive, model_run_id, timemark, variable_type, csvurl, ingested
+        cur.execute("""SELECT dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,variable_type,csvurl,ingested
                        FROM drf_apsviz_station_file_meta
                        WHERE model_run_id = %(modelrunid)s""", {'modelrunid': modelRunID})
     
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archive','model_run_id','timemark', 
-                                                   'variable_type','csvurl','ingested'])   
+        df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archive','grid_name','model_run_id',
+                                                   'timemark','variable_type','csvurl','ingested']) 
         
         # Close cursor and database connection
         cur.close()
@@ -108,10 +108,10 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         # Sources from drf_source_meta will not be used in this run
         logger.info('Process data for ADCIRC model run: '+modelRunID)
 
-        # Get input file name, grid, timemark, and stormtrack
+        # Get input file name, grid_name, timemark, and stormtrack
         inputPathFileGrid = gdm.getInputFileName(harvestDir,modelRunID)
         inputFile = inputPathFileGrid[0].split('/')[-1]
-        grid = inputPathFileGrid[1]
+        grid_name = inputPathFileGrid[1]
         advisory = inputPathFileGrid[2]
         timemark = inputPathFileGrid[3]
         stormtrack = inputPathFileGrid[4]
@@ -126,16 +126,16 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         scenario = inputFileParts[3]
         source_name = inputFileParts[0]
         source_archive = inputFileParts[2].lower()
-        modeltype = inputFile.split(grid)[1].split('_')[1]
+        modeltype = inputFile.split(grid_name)[1].split('_')[1]
         if stormtrack == 'notrack':
-            logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the scenario and grid type')
-            data_source = scenario+'_'+grid
-            filename_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid+'_'+modeltype
+            logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the scenario and grid name')
+            data_source = scenario+'_'+grid_name
+            filename_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid_name+'_'+modeltype
             filename_prefix_ta = filename_prefix+'_'+timemark
         else:
-            logger.info('Input file '+inputFile+' data is from a hurricane, so data source consists of the storm number, scenario and grid type')
-            data_source = stormnum+'_'+scenario+'_'+grid
-            filename_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid+'_'+modeltype
+            logger.info('Input file '+inputFile+' data is from a hurricane, so data source consists of the storm number, scenario and grid name')
+            data_source = stormnum+'_'+scenario+'_'+grid_name
+            filename_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid_name+'_'+modeltype
             filename_prefix_ta = filename_prefix+'_'+advisory
 
         # Define other source meta variables
@@ -171,8 +171,8 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                 apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
                 program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
                                      data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
-                                     apsviz_station_meta_filename,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00','--variableType',source_variable,
-                                     '--csvURL',csv_url,'--dataDateTime',data_date_time])
+                                     apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
+                                     '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
                 program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
                                      '--inputTask','ingestApsVizStationFileMeta'])
             elif modeltype == 'NOWCAST':
@@ -204,8 +204,8 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                 # NEED TO CHECK FORMATING OF timemark
                 program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
                                      data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
-                                     apsviz_station_meta_filename,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00','--variableType',source_variable,
-                                     '--csvURL',csv_url,'--dataDateTime',data_date_time])
+                                     apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
+                                     '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
                 program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
                                      '--inputTask','ingestApsVizStationFileMeta'])
             elif modeltype == 'NOWCAST':
@@ -312,8 +312,9 @@ def runApsVizStationCreateIngest(ingestDir, modelRunID):
     for index, row in df.iterrows():
         # dir_path, file_name, data_date_time, data_source, source_name, source_archive, model_run_id, variable_type, csvurl, ingested
         program_list.append(['python','createIngestApsVizStationData.py','--harvestDir',row['dir_path'],'--ingestDir',ingestDir,
-                             '--inputFilename',row['file_name'],'--modelRunID',row['model_run_id'],'--timeMark',str(row['timemark']),
-                             '--variableType', row['variable_type'],'--csvURL',row['csvurl']])
+                             '--inputFilename',row['file_name'],'--timeMark',str(row['timemark']),'--modelRunID',row['model_run_id'],
+                             '--inputDataSource',row['data_source'],'--gridName',row['grid_name'],'--variableType', row['variable_type'],
+                             '--csvURL',row['csvurl']])
 
     # Run list of program commands using subprocess
     for program in program_list:
