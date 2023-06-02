@@ -25,9 +25,9 @@ def getADCIRCFileNameVariables(modelRunID):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_ASGS_DATABASE'], user=os.environ['SQL_ASGS_USER'], 
-                             host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], 
-                             password=os.environ['SQL_ASGS_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_DB_DATABASE'], user=os.environ['ASGS_DB_USERNAME'], 
+                             host=os.environ['ASGS_DB_HOST'], port=os.environ['ASGS_DB_PORT'], 
+                             password=os.environ['ASGS_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -51,7 +51,7 @@ def getADCIRCFileNameVariables(modelRunID):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 
 def getInputFileName(harvestDir,modelRunID):
     ''' Returns a file name, with directory path, that will be used to search for the file using glob. It uses 
@@ -143,9 +143,9 @@ def checkSourceMeta(filename_prefix):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], 
-                               host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], 
-                               password=os.environ['SQL_GAUGE_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], 
+                               host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], 
+                               password=os.environ['OBS_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -173,5 +173,5 @@ def checkSourceMeta(filename_prefix):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        print(error)
+        logger.info(error)
 

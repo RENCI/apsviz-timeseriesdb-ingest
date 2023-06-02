@@ -34,9 +34,9 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
     '''         
 
     try:
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'],
-                             host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'],
-                             password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'],
+                             host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'],
+                             password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
     
             cur.execute("""SET CLIENT_ENCODING TO UTF8""")
@@ -92,7 +92,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -130,7 +130,7 @@ def ingestStations(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -173,7 +173,7 @@ def ingestSourceData(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -218,7 +218,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
     try:
         # Create connection to database, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -268,7 +268,7 @@ def ingestHarvestDataFileMeta(ingestDir):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -310,7 +310,7 @@ def ingestApsVizStationFileMeta(ingestDir, inputFilename):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -366,7 +366,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -456,7 +456,7 @@ def ingestApsVizStationData(ingestDir, inputFilename):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent
@@ -498,7 +498,7 @@ def createView():
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Set enviromnent

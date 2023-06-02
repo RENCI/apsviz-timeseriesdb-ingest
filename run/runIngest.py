@@ -24,7 +24,7 @@ def getSourceMeta(dataType):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
@@ -61,7 +61,7 @@ def getApsVizStationInfo(modelRunID):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['SQL_GAUGE_DATABASE'], user=os.environ['SQL_GAUGE_USER'], host=os.environ['SQL_HOST'], port=os.environ['SQL_PORT'], password=os.environ['SQL_GAUGE_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Set enviromnent
