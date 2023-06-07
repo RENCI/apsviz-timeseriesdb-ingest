@@ -27,7 +27,7 @@ AS $function$
                    time >= ''''' || _start_date || ''''' AND time <= ''''' || _end_date || '''''
                 ORDER BY d.time'',
                 ''SELECT data_source FROM (VALUES (''''air_barometer''''),
-                                                  ('''' || _nowcast_source || ''''),
+                                                  (''''' || _nowcast_source || '''''),
                                                   (''''ocean_buoy''''),
                                                   (''''tidal_gauge''''),
                                                   (''''tidal_predictions''''),
