@@ -126,17 +126,22 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         scenario = inputFileParts[3]
         source_name = inputFileParts[0]
         source_archive = inputFileParts[2].lower()
-        modeltype = inputFile.split(grid_name)[1].split('_')[1]
         if stormtrack == 'notrack':
             logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the scenario and grid name')
-            data_source = scenario+'_'+grid_name
-            filename_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid_name+'_'+modeltype
-            filename_prefix_ta = filename_prefix+'_'+timemark
+            forecast_data_source = scenario+'_'+grid_name
+            forecast_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid_name+'_'+'FORECAST'
+            forecast_prefix_ta = forecast_prefix+'_'+timemark
+            nowcast_data_source = 'NOWCAST_'+grid_name
+            nowcast_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_NOWCAST_'+grid_name+'_'+'NOWCAST'
+            nowcast_prefix_ta = nowcast_prefix+'_'+timemark 
         else:
             logger.info('Input file '+inputFile+' data is from a hurricane, so data source consists of the storm number, scenario and grid name')
-            data_source = stormnum+'_'+scenario+'_'+grid_name
-            filename_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid_name+'_'+modeltype
-            filename_prefix_ta = filename_prefix+'_'+advisory
+            forecast_data_source = stormnum+'_'+scenario+'_'+grid_name
+            forecast_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_'+scenario+'_'+grid_name+'_'+'FORECAST'
+            forecast_prefix_ta = forecast_prefix+'_'+advisory
+            nowcast_data_source = stormnum+'_NOWCAST_'+grid_name
+            nowcast_prefix = source_name+'_'+stormnum+'_'+source_archive.upper()+'_NOWCAST_'+grid_name+'_'+'NOWCAST'
+            nowcast_prefix_ta = nowcast_prefix+'_'+advisory
 
         # Define other source meta variables
         source_variable = 'water_level'
@@ -144,42 +149,36 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         units = 'm'
         csv_url = 'https:/www.renci.org'
 
-        # Check to see if source exists
-        dfcheck = gdm.checkSourceMeta(filename_prefix)
+        # Check to see if forecast source exists
+        dfcheck = gdm.checkSourceMeta(forecast_prefix)
    
-        # Check if dfcheck is empty. If it is a new source is added to the drf_source_meta table ,and then drf_gauge_source table. 
+        # Check if dfcheck is empty, for forecast. If it is a new source is added to the drf_source_meta table ,and then drf_gauge_source table. 
         if dfcheck.empty:
             # Log results
             logger.info('The following source does not exist in the drf_source_meta table:\n '+
-                        data_source+','+source_name+','+source_archive+','+source_variable+','+
-                        filename_prefix_ta+','+location_type+','+units)
+                        forecast_data_source+','+source_name+','+source_archive+','+source_variable+','+
+                        forecast_prefix_ta+','+location_type+','+units)
             program_list = []
-            program_list.append(['python','ingestTasks.py','--inputDataSource',data_source,'--inputSourceName',source_name,'--inputSourceArchive',
-                                 source_archive,'--inputSourceVariable',source_variable,'--inputFilenamePrefix',filename_prefix,'--inputLocationType',
+            program_list.append(['python','ingestTasks.py','--inputDataSource',forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',
+                                 source_archive,'--inputSourceVariable',source_variable,'--inputFilenamePrefix',forecast_prefix,'--inputLocationType',
                                  location_type,'--dataType','model','--inputUnits',units,'--inputTask','ingestSourceMeta'])
-            program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',data_source,'--inputSourceName',
+            program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',forecast_data_source,'--inputSourceName',
                                  source_name,'--inputSourceArchive',source_archive,'--inputUnits',units,'--inputLocationType',location_type])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
             program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', 
-                                 data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',filename_prefix_ta])
+                                 forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',forecast_prefix_ta])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
 	    # Check if model type is FORECAST and if so create harvest station file meta and ingest it into the drf_apsviz_stationn table. This table is used
             # to display the stations, that have data for a specific model run, in the apsViz map.
-            if modeltype == 'FORECAST':
-                logger.info('Model type is FORECAST, so meta file, containing station location harvest file meta has to be ingested')
-                apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
-                program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
-                                     data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
-                                     apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
-                                     '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
-                                     '--inputTask','ingestApsVizStationFileMeta'])
-            elif modeltype == 'NOWCAST':
-                logger.info('Model type is NOWCAST, so meta file does not have to be ingested')
-            else:
-                logger.info('Model type is FORECAST or NOWCAST, so something is incorrect')
-                sys.exit(1)
+            logger.info('Model type is FORECAST, so meta file, containing station location harvest file meta has to be ingested')
+            apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
+            program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
+                                 forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
+                                 apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
+                                 '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
+            program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
+                                 '--inputTask','ingestApsVizStationFileMeta'])
 
             # Run list of program commands using subprocess
             for program in program_list:
@@ -189,36 +188,69 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
 
         else:
             # log results
-            logger.info(data_source+','+source_name+','+source_archive+','+source_variable+','+
-                        filename_prefix_ta+','+location_type+','+units)
+            logger.info(forecast_data_source+','+source_name+','+source_archive+','+source_variable+','+
+                        forecast_prefix_ta+','+location_type+','+units)
             program_list = []
-            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', data_source,
-                                 '--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',filename_prefix_ta])
+            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', forecast_data_source,
+                                 '--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',forecast_prefix_ta])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
             # Check if model type is FORECAST and if so create harvest station file meta and ingest it into the drf_apsviz_stationn table. This table is used
             # to display the stations, that have data for a specific model run, in the apsViz map.
-            if modeltype == 'FORECAST':
-                logger.info('Model type is FORECAST, so meta file, containing station location harvest file meta has to be ingested')
-                apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
-                # NEED TO CHECK FORMATING OF timemark
-                program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
-                                     data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
-                                     apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
-                                     '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
-                                     '--inputTask','ingestApsVizStationFileMeta'])
-            elif modeltype == 'NOWCAST':
-                logger.info('Model type is NOWCAST, so meta file does not have to be ingested')
-            else:
-                logger.info('Model type is FORECAST or NOWCAST, so something is incorrect')
-                sys.exit(1)
+            logger.info('Model type is FORECAST, so meta file, containing station location harvest file meta has to be ingested')
+            apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
+            program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
+                                  forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
+                                  apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
+                                  '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
+            program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
+                                 '--inputTask','ingestApsVizStationFileMeta'])
 
             # Run list of program commands using subprocess
             for program in program_list:
                 logger.info('Run '+" ".join(program))
                 output = subprocess.run(program, shell=False, check=True)
                 logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+
+        # Check to see if nowcast source exists
+        dfcheck = gdm.checkSourceMeta(nowcast_prefix)
+
+        # Check if dfcheck is empty, for nowcast data. If it is a new source is added to the drf_source_meta table ,and then drf_gauge_source table.
+        if dfcheck.empty:
+            # Log results
+            logger.info('The following source does not exist in the drf_source_meta table:\n '+
+                        nowcast_data_source+','+source_name+','+source_archive+','+source_variable+','+
+                        nowcast_prefix_ta+','+location_type+','+units)
+            program_list = []
+            program_list.append(['python','ingestTasks.py','--inputDataSource',nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',
+                                 source_archive,'--inputSourceVariable',source_variable,'--inputFilenamePrefix',nowcast_prefix,'--inputLocationType',
+                                 location_type,'--dataType','model','--inputUnits',units,'--inputTask','ingestSourceMeta'])
+            program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',nowcast_data_source,'--inputSourceName',
+                                 source_name,'--inputSourceArchive',source_archive,'--inputUnits',units,'--inputLocationType',location_type])
+            program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
+            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
+                                 nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',nowcast_prefix_ta])
+            program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
+
+            # Run list of program commands using subprocess
+            for program in program_list:
+                logger.info('Run '+" ".join(program))
+                output = subprocess.run(program, shell=False, check=True)
+                logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+
+        else:
+            # log results
+            logger.info(nowcast_data_source+','+source_name+','+source_archive+','+source_variable+','+
+                        nowcast_prefix_ta+','+location_type+','+units)
+            program_list = []
+            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', nowcast_data_source,
+                                 '--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',nowcast_prefix_ta])
+            program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
+
+            # Run list of program commands using subprocess
+            for program in program_list:
+                logger.info('Run '+" ".join(program))
+                output = subprocess.run(program, shell=False, check=True)
 
     else:
         # get source meta
@@ -228,6 +260,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         program_list = []
         for index, row in df.iterrows():
             program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
+
 
         program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 

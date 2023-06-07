@@ -11,7 +11,7 @@ AS $function$
                 ''SELECT
                     CAST(d.time AS TEXT) AS id,
                     s.data_source AS category,
-                    coalesce(d.water_level,
+                    COALESCE(d.water_level,
                     d.wave_height,
                     d.wind_speed,
                     d.air_pressure,

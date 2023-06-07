@@ -155,7 +155,13 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
             df['timemark'] = datetimes[0]
         elif re.search('nowcast', inputDataSource.lower()):
             # If the inputDataSource has nowcast in its name get the third datetime in the filename
-            df['timemark'] = datetimes[2]
+            # if it is a synoptic run, and the second datetime in the filename if it is a hurricane run
+            if inputDataSource[0:2] == 'al':
+                # Hurricane run
+                df['timemark'] = datetimes[1]
+            else:
+                # Synoptic run
+                df['timemark'] = datetimes[2]
         else:
             # If the inputDataSource is a hurricane for ensemble  get the second datetime in the filename
             df['timemark'] = datetimes[1]
