@@ -34,9 +34,9 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
     '''         
 
     try:
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'],
-                             host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'],
-                             password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'],
+                             host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'],
+                             password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
     
             cur.execute("""DELETE FROM
@@ -89,7 +89,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -123,7 +123,7 @@ def ingestStations(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Loop thru geom file list, ingesting each one
@@ -162,7 +162,7 @@ def ingestSourceData(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Loop thru source file list, ingesting each one
@@ -203,7 +203,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
     try:
         # Create connection to database, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ__GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -249,7 +249,7 @@ def ingestHarvestDataFileMeta(ingestDir):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             for infoFile in inputFiles:
@@ -287,7 +287,7 @@ def ingestApsVizStationFileMeta(ingestDir, inputFilename):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Run ingest query
@@ -339,7 +339,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Loop thru DataFrame ingesting each data file
@@ -425,7 +425,7 @@ def ingestApsVizStationData(ingestDir, inputFilename):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Run ingest query
@@ -463,7 +463,7 @@ def createView():
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
 
             # Run query

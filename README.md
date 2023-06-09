@@ -41,7 +41,7 @@ git clone https://github.com/RENCI/apsviz-timeseriesdb-ingest.git
 
 Next edit the run/createEnvVars.sh file adding a password to the line:
 
-ASGS_GAUGES_PASSWORD=xxxxxx
+APSVIZ_GAUGES_PASSWORD=xxxxxx
 
 where you change xxxxxx to the password that is used to access the database in apsviz-timeseriesdb. 
 

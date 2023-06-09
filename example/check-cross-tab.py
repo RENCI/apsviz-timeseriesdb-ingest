@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 def getForecastStationData(station_name, timemark, data_source):
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], 
-                             host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], 
-                             password=os.environ['ASGS_GAUGES_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -36,9 +36,9 @@ def getForecastStationData(station_name, timemark, data_source):
 def getObsStationData(station_name, start_date, end_date, nowcast_source):
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], 
-                             host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], 
-                             password=os.environ['ASGS_GAUGES_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query

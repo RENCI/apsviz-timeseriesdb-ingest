@@ -27,7 +27,7 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -73,7 +73,7 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_li
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
