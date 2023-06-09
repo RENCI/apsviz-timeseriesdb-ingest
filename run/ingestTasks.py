@@ -203,7 +203,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
     try:
         # Create connection to database, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ__GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
