@@ -73,13 +73,8 @@ def getSourceMeta():
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'])
         cur = conn.cursor()
-
-        # Set enviromnent
-        cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-        cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-        cur.execute("""BEGIN""")
 
         # Run query
         cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, units FROM drf_source_meta""")

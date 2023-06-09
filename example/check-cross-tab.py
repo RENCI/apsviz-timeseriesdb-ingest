@@ -7,14 +7,10 @@ from datetime import datetime, timedelta
 def getForecastStationData(station_name, timemark, data_source):
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], 
-                             host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], 
-                             password=os.environ['OBS_DB_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], 
+                             host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], 
+                             password=os.environ['ASGS_GAUGES_PASSWORD']) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
             cur.execute("""SELECT * FROM get_forecast_timeseries_station_data(_station_name := %(stationname)s,
@@ -40,14 +36,10 @@ def getForecastStationData(station_name, timemark, data_source):
 def getObsStationData(station_name, start_date, end_date, nowcast_source):
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], 
-                             host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], 
-                             password=os.environ['OBS_DB_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], 
+                             host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], 
+                             password=os.environ['ASGS_GAUGES_PASSWORD']) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
             cur.execute("""SELECT * FROM get_obs_timeseries_station_data(_station_name := %(stationname)s, 

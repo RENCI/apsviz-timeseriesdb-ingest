@@ -34,14 +34,11 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
     '''         
 
     try:
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'],
-                             host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'],
-                             password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'],
+                             host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'],
+                             password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
     
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
-   
             cur.execute("""DELETE FROM
                                drf_gauge_data a
                                    USING drf_gauge_data b,
@@ -92,12 +89,8 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
             cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units)
@@ -130,12 +123,8 @@ def ingestStations(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Loop thru geom file list, ingesting each one
             for geomFile in inputFiles:
@@ -173,12 +162,8 @@ def ingestSourceData(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Loop thru source file list, ingesting each one
             for sourceFile in inputFiles:
@@ -218,12 +203,8 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
     try:
         # Create connection to database, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD']) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
             cur.execute("""SELECT dir_path, file_name
@@ -268,12 +249,8 @@ def ingestHarvestDataFileMeta(ingestDir):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             for infoFile in inputFiles:
                 # Run ingest query
@@ -310,12 +287,8 @@ def ingestApsVizStationFileMeta(ingestDir, inputFilename):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run ingest query
             with open(ingestDir+inputFilename, "r") as f:
@@ -366,12 +339,8 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Loop thru DataFrame ingesting each data file
             for index, row in dfDirFiles.iterrows():
@@ -456,12 +425,8 @@ def ingestApsVizStationData(ingestDir, inputFilename):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run ingest query
             with open(ingestDir+ingestFilename, "r") as f:
@@ -498,12 +463,8 @@ def createView():
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['OBS_DB_DATABASE'], user=os.environ['OBS_DB_USERNAME'], host=os.environ['OBS_DB_HOST'], port=os.environ['OBS_DB_PORT'], password=os.environ['OBS_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['ASGS_GAUGES_DATABASE'], user=os.environ['ASGS_GAUGES_USERNAME'], host=os.environ['ASGS_GAUGES_HOST'], port=os.environ['ASGS_GAUGES_PORT'], password=os.environ['ASGS_GAUGES_PASSWORD'], autocommit=True) as conn:
             cur = conn.cursor()
-
-            # Set enviromnent
-            cur.execute("""SET CLIENT_ENCODING TO UTF8""")
-            cur.execute("""SET STANDARD_CONFORMING_STRINGS TO ON""")
 
             # Run query
             cur.execute("""CREATE or REPLACE VIEW drf_gauge_station_source_data AS
