@@ -1,0 +1,18 @@
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID 4358-2023042312-namforecast
+python runIngest.py --ingestDir /data/ast-run-ingester/ --modelRunID 4358-2023042312-namforecast --inputTask runApsVizStationCreateIngest
+
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID 4257-2022092812-namforecast
+python runIngest.py --ingestDir /data/ast-run-ingester/ --modelRunID 4257-2022092812-namforecast --inputTask runApsVizStationCreateIngest
+
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID 4358-2023042206-namforecast
+python runIngest.py --ingestDir /data/ast-run-ingester/ --modelRunID 4358-2023042206-namforecast --inputTask runApsVizStationCreateIngest
+
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID 4293-15-nhcOfcl
+python runIngest.py --ingestDir /data/ast-run-ingester/ --modelRunID 4293-15-nhcOfcl --inputTask runApsVizStationCreateIngest
+
+#Forecast
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --dataType model --modelRunID 4358-2023042312-namforecast
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --dataType model --modelRunID 4257-2022092812-namforecast
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --dataType model --modelRunID 4358-2023042206-namforecast
+python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --dataType model --modelRunID 4293-15-nhcOfcl
+
