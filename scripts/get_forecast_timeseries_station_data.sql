@@ -1,7 +1,7 @@
-CREATE OR REPLACE FUNCTION  get_forecast_timeseries_station_data(_station_name character varying, _timemark character varying, _data_source character varying)
-  RETURNS json
-  LANGUAGE plpgsql
-AS $function$
+create function get_forecast_timeseries_station_data(_station_name character varying, _timemark character varying, _data_source character varying) returns json
+    language plpgsql
+as
+$$
    DECLARE
        _output json;
    DECLARE pivot_sql text =
@@ -34,5 +34,9 @@ BEGIN
     -- return the data to the caller
     return _output;
 END
-$function$;
-alter function get_forecast_timeseries_station_data(varchar, varchar, varchar) owner to apsviz_ingester;
+$$;
+
+alter function get_forecast_timeseries_station_data(varchar, varchar, varchar) owner to postgres;
+
+grant execute on function get_forecast_timeseries_station_data(varchar, varchar, varchar) to apsviz_ingester;
+

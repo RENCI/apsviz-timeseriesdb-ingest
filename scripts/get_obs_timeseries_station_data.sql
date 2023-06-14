@@ -1,7 +1,7 @@
-CREATE OR REPLACE FUNCTION get_obs_timeseries_station_data(_station_name character varying, _start_date character varying, _end_date character varying, _nowcast_source character varying)
-  RETURNS json
-  LANGUAGE plpgsql
-AS $function$
+create function get_obs_timeseries_station_data(_station_name character varying, _start_date character varying, _end_date character varying, _nowcast_source character varying) returns json
+    language plpgsql
+as
+$$
    DECLARE _output json;
    DECLARE pivot_sql text =
        'SELECT JSON_AGG(ct)
@@ -52,5 +52,9 @@ BEGIN
     -- return the data to the caller
     return _output;
 END
-$function$;
-alter function get_obs_timeseries_station_data(varchar, varchar, varchar, varchar) owner to apsviz_ingester;
+$$;
+
+alter function get_obs_timeseries_station_data(varchar, varchar, varchar, varchar) owner to postgres;
+
+grant execute on function get_obs_timeseries_station_data(varchar, varchar, varchar, varchar) to apsviz_ingester;
+
