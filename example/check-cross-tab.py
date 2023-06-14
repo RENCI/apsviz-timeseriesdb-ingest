@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 def getForecastStationData(station_name, timemark, data_source):
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], 
-                             host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], 
-                             password=os.environ['APSVIZ_GAUGES_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES__DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -36,9 +36,9 @@ def getForecastStationData(station_name, timemark, data_source):
 def getObsStationData(station_name, start_date, end_date, nowcast_source):
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], 
-                             host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], 
-                             password=os.environ['APSVIZ_GAUGES_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -63,19 +63,21 @@ def getObsStationData(station_name, start_date, end_date, nowcast_source):
         print(error)
 
 def processStationData(station_name, timemark, data_source):
-    # get forecast data
-    dffc = getForecastStationData(station_name, timemark, data_source)
-    
+    # THESE STEPS COULD STILL BE DONE WITH PYTHON
     # derive start_date from timemark
     fdatetime = datetime.fromisoformat(" ".join(timemark.split('T'))[0:-1])
     DAYS = timedelta(4)
     start_date = "T".join(str(fdatetime - DAYS).split(' '))+'Z'
+
+    # get nowcast data_source from forecast data_source
+    nowcast_source = 'NOWCAST_'+"_".join(data_source.split('_')[1:])
+
+    # THESE STEPS NEED TO BE DONE WITH PLPGSQL
+    # get forecast data
+    dffc = getForecastStationData(station_name, timemark, data_source)
     
     # get end_date from last datetime in forecast data
     end_date = dffc['time_stamp'].iloc[-1]
-    
-    # get nowcast data_source from forecast data_source
-    nowcast_source = 'NOWCAST_'+"_".join(data_source.split('_')[1:])
     
     # get obs and nowcast data
     dfobs = getObsStationData(station_name, start_date, end_date, nowcast_source)

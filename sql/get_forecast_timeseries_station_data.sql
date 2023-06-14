@@ -12,7 +12,7 @@ AS $function$
                 ''SELECT
                     CAST(d.time AS TEXT) AS id,
                     s.data_source AS category,
-                    coalesce(d.water_level) AS axis
+                    COALESCE(d.water_level) AS axis
                 FROM
                    drf_gauge_data d
                 JOIN

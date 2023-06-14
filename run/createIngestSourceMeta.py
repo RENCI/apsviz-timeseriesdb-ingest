@@ -21,7 +21,7 @@ def getStationID(locationType):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DATABASE'], user=os.environ['APSVIZ_GAUGES_USERNAME'], host=os.environ['APSVIZ_GAUGES_HOST'], port=os.environ['APSVIZ_GAUGES_PORT'], password=os.environ['APSVIZ_GAUGES_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query 
