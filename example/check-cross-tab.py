@@ -9,7 +9,7 @@ def getForecastStationData(station_name, timemark, data_source):
         # Create connection to database, set autocommit, and get cursor
         with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
                              host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
-                             password=os.environ['APSVIZ_GAUGES__DB_PASSWORD']) as conn:
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
