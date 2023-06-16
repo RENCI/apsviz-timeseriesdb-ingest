@@ -68,12 +68,16 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
     df['geom'] = geom
  
     # Add model_run_id, timemark, variable_type, and csvurl values to specifies columns in DataFrame
-    df['timemark'] = timeMark
+    timemark = "T".join(timeMark.split(' ')).split('+')[0]+'Z'
+    df['timemark'] = timemark
     df['model_run_id'] = modelRunID
     df['data_source'] = inputDataSource
     df['grid_name'] = gridName
     df['variable_type'] = variableType
-    df['csvurl'] = csvURL
+
+    for index, row in df.iterrows():
+        csvURL = os.environ['UI_DATA_URL']+'station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource
+        df.at[index,'csvurl'] = csvURL
 
     df.to_csv(ingestDir+'meta_copy_'+apsviz_station_meta_filename, index=False, header=False)
 
@@ -126,10 +130,10 @@ def main(args):
     variableType = args.variableType
     csvURL = args.csvURL
         
-    logger.info('Start processing data from data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
+    logger.info('Start processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
                 modelRunID+', timemark '+timeMark+', variable type '+variableType+', and csvURL '+csvURL+'.')
     addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, gridName, variableType, csvURL)
-    logger.info('Finished processing data from data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
+    logger.info('Finished processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
                 modelRunID+', timemark '+timeMark+', variable type '+variableType+', and csvURL '+csvURL+'.')
  
 # Run main function takes harvestDir, ingestDir, inputFilename, and timeMark as input.

@@ -137,7 +137,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         source_variable = 'water_level'
         location_type = 'tidal'
         units = 'm'
-        csv_url = 'https:/www.renci.org'
+        csv_url = os.environ['UI_DATA_URL']
 
         # Check to see if forecast source exists
         dfcheck = gdm.checkSourceMeta(forecast_prefix)
