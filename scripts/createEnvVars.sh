@@ -10,4 +10,4 @@ export APSVIZ_GAUGES_DB_DATABASE=apsviz_gauges
 export APSVIZ_GAUGES_DB_USERNAME=xxxxxxxx
 export APSVIZ_GAUGES_DB_PASSWORD=xxxxxxxx
 export APSVIZ_GAUGES_ENGINE=timescale.db.backends.postgis
-export UI_DATA_URL='https://apsviz-ui-data-dev.apps.renci.org/get_station_data?'
+export UI_DATA_URL='https://apsviz-ui-data-dev.apps.renci.org'

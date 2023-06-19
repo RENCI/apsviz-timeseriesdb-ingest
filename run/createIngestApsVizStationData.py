@@ -76,7 +76,7 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
     df['variable_type'] = variableType
 
     for index, row in df.iterrows():
-        csvURL = os.environ['UI_DATA_URL']+'station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource
+        csvURL = os.environ['UI_DATA_URL']+'/get_station_data?station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource
         df.at[index,'csvurl'] = csvURL
 
     df.to_csv(ingestDir+'meta_copy_'+apsviz_station_meta_filename, index=False, header=False)
