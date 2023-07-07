@@ -120,7 +120,8 @@ def getInputFileName(harvestDir,modelRunID):
         # Search for file name, and return it
         filelist = glob.glob(harvestDir+'adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv')
         if len(filelist) == 0:
-            return('adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv', modelRunID)
+            logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
+            sys.exit(1)
         elif len(filelist) == 1:
             return(filelist[0], grid, advisory, timemark, stormTrack)
         else:

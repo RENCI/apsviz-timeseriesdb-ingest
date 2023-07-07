@@ -60,13 +60,13 @@ def getApsVizStationInfo(modelRunID):
         cur = conn.cursor()
 
         # Run query
-        cur.execute("""SELECT dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,variable_type,csvurl,ingested
+        cur.execute("""SELECT dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,csvurl,ingested
                        FROM drf_apsviz_station_file_meta
                        WHERE model_run_id = %(modelrunid)s""", {'modelrunid': modelRunID})
     
         # convert query output to Pandas dataframe
         df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archive','grid_name','model_run_id',
-                                                   'timemark','variable_type','csvurl','ingested']) 
+                                                   'timemark','csvurl','ingested']) 
         
         # Close cursor and database connection
         cur.close()
@@ -166,7 +166,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
                                  forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
                                  apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
-                                 '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
+                                 '--csvURL',csv_url,'--dataDateTime',data_date_time])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
                                  '--inputTask','ingestApsVizStationFileMeta'])
 
@@ -192,7 +192,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             program_list.append(['python','createApsVizStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
                                   forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
                                   apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
-                                  '--variableType',source_variable,'--csvURL',csv_url,'--dataDateTime',data_date_time])
+                                  '--csvURL',csv_url,'--dataDateTime',data_date_time])
             program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
                                  '--inputTask','ingestApsVizStationFileMeta'])
 
@@ -333,10 +333,10 @@ def runApsVizStationCreateIngest(ingestDir, modelRunID):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        # dir_path, file_name, data_date_time, data_source, source_name, source_archive, model_run_id, variable_type, csvurl, ingested
+        # dir_path, file_name, data_date_time, data_source, source_name, source_archive, model_run_id, csvurl, ingested
         program_list.append(['python','createIngestApsVizStationData.py','--harvestDir',row['dir_path'],'--ingestDir',ingestDir,
                              '--inputFilename',row['file_name'],'--timeMark',str(row['timemark']),'--modelRunID',row['model_run_id'],
-                             '--inputDataSource',row['data_source'],'--gridName',row['grid_name'],'--variableType', row['variable_type'],
+                             '--inputDataSource',row['data_source'],'--inputSourceArchive',row['source_archive'],'--gridName',row['grid_name'],
                              '--csvURL',row['csvurl']])
 
     # Run list of program commands using subprocess

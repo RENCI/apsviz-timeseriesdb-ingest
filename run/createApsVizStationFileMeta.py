@@ -42,7 +42,7 @@ def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchiv
         # convert query output to Pandas dataframe 
         df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'data_date_time', 
                                                    'data_source', 'source_name', 'source_archive', 'model_run_id', 
-                                                   'timemark', 'variable_type', 'csvurl', 'ingested'])
+                                                   'timemark', 'csvurl', 'ingested'])
 
         # Close cursor and database connection
         cur.close()
@@ -55,7 +55,7 @@ def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchiv
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,gridName,modelRunID,timeMark,variableType,csvURL,dataDateTime):
+def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,gridName,modelRunID,timeMark,csvURL,dataDateTime):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_apsviz_station_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
@@ -77,8 +77,6 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
-            variableType:
-                Type of variable (e.g., water_level)
             csvURL:
                 URL to SQL function that queries db and returns CSV file of data
             dataDateTime:
@@ -94,11 +92,11 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     ingested = False
 
     # Append variables to output list.
-    outputList.append([harvestDir,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,gridName,modelRunID,timeMark,variableType,csvURL,ingested]) 
+    outputList.append([harvestDir,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,gridName,modelRunID,timeMark,csvURL,ingested]) 
 
     # Convert outputList to a DataFrame
     dfnew = pd.DataFrame(outputList, columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archve',
-                                              'grid_name','model_run_id','timemark','source_variable','csv_url','ingested'])
+                                              'grid_name','model_run_id','timemark','csv_url','ingested'])
 
     # Get DataFrame of existing list of files, in the database, that have been ingested.
     dfold = getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID)
@@ -144,8 +142,6 @@ def main(args):
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
-            variableType:
-                Type of variable (e.g., water_level)
             csvURL:
                 URL to SQL function that queries db and returns CSV file of data
             dataDateTime:
@@ -171,7 +167,6 @@ def main(args):
     gridName = args.gridName
     modelRunID = args.modelRunID
     timeMark = args.timeMark
-    variableType = args.variableType
     csvURL = args.csvURL
     dataDateTime = args.dataDateTime
 
@@ -179,7 +174,7 @@ def main(args):
 
     # Get DataFrame file list, and time variables by running the createFileList function
     df, first_time, last_time = createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,
-                                               gridName,modelRunID,timeMark,variableType,csvURL,dataDateTime)
+                                               gridName,modelRunID,timeMark,csvURL,dataDateTime)
 
     if pd.isnull(first_time) and pd.isnull(last_time):
         logger.info('No new files for station meta data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
@@ -215,8 +210,6 @@ if __name__ == "__main__":
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
-            variableType:
-                Type of variable (e.g., water_level)
             csvURL:
                 URL to SQL function that queries db and returns CSV file of data
             dataDateTime:
@@ -236,7 +229,6 @@ if __name__ == "__main__":
     parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)
     parser.add_argument("--modelRunID", help="Input model run ID", action="store", dest="modelRunID", required=True)
     parser.add_argument("--timeMark", help="Timemark value for model run ID", action="store", dest="timeMark", required=True)
-    parser.add_argument("--variableType", help="Input source variable name", action="store", dest="variableType", required=True)
     parser.add_argument("--csvURL", help="Input URL to get CSV output file", action="store", dest="csvURL", required=True)
     parser.add_argument("--dataDateTime", help="Data date time from input harvest file", action="store", dest="dataDateTime", required=True)
 
