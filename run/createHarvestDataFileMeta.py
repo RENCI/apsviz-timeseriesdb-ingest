@@ -130,7 +130,7 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
         data_end_time = df['TIME'].max()
 
         # This step checks to see if begin_time, and end_time or null, and if they are it marks the file as being ingested
-        # This step was added to deal with some erroneous runs, and may be removed in the future.
+        # This step was added to deal with some erroneous runs, and may be removed in the future. NO LONGER NEED THIS!
         if pd.isnull(data_begin_time) and pd.isnull(data_end_time):
             ingested = 'True'
         else:
@@ -212,7 +212,7 @@ def main(args):
 
         # Create output file name
         if inputSourceName == 'adcirc':
-            outputFile = 'harvest_data_files_'+inputSourceName+'_stationdata_'+inputSourceArchive+'_'+inputDataSource+'_'+inputFilenamePrefix+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+            outputFile = 'harvest_data_files_'+inputFilenamePrefix+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
         else:
             outputFile = 'harvest_data_files_'+inputSourceArchive+'_stationdata_'+inputDataSource+'_'+inputFilenamePrefix+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
 

@@ -116,6 +116,8 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         scenario = inputFileParts[3]
         source_name = inputFileParts[0]
         source_archive = inputFileParts[2].lower()
+        # NEED TO CHECK TO SEE IF NOWCAST FILE EXISTS!
+        # NOTE: If ecflow launches a nowcast, all you will rcv are nowcast files. If ecflow/asgs pass a forecast but no nowcast exist, then you rcv only forecast files.
         if stormtrack == 'notrack':
             logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the scenario and grid name')
             forecast_data_source = scenario+'_'+grid_name
@@ -246,12 +248,13 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         # get source meta
         df = getSourceMeta('obs')
 
-        # Create list of program commands
+        # Create list of program commands to ingest meta-data on harvest files
         program_list = []
         for index, row in df.iterrows():
-            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
+            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],
+                                 '--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
 
-
+        # Ingest meta-data on harvest files created above
         program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
         # Run list of program commands using subprocess

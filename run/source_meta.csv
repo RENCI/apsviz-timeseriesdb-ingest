@@ -1,5 +1,6 @@
 data_source,source_name,source_archive,source_variable,filename_prefix,location_type,data_type,units
 coastal_gauge,ncem,contrails,water_level,contrails_stationdata_coastal_water_level,coastal,obs,m
+air_barometer,ncem,contrails,air_pressure,contrails_stationdata_air_pressure,coastal,obs,mb
 river_gauge,ncem,contrails,water_level,contrails_stationdata_river_water_level,river,obs,m
 river_gauge,ncem,contrails,flow_volume,contrails_stationdata_river_flow_volume,river,obs,m^3ps
 ocean_buoy,ndbc,ndbc,wave_height,ndbc_stationdata_wave_height,ocean,obs,m
