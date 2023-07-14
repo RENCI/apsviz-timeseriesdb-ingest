@@ -87,13 +87,14 @@ def getInputFileName(harvestDir,modelRunID):
         day = startTime[6:8]
         hour = startTime[8:11]
         timemark = year+'-'+month+'-'+day+'T'+hour
-        
+      
         # Search for file name, and return it
-        filelist = glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_'+timemark+'*.csv')
+        filelist = glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv')
         if len(filelist) == 0:
-            return('adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_'+timemark+'*.csv', modelRunID)
-        elif len(filelist) == 1:
-            return(filelist[0], grid, advisory, timemark, stormTrack)
+            logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
+            sys.exit(1)
+        elif len(filelist) > 0:
+            return(filelist, grid, advisory, timemark, stormTrack)
         else:
             return(modelRunID)
     else:
@@ -122,8 +123,8 @@ def getInputFileName(harvestDir,modelRunID):
         if len(filelist) == 0:
             logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
             sys.exit(1)
-        elif len(filelist) == 1:
-            return(filelist[0], grid, advisory, timemark, stormTrack)
+        elif len(filelist) > 0:
+            return(filelist, grid, advisory, timemark, stormTrack)
         else:
             return(modelRunID)
 
