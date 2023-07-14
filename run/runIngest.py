@@ -263,6 +263,32 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             output = subprocess.run(program, shell=False, check=True)
             logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
+        # Create list of program commands to ingest meta-data on contrails meta files
+        # WORKING ON THIS
+        program_list = []
+
+        # Loop through all obs data sources
+        for index, row in df.iterrows():
+            # Add meta to filename_prefix, so it can be used to find meta files.
+            meta_filename_prefix = "stationdata_meta".join(row['filename_prefix'].split('stationdata'))
+           
+            # Create list of command line calls to createRetainObsStationFileMeta.py 
+            program_list.append(['python','createRetainObsStationFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', 
+                                 row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],
+                                 '--inputFilenamePrefix',meta_filename_prefix])
+
+            # Ingest meta-data on harvest files created above
+            #program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationFileMeta'])
+
+        # Run list of program commands using subprocess
+        if len(program_list) > 0:
+            for program in program_list:
+                logger.info('Run '+" ".join(program))
+                output = subprocess.run(program, shell=False, check=True)
+                logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        else:
+            logger.info('Program list has 0 length, so continue')
+
 def runDataCreate(ingestDir, dataType):
     ''' This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be 
         ingested into the database using the runDataIngest function.
