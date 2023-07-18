@@ -35,7 +35,6 @@ def getADCIRCFileNameVariables(modelRunID):
                         {'modelRunID':modelRunID})
 
             # convert query output to Pandas dataframe
-            #df = pd.DataFrame(cur.fetchall(), columns=['track_raw_fst'])
             df = pd.DataFrame.from_dict(cur.fetchall()[0], orient='columns')
 
             # Close cursor and database connection
@@ -69,8 +68,9 @@ def getInputFileName(harvestDir,modelRunID):
     # Get storm track
     stormTrack = df['track_raw_fst'].values[0]
 
-    # Check it run is from a hurricane
-    if stormTrack == 'notrack':
+    # Check it run is from a hurricane. The stormTrack value of notrack in for ASGS runs,
+    # while stormTrack value of None is for ECFLOW runs.
+    if stormTrack == 'notrack' or stormTrack == None:
         # Get downloadurl, and extract model run type
         model = df['downloadurl'].values[0].split('/')[-1].upper()
         
@@ -81,7 +81,12 @@ def getInputFileName(harvestDir,modelRunID):
         advisory = df['advisory'].values[0]
         
         # Get startTime, extracet time variables, and create timemark
-        startTime = df['RunStartTime'].values[0]
+        # Check if RunStartTime in None and if so use advisory instead.
+        # This step was add for ECFLOW runs
+        if df['RunStartTime'].values[0] == None:
+            startTime = df['advisory'].values[0]
+        else:
+            startTime = df['RunStartTime'].values[0]
         year = startTime[0:4]
         month = startTime[4:6]
         day = startTime[6:8]

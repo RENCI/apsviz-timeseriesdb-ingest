@@ -100,12 +100,6 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
 
         # Get input file name, grid_name, timemark, and stormtrack
         filelist, grid_name, advisory, timemark, stormtrack = gdm.getInputFileName(harvestDir,modelRunID)
-        #inputPathFileGrid = gdm.getInputFileName(harvestDir,modelRunID)
-        #inputFile = inputPathFileGrid[0].split('/')[-1]
-        #grid_name = inputPathFileGrid[1]
-        #advisory = inputPathFileGrid[2]
-        #timemark = inputPathFileGrid[3]
-        #stormtrack = inputPathFileGrid[4]
 
         for filenamepath in filelist:
             # Define inputFile 
@@ -115,7 +109,8 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile) 
             data_date_time = datetimes[0]
 
-            # Split input file name and extract source meta variables from it
+            # Split input file name and extract source meta variables from it. The stormnum variable is the strom number (e.g., al03) 
+            # in the case of a hurricane run, or the model type (e.g., nam or gfs) in the case of a synoptic run.
             inputFileParts = inputFile.split('_')
             stormnum = inputFileParts[1]
             scenario = inputFileParts[3]
@@ -123,7 +118,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             source_archive = inputFileParts[2].lower()
             # NEED TO CHECK TO SEE IF NOWCAST FILE EXISTS!
             # NOTE: If ecflow launches a nowcast, all you will rcv are nowcast files. If ecflow/asgs pass a forecast but no nowcast exist, then you rcv only forecast files.
-            if stormtrack == 'notrack':
+            if stormtrack == 'notrack' or stormtrack == None:
                 logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the scenario and grid name')
                 forecast_data_source = scenario+'_'+grid_name
                 forecast_obs_station_type = inputFile.split('_'+timemark)[0].split('_')[-1]
