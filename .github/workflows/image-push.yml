@@ -57,3 +57,4 @@ jobs:
           region: us-east-2
           local-image: ${{ env.REGISTRY }}:${{ steps.get_version.outputs.VERSION }}
           image: apsviz-timeseriesdb-ingest:latest, apsviz-timeseriesdb-ingest:${{ steps.get_version.outputs.VERSION }}
+            
