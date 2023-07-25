@@ -15,7 +15,7 @@ AS $function$
 		    FROM
 			"ASGS_Mon_config_item"
 		    WHERE
-			key IN (''''ADCIRCgrid'''', ''''advisory'''', ''''downloadurl'''', ''''track_raw_fst'''', ''''RunStartTime'''')
+			key IN (''''ADCIRCgrid'''', ''''advisory'''', ''''downloadurl'''', ''''forcing.metclass'''', ''''stormnumber'''', ''''RunStartTime'''',''''workflow_type'''')
 			and instance_id || ''''-'''' || uid = ''''' || _run_id || '''''
 		    ORDER BY id ASC, key ASC'',
 		    ''SELECT data_source
@@ -23,15 +23,19 @@ AS $function$
 			(''''ADCIRCgrid''''),
 			(''''advisory''''),
 			(''''downloadurl''''),
-			(''''RunStartTime''''),
-			(''''track_raw_fst'''')) b(data_source)''
+			(''''forcing.metclass''''),
+                        (''''stormnumber''''),
+                        (''''RunStartTime''''),
+                        (''''workflow_type'''')) b(data_source)''
 		) AS (
 		    id INT,
 		    "ADCIRCgrid" TEXT,
 		    "advisory" TEXT,
 		    "downloadurl" TEXT,
-		    "RunStartTime" TEXT,
-		    "track_raw_fst" TEXT)) AS ct';
+                    "forcing.metclass" TEXT,
+                    "stormnumber" TEXT,
+                    "RunStartTime" TEXT,
+		    "workflow_type" TEXT)) AS ct';
 
 BEGIN
     -- gather the records and return them in json format

@@ -33,7 +33,7 @@ https://github.com/RENCI/AST
 
 Deploying on the Sterling k8s  cluster is done using GitHub Actions which pushes the docker image to the RENCI Harbor docker repository. A YAML file, with Kubernetes configurations, is then used to deploy as a pod on Sterling.
 
-## Installing on you local machine
+## Installing on your local machine
 
 To install apsviz-timeseriesdb-ingest you first need to clone it:
 

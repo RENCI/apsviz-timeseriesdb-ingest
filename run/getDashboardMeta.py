@@ -13,7 +13,7 @@ logger.add(sys.stdout, level="DEBUG")
 logger.add(sys.stderr, level="ERROR")
 
 def getADCIRCFileNameVariables(modelRunID):
-    ''' Returns DataFrame containing a list of variables (track_raw_fst, downloadurl, ADCIRCgrid, RunStartTime, advisory), 
+    ''' Returns DataFrame containing a list of variables (forcing.metclass, downloadurl, ADCIRCgrid, RunStartTime, advisory), 
         extracted from table ASGS_Mon_config_item, in the asgs_dashboard DB, using the public.get_adcirc_filename_variables 
         SQL function with modelRunID as input. These variables are used to construct filenames.
         Parameters
@@ -65,12 +65,15 @@ def getInputFileName(harvestDir,modelRunID):
     # Get ADCIRC filename variables
     df = getADCIRCFileNameVariables(modelRunID)
     
-    # Get storm track
-    stormTrack = df['track_raw_fst'].values[0]
+    # Get forcing metaclass 
+    forcingMetaClass = df['forcing.metclass'].values[0]
+    workflowType = df['workflow_type'].values[0]
 
-    # Check it run is from a hurricane. The stormTrack value of notrack in for ASGS runs,
-    # while stormTrack value of None is for ECFLOW runs.
-    if stormTrack == 'notrack' or stormTrack == None:
+    # Check it run is from a hurricane. 
+    if forcingMetaClass == 'synoptic':
+        # Create storm variable with value of None since this is a synoptic run
+        storm = None
+
         # Get downloadurl, and extract model run type
         model = df['downloadurl'].values[0].split('/')[-1].upper()
         
@@ -80,13 +83,10 @@ def getInputFileName(harvestDir,modelRunID):
         # Get advisory number or date for synoptic runs
         advisory = df['advisory'].values[0]
         
-        # Get startTime, extracet time variables, and create timemark
+        # Get startTime, extract time variables, and create timemark
         # Check if RunStartTime in None and if so use advisory instead.
         # This step was add for ECFLOW runs
-        if df['RunStartTime'].values[0] == None:
-            startTime = df['advisory'].values[0]
-        else:
-            startTime = df['RunStartTime'].values[0]
+        startTime = df['RunStartTime'].values[0]
         year = startTime[0:4]
         month = startTime[4:6]
         day = startTime[6:8]
@@ -99,12 +99,12 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
             sys.exit(1)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, stormTrack)
+            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
         else:
             return(modelRunID)
     else:
-        # Extract storm ID from stormTrack
-        storm = stormTrack[0:4]
+        # Extract storm ID from forcingMetaClass
+        storm = 'al'+df['stormnumber'].values[0].zfill(2)
 
         # Get downloadurl, and extract model run type
         model = df['downloadurl'].values[0].split('/')[-1].upper()
@@ -120,7 +120,7 @@ def getInputFileName(harvestDir,modelRunID):
         year = startTime[0:4]
         month = startTime[4:6]
         day = startTime[6:8]
-        hour = str(int(startTime[8:11])+1)
+        hour = str(int(startTime[8:11])).zfill(2)
         timemark = year+'-'+month+'-'+day+'T'+hour
 
         # Search for file name, and return it
@@ -129,7 +129,7 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
             sys.exit(1)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, stormTrack)
+            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
         else:
             return(modelRunID)
 

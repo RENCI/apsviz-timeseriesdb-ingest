@@ -255,7 +255,7 @@ def ingestHarvestDataFileMeta(ingestDir):
             for infoFile in inputFiles:
                 # Run ingest query
                 with open(infoFile, "r") as f:
-                    with cur.copy("COPY drf_harvest_data_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_harvest_data_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
