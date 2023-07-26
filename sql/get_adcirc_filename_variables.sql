@@ -44,4 +44,7 @@ BEGIN
     -- return the data to the caller
     return _output;
 END
-$function$
+$function$;
+
+ALTER FUNCTION get_adcirc_filename_variables(varchar) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION get_adcirc_filename_variables(varchar) TO asgs; 
