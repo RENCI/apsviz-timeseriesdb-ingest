@@ -75,7 +75,7 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
         # convert query output to Pandas dataframe 
         df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_paht', 'file_name', 'data_date_time', 
                                                    'data_begin_time', 'data_end_time', 'data_source', 'source_name', 
-                                                   'source_archive', 'ingested', 'overlap_past_file_date_time'])
+                                                   'source_archive', 'timemark', 'ingested', 'overlap_past_file_date_time'])
 
         # Close cursor and database connection
         cur.close()
@@ -91,7 +91,7 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
 # This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
 # It uses them to create a file list that is then ingested into the drf_harvest_data_file_meta table, and used to ingest the
 # data files. This function also returns first_time, and last_time which are used in cross checking the data.
-def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix):
+def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix, inputTimemark):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_harvest_data_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
@@ -107,6 +107,8 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputFilenamePrefix: string
                 Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob. 
+            inputTimemark: string
+                Model run ID timemark, or the start time of the model. This is only for ADCIRC data.
         Returns
             DataFrame, first_time, last_time
     '''
@@ -138,10 +140,10 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
 
         overlap_past_file_date_time = 'False'
 
-        outputList.append([dir_path,file_name,data_date_time,data_begin_time,data_end_time,inputDataSource,inputSourceName,inputSourceArchive,ingested,overlap_past_file_date_time]) 
+        outputList.append([dir_path,file_name,data_date_time,data_begin_time,data_end_time,inputDataSource,inputSourceName,inputSourceArchive,inputTimemark,ingested,overlap_past_file_date_time]) 
 
     # Convert outputList to a DataFrame
-    dfnew = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'data_date_time', 'data_begin_time', 'data_end_time', 'data_source', 'source_name', 'source_archve', 'ingested', 'overlap_past_file_date_time'])
+    dfnew = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'data_date_time', 'data_begin_time', 'data_end_time', 'data_source', 'source_name', 'source_archve', 'timemark', 'ingested', 'overlap_past_file_date_time'])
 
     # Get DataFrame of existing list of files, in the database, that have been ingested.
     dfold = getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive)
@@ -199,10 +201,15 @@ def main(args):
     inputSourceArchive = args.inputSourceArchive
     inputFilenamePrefix = args.inputFilenamePrefix
 
+    if args.inputTimemark:
+        inputTimemark = args.inputTimemark+':00:00'
+    else:
+        inputTimemark = None
+
     logger.info('Start processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+', with filename prefix '+inputFilenamePrefix+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    df, first_time, last_time = createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix)
+    df, first_time, last_time = createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix, inputTimemark)
 
     if pd.isnull(first_time) and pd.isnull(last_time):
         logger.info('No new files for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
@@ -235,6 +242,8 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputFilenamePrefix: string
                 Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
+            inputTimemark: string
+                Model run ID timemark, or the start time of the model. This is only for ADCIRC data.
         Returns
             None
     '''
@@ -248,6 +257,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
     parser.add_argument("--inputFilenamePrefix", help="Input data filename prefix", action="store", dest="inputFilenamePrefix", required=True)
+    parser.add_argument("--inputTimemark", help="Input timemark", action="store", dest="inputTimemark", required=False)
 
     # Parse input arguments
     args = parser.parse_args()

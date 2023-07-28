@@ -12,6 +12,40 @@ import pandas as pd
 import numpy as np
 from loguru import logger
 
+def getFileMetaTimemark(inputFile):
+    ''' Returns DataFrame containing a timemark value, from the table drf_havest_data_file_meta.
+        Parameters
+            inputFile: string
+                Input file name for the file to get the timemark for.
+        Returns
+            DataFrame
+    '''
+    try:
+        # Create connection to database and get cursor
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        cur = conn.cursor()
+
+        # Run query
+        cur.execute("""SELECT file_name, timemark
+                       FROM drf_harvest_data_file_meta
+                       WHERE file_name = %(inputfile)s 
+                       ORDER BY timemark""",
+                    {'inputfile': inputFile})
+
+        # convert query output to Pandas DataFrame
+        df = pd.DataFrame(cur.fetchall(), columns=['file_name','timemark'])
+
+        # Close cursor and database connection
+        cur.close()
+        conn.close()
+
+        return(df)
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
+
 def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
     ''' Returns DataFrame containing a list of filenames, from the table drf_havest_data_file_meta, that have not been ingested yet.
         Parameters
@@ -136,25 +170,27 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
 
     # Run getSourceID function to get the source_id(s)
     dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list)
- 
-    # Get the timemark frome the the data filename NEED TO DEAL WITH HURRICANE AND ENSEMBLES
+
+    # Get the timemark from the the data filename NEED TO DEAL WITH HURRICANE AND ENSEMBLES
     datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
     if inputSourceName == 'adcirc':
+        # Get timemark from the drf_harvest_data_file_meta table
+        dftimemark = getFileMetaTimemark(inputFile)
         if re.search('forecast', inputDataSource.lower()):
             # If the inputDataSource has forecast in its name get the first datetime in the filename
-            df['timemark'] = datetimes[0]
+            df['timemark'] = dftimemark['timemark'].values[0]
         elif re.search('nowcast', inputDataSource.lower()):
             # If the inputDataSource has nowcast in its name get the third datetime in the filename
             # if it is a synoptic run, and the second datetime in the filename if it is a hurricane run
             if inputDataSource[0:2] == 'al':
                 # Hurricane run
-                df['timemark'] = datetimes[1]
+                df['timemark'] = dftimemark['timemark'].values[0]
             else:
                 # Synoptic run
-                df['timemark'] = datetimes[2]
+                df['timemark'] = dftimemark['timemark'].values[0]
         else:
             # If the inputDataSource is a hurricane for ensemble  get the second datetime in the filename
-            df['timemark'] = datetimes[1]
+            df['timemark'] = dftimemark['timemark'].values[0]
     else:
         # If the inputDataSource does not have forecast or  nowcast in its name get the first datetime in the filename
         df['timemark'] = datetimes[0] 
