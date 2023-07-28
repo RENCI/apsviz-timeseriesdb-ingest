@@ -47,3 +47,6 @@ BEGIN
     return _output;
 END
 $function$;
+
+ALTER FUNCTION get_adcirc_filename_variables(varchar) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION get_adcirc_filename_variables(varchar) TO asgs; 
