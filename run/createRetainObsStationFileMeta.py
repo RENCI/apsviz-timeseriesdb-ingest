@@ -75,39 +75,60 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     # Search for files in the harvestDir that have inputDataset name in them, and generate a list of files found
     dirInputFiles = glob.glob(harvestDir+inputFilenamePrefix+"*.csv")
 
-    # Define outputList variable
-    outputList = []
+    if len(dirInputFiles) > 0:
+        # Define outputList variable
+        outputList = []
 
-    # Define ingested as False
-    ingested = False
+        # Define ingested as False
+        ingested = False
 
-    # Loop through dirOutputFiles, generate new variables and add them to outputList
-    for dirInputFile in dirInputFiles:
-        dir_path = dirInputFile.split(inputFilenamePrefix)[0]
-        file_name = Path(dirInputFile).parts[-1] 
+        # Define timeMarkList to output timeMarks into
+        timeMarkList = []
+
+        # Loop through dirOutputFiles, generate new variables and add them to outputList
+        for dirInputFile in dirInputFiles:
+            dir_path = dirInputFile.split(inputFilenamePrefix)[0]
+            file_name = Path(dirInputFile).parts[-1] 
+
+            logger.info('Process file: '+file_name)
                        
-        datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',file_name)
-        timeMark = datetimes[0]
-        
-        outputList.append([dir_path,file_name,inputDataSource,inputSourceName,inputSourceArchive,timeMark,ingested])
+            datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',file_name)
+            timeMark = datetimes[0]
+            if len(timeMark) == 0:
+                logger.info('Something is wrong for the timeMake from file: '+file_name)
+            else:
+                timeMarkList.append([timeMark])
 
-    # Convert outputList to a DataFrame
-    dfnew = pd.DataFrame(outputList, columns=['dir_path','file_name','data_source','source_name','source_archve','timemark','ingested'])
+            dirInputDataFile = "_".join(dirInputFile.split('_meta_'))
+            logger.info('Get begin date, and end date from data file: '+dirInputDataFile)
+            df = pd.read_csv(dirInputDataFile)
+            beginDate = df['TIME'].min()
+            endDate = df['TIME'].max()
 
-    # Get DataFrame of existing list of files, in the database, that have been ingested.
-    dfold = getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArchive)
+            outputList.append([dir_path,file_name,inputDataSource,inputSourceName,inputSourceArchive,timeMark,beginDate,endDate,ingested])
 
-    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
-    df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
+        # Convert outputList to a DataFrame
+        dfnew = pd.DataFrame(outputList, columns=['dir_path','file_name','data_source','source_name','source_archve','timemark','begin_date','end_date','ingested'])
 
-    # Check to see if there are any files 
-    if len(df.values) == 0:
-        logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
+        # Get DataFrame of existing list of files, in the database, that have been ingested.
+        dfold = getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArchive)
+
+        # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
+        df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
+
+        # Check to see if there are any files 
+        if len(df.values) == 0:
+            logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
+        else:
+            logger.info('There are '+str(len(df.values))+' new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
+
+        # Return DataFrame first time, and last time
+        return(df, timeMarkList)
     else:
-        logger.info('There are '+str(len(df.values))+' new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
-
-    # Return DataFrame first time, and last time
-    return(df, timeMark)
+        logger.info('There were no files with prefix: '+inputFilenamePrefix)
+        df = 'NODATA'
+        timeMarkList = 'NOTIMEMARKS'
+        return(df,timeMarkList)
 
 @logger.catch
 def main(args):
@@ -135,7 +156,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createApsVizStationFileMeta.log', level='DEBUG')
+    logger.add(log_path+'createRetainObsStationFileMeta.log', level='DEBUG')
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
@@ -150,17 +171,22 @@ def main(args):
     logger.info('Start processing source station data for source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+', with filename prefix '+inputFilenamePrefix+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    df, timemark = createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilenamePrefix)
+    df, timeMarkList = createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilenamePrefix)
 
-    # Get current date   
-    current_date = datetime.date.today()
+    if timeMarkList == 'NOTIMEMARKS':
+        logger.info('No data or timeMark for file name prefix'+inputFilenamePrefix)
+    else:
+        logger.info('createFileList returned '+str(len(timeMarkList))+' timeMarks')
 
-    # Create output file name
-    outputFile = 'retain_obs_meta_files_'+inputFilenamePrefix+'_'+timeMark+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+        # Get current date   
+        current_date = datetime.date.today()
 
-    # Write DataFrame containing list of files to a csv file
-    df.to_csv(ingestDir+outputFile, index=False, header=False)
-    logger.info('Finished processing source station meta data for file '+outputFile+'.')
+        # Create output file name
+        outputFile = 'retain_obs_meta_files_'+inputFilenamePrefix+'_'+timeMarkList[0][0]+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
+
+        # Write DataFrame containing list of files to a csv file
+        df.to_csv(ingestDir+outputFile, index=False, header=False)
+        logger.info('Finished processing source station meta data for file '+outputFile+'.')
 
 if __name__ == "__main__":
     ''' Takes argparse inputs and passes theme to the main function

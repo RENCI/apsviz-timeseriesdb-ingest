@@ -24,7 +24,11 @@ def getSourceMeta(dataType):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -56,7 +60,11 @@ def getApsVizStationInfo(modelRunID):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -68,6 +76,45 @@ def getApsVizStationInfo(modelRunID):
         df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archive','grid_name','model_run_id',
                                                    'timemark','csvurl','ingested']) 
         
+        # Close cursor and database connection
+        cur.close()
+        conn.close()
+
+        # return DataFrame
+        return(df)
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
+def getRetainObsStationInfo():
+    ''' Returns DataFrame containing variables from the drf_apsviz_station_file_meta table. It takes a model run ID as input.
+        Parameters
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db.
+        Returns
+            DataFrame
+    '''
+
+    try:
+        # Create connection to database and get cursor
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        cur = conn.cursor()
+
+        # Run query
+        cur.execute("""SELECT dir_path,file_name,data_source,source_name,source_archive,
+                              timemark,begin_date,end_date,ingested
+                       FROM drf_retain_obs_station_file_meta
+                       WHERE ingested = False""")
+
+        # convert query output to Pandas dataframe
+        df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name','data_source','source_name','source_archive',
+                                                   'timemark','begin_date','end_date','ingested'])
+
         # Close cursor and database connection
         cur.close()
         conn.close()
@@ -292,8 +339,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             output = subprocess.run(program, shell=False, check=True)
             logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-        # Create list of program commands to ingest meta-data on contrails meta files
-        # WORKING ON THIS
+        # Create list of program commands to ingest meta-data on the obs meta files, which contain station information, into the drf_retain_obs_station_file_meta table
         program_list = []
 
         # Loop through all obs data sources
@@ -306,8 +352,8 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                                  row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],
                                  '--inputFilenamePrefix',meta_filename_prefix])
 
-            # Ingest meta-data on harvest files created above
-            #program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationFileMeta'])
+        # Ingest meta-data on harvest files created above
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationFileMeta'])
 
         # Run list of program commands using subprocess
         if len(program_list) > 0:
@@ -337,7 +383,8 @@ def runDataCreate(ingestDir, dataType):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','createIngestData.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive']])
+        program_list.append(['python','createIngestData.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],
+                             '--inputSourceArchive',row['source_archive']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -363,7 +410,8 @@ def runDataIngest(ingestDir, dataType):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestData','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'], '--inputSourceVariable',row['source_variable']])
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestData','--inputDataSource',row['data_source'],
+                             '--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'], '--inputSourceVariable',row['source_variable']])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -408,8 +456,52 @@ def runApsVizStationCreateIngest(ingestDir, modelRunID):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestApsVizStationData',
-                             '--ingestDir',ingestDir,'--inputFilename',row['file_name']])
+        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename',row['file_name'],'--inputTask','ingestApsVizStationData'])
+
+    # Run list of program commands using subprocess
+    for program in program_list:
+        logger.info('Run '+" ".join(program))
+        output = subprocess.run(program, shell=False, check=True)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+
+def runRetainObsStationCreateIngest(ingestDir):
+    ''' This function creates and ingests the obs station data from the obs meta files, adding a timemark, begin_date, end_date, 
+        data_source, and source_archive. It gets this information from the from the drf_retain_obs_station_file_meta table, by running the 
+        getRetainObsStationInfo() function
+        Parameters 
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files. 
+        Returns
+            None, but it runs createIngestRetainObsStationData.py, which outputs a CSV file, and then it runs ingestTask.py
+            which ingest the CSV files into the drf_retain_obs_station table.
+    ''' 
+
+    logger.info('Create Retain Obs station file data, to be ingested into the drf_retain_obs_station table ')
+    df = getRetainObsStationInfo() 
+
+    # Create list of program commands
+    program_list = []
+    for index, row in df.iterrows():
+        timeMark = "T".join(str(row['timemark']).split('+')[0].split(' '))
+        beginDate = "T".join(str(row['begin_date']).split('+')[0].split(' '))
+        endDate = "T".join(str(row['end_date']).split('+')[0].split(' '))
+        program_list.append(['python','createIngestRetainObsStationData.py','--harvestDir',row['dir_path'],'--ingestDir',ingestDir,
+                             '--inputFilename',row['file_name'],'--timeMark',timeMark,'--inputDataSource',row['data_source'],
+                             '--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--beginDate',beginDate,
+                             '--endDate',endDate])
+        
+        logger.info('Create ingest command for Retain Obs station file data, with filename '+row['file_name']+', to ingest into the drf_retain_obs_station table ')
+
+    # Run list of program commands using subprocess
+    for program in program_list:
+        logger.info('Run '+" ".join(program))
+        output = subprocess.run(program, shell=False, check=True)
+        logger.info('Ran '+" ".join(program)+' with output returncode '+str(output.returncode))
+
+    # Create list of program commands
+    program_list = []
+    for index, row in df.iterrows():
+        program_list.append(['python','ingestTasks.py','--inputFilename',row['file_name'],'--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationData'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -440,10 +532,11 @@ def runSequenceIngest(harvestDir, ingestDir, dataType, modelRunID):
     runDataIngest(ingestDir, dataType)
 
     if modelRunID != None:
-        logger.info('Data type '+dataType+' needs apsViz stations ingest in case of modetype forecast, but not for nowcast')
+        logger.info('Data type '+dataType+' needs apsViz stations ingest, into the drf_apsviz_station table, in case of modetype forecast, but not for nowcast')
         runApsVizStationCreateIngest(ingestDir, modelRunID) 
     else:
-       logger.info('Data type '+dataType+' does not need to have apsViz stations ingested')
+       logger.info('Data type '+dataType+' needs to have obs stations ingested into the drf_retain_obs_station table')
+       runRetainObsStationCreateIngest(ingestDir)
 
 @logger.catch
 def main(args):
@@ -514,6 +607,11 @@ def main(args):
         logger.info('Run apsViz station create-ingest for model run ID '+modelRunID+'.')
         runApsVizStationCreateIngest(ingestDir, modelRunID)
         logger.info('Ran apsViz station create-ingest for model run ID '+modelRunID+'.')
+    elif inputTask.lower() == 'runretainobsstationcreateingest':
+        ingestDir = os.path.join(args.ingestDir, '')
+        logger.info('Run Retain Obs station create-ingest.')
+        runRetainObsStationCreateIngest(ingestDir)
+        logger.info('Ran Retain Obs station create-ingest.')
     elif inputTask.lower() == 'sequenceingest':
         harvestDir = os.path.join(args.harvestDir, '')
         ingestDir = os.path.join(args.ingestDir, '')
@@ -549,7 +647,7 @@ if __name__ == "__main__":
 
     # Non optional argument
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestHarvestDataFileMeta',
-                        'DataCreate','DataIngest','runApsVizStationCreateIngest','SequenceIngest'], required=True)
+                        'DataCreate','DataIngest','runApsVizStationCreateIngest','runRetainObsStationCreateIngest','SequenceIngest'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]
@@ -568,6 +666,11 @@ if __name__ == "__main__":
     elif args.inputTask.lower() == 'runapsvizstationcreateingest':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--modelRunID", "--modelRunId", help="Model run ID for ADCIRC forecast data", action="store", dest="modelRunID", required=True)
+    elif args.inputTask.lower() == 'runapsvizstationcreateingest':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--modelRunID", "--modelRunId", help="Model run ID for ADCIRC forecast data", action="store", dest="modelRunID", required=True)
+    elif args.inputTask.lower() == 'runretainobsstationcreateingest':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'sequenceingest':
         parser.add_argument("--harvestDIR", "--harvestDir", help="Harvest directory path", action="store", dest="harvestDir", required=True)
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
