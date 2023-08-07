@@ -14,7 +14,7 @@ import numpy as np
 from pathlib import Path
 from loguru import logger
 
-def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID):
+def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID, inputLocationType):
     ''' Returns a DataFrame containing a list of files, from table drf_apsviz_station_file_meta, that have been ingested.
         Parameters
             inputDataSource: string
@@ -30,19 +30,23 @@ def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchiv
     '''
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
        
         # Run query
-        cur.execute("""SELECT * FROM drf_apsviz_station_file_meta
+        cur.execute("""SELECT file_id, dir_path, file_name, data_date_time, data_source, source_name, source_archive, grid_name, model_run_id, timemark, location_type, csvurl, ingested 
+                       FROM drf_apsviz_station_file_meta
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                       source_archive = %(sourcearchive)s AND ingested = True AND model_run_id = %(modelrunid)s""", 
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'modelrunid': modelRunID})
+                       source_archive = %(sourcearchive)s AND ingested = True AND model_run_id = %(modelrunid)s AND location_type = %(locationtype)s""", 
+                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'modelrunid': modelRunID, 'locationtype': inputLocationType})
           
         # convert query output to Pandas dataframe 
-        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'data_date_time', 
-                                                   'data_source', 'source_name', 'source_archive', 'model_run_id', 
-                                                   'timemark', 'csvurl', 'ingested'])
+        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'data_date_time', 'data_source', 'source_name', 'source_archive', 'grid_name',
+                                                   'model_run_id', 'timemark', 'location_type', 'csvurl', 'ingested'])
 
         # Close cursor and database connection
         cur.close()
@@ -55,7 +59,7 @@ def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchiv
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,gridName,modelRunID,timeMark,csvURL,dataDateTime):
+def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,gridName,modelRunID,timeMark,inputLocationType,csvURL,dataDateTime):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_apsviz_station_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
@@ -77,6 +81,8 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            inputLocationType: string
+                Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             csvURL:
                 URL to SQL function that queries db and returns CSV file of data
             dataDateTime:
@@ -92,24 +98,26 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     ingested = False
 
     # Append variables to output list.
-    outputList.append([harvestDir,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,gridName,modelRunID,timeMark,csvURL,ingested]) 
+    outputList.append([harvestDir,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,gridName,modelRunID,timeMark,inputLocationType,csvURL,ingested]) 
 
     # Convert outputList to a DataFrame
     dfnew = pd.DataFrame(outputList, columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archve',
-                                              'grid_name','model_run_id','timemark','csv_url','ingested'])
+                                              'grid_name','model_run_id','timemark','location_type','csv_url','ingested'])
 
     # Get DataFrame of existing list of files, in the database, that have been ingested.
-    dfold = getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID)
+    dfold = getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID, inputLocationType)
 
     # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
     df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
     if len(df.values) == 0:
-        logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive, with model run ID '+modelRunID)
+        logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive, with model run ID '+
+                    modelRunID+' and location type'+inputLocationType+'.')
         first_time = np.nan
         last_time = np.nan
     else:
-        logger.info('There are '+str(len(df.values))+' new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive, with model run ID '+modelRunID)
+        logger.info('There are '+str(len(df.values))+' new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+
+                    inputSourceArchive+' archive, with model run ID '+modelRunID+' and location type'+inputLocationType+'.')
         # Get first time, and last time from the list of files. This will be used in the filename, to enable checking for time overlap in files
         first_time = df['data_date_time'].iloc[0]
         last_time = df['data_date_time'].iloc[-1] 
@@ -142,6 +150,8 @@ def main(args):
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            inputLocationType: string
+                Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             csvURL:
                 URL to SQL function that queries db and returns CSV file of data
             dataDateTime:
@@ -167,6 +177,7 @@ def main(args):
     gridName = args.gridName
     modelRunID = args.modelRunID
     timeMark = args.timeMark
+    inputLocationType = args.inputLocationType
     csvURL = args.csvURL
     dataDateTime = args.dataDateTime
 
@@ -174,10 +185,10 @@ def main(args):
 
     # Get DataFrame file list, and time variables by running the createFileList function
     df, first_time, last_time = createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputFilename,
-                                               gridName,modelRunID,timeMark,csvURL,dataDateTime)
+                                               gridName,modelRunID,timeMark,inputLocationType,csvURL,dataDateTime)
 
     if pd.isnull(first_time) and pd.isnull(last_time):
-        logger.info('No new files for station meta data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
+        logger.info('No new files for station meta data source '+inputDataSource+', source name '+inputSourceName+', source archive '+inputSourceArchive+', and location type '+inputLocationType+'.')
     else:
         # Get current date    
         current_date = datetime.date.today()
@@ -210,6 +221,8 @@ if __name__ == "__main__":
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
             timeMark: datatime
                 Date and time of the beginning of the model run for forecast runs, and end of the model run for nowcast runs.
+            inputLocationType: string
+                Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             csvURL:
                 URL to SQL function that queries db and returns CSV file of data
             dataDateTime:
@@ -229,6 +242,7 @@ if __name__ == "__main__":
     parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)
     parser.add_argument("--modelRunID", help="Input model run ID", action="store", dest="modelRunID", required=True)
     parser.add_argument("--timeMark", help="Timemark value for model run ID", action="store", dest="timeMark", required=True)
+    parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
     parser.add_argument("--csvURL", help="Input URL to get CSV output file", action="store", dest="csvURL", required=True)
     parser.add_argument("--dataDateTime", help="Data date time from input harvest file", action="store", dest="dataDateTime", required=True)
 

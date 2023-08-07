@@ -324,7 +324,7 @@ def ingestApsVizStationFileMeta(ingestDir, inputFilename):
 
             # Run ingest query
             with open(ingestDir+inputFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,location_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
@@ -366,7 +366,7 @@ def ingestRetainObsStationFileMeta(ingestDir):
             for infoFile in inputFiles:
                 # Run ingest query
                 with open(infoFile, "r") as f:
-                    with cur.copy("COPY drf_retain_obs_station_file_meta (dir_path,file_name,data_source,source_name,source_archive,timemark,begin_date,end_date,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_retain_obs_station_file_meta (dir_path,file_name,data_source,source_name,source_archive,location_type,timemark,begin_date,end_date,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -514,7 +514,7 @@ def ingestApsVizStationData(ingestDir, inputFilename):
 
             # Run ingest query
             with open(ingestDir+ingestFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,model_run_id,data_source,source_archive,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_archive,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
@@ -565,7 +565,7 @@ def ingestRetainObsStationData(ingestDir, inputFilename):
             # Run ingest query to input data with the following variables: station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,
             # begin_date,end_date,data_source,source_archive into the drf_retain_obs_station table.
             with open(ingestDir+ingestFilename, "r") as f:
-                with cur.copy("COPY drf_retain_obs_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,begin_date,end_date,data_source,source_archive) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_retain_obs_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,begin_date,end_date,data_source,source_name,source_archive,location_type) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 

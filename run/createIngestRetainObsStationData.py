@@ -51,7 +51,7 @@ def getGaugeStationInfo(stationNames):
         logger.info(error)
 
 # look into using **kwargs here, and eventually other places where it make sense.
-def addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginDate, endDate, inputDataSource, inputSourceName, inputSourceArchive):
+def addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginDate, endDate, inputDataSource, inputSourceName, inputSourceArchive, inputLocationType):
     ''' Returns a csv file that containes station location data for the drf_retain_obs_station table. The function adds
         a timemark, that it gets from the input file name. The timemark values can be used to uniquely query an ADCIRC 
         forecast model run. It also adds a data_source, and source_archive. 
@@ -73,8 +73,13 @@ def addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginD
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, 
                 wind_anemometer,
                 NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...). Used by ingestSourceMeta,
+                and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputLocationType: string
+                Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
         Returns
             CSV file
     '''
@@ -94,11 +99,13 @@ def addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginD
     df.insert(0,'begin_date', '')
     df.insert(0,'end_date', '')
     df.insert(0,'data_source', '')
+    df.insert(0,'source_name', '')
     df.insert(0,'source_archive', '')
+    df.insert(0,'location_type', '')
 
     # Reorder columns
     df = df.loc[:, ["station_name","lat","lon","location_name","tz","gauge_owner","country","state","county","geom","timemark",
-                    "begin_date","end_date","data_source","source_archive"]]
+                    "begin_date","end_date","data_source","source_name","source_archive","location_type"]]
  
     # Add model_run_id, timemark, and csvurl values to specifies columns in DataFrame
     timemark = "T".join(timeMark.split(' ')).split('+')[0]+'Z'
@@ -106,7 +113,9 @@ def addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginD
     df['begin_date'] = beginDate
     df['end_date'] = endDate
     df['data_source'] = inputDataSource
+    df['source_name'] = inputSourceName
     df['source_archive'] = inputSourceArchive
+    df['location_type'] = inputLocationType
 
     # Write DataFrame to CSV file
     df.to_csv(ingestDir+'obs_station_data_copy_'+inputFilename, index=False, header=False)
@@ -134,9 +143,14 @@ def main(args):
             inputDataSource: string
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
                 NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...). Used by ingestSourceMeta,
+                and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
                 URL to SQL function that queries db and returns CSV file of data
+            inputLocationType: string
+                Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
         Returns
             CSV file
     '''
@@ -158,10 +172,11 @@ def main(args):
     inputDataSource = args.inputDataSource
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
+    inputLocationType = args.inputLocationType
         
-    logger.info('Start processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', and timemark '+timeMark+'.')
-    addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginDate, endDate, inputDataSource, inputSourceName, inputSourceArchive)
-    logger.info('Finished processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', and timemark '+timeMark+'.')
+    logger.info('Start processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', timemark '+timeMark+', and location type '+inputLocationType+'.')
+    addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginDate, endDate, inputDataSource, inputSourceName, inputSourceArchive, inputLocationType)
+    logger.info('Finished processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', timemark '+timeMark+', and location type '+inputLocationType+'.')
  
 # Run main function takes harvestDir, ingestDir, inputFilename, and timeMark as input.
 if __name__ == "__main__": 
@@ -187,6 +202,8 @@ if __name__ == "__main__":
                 and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputLocationType: string
+                Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
         Returns
             None
     '''
@@ -203,6 +220,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True) 
+    parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
 
     args = parser.parse_args() 
     main(args)
