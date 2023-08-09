@@ -25,8 +25,10 @@ def getADCIRCFileNameVariables(modelRunID):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_DB_DATABASE'], user=os.environ['ASGS_DB_USERNAME'], 
-                             host=os.environ['ASGS_DB_HOST'], port=os.environ['ASGS_DB_PORT'], 
+        with psycopg.connect(dbname=os.environ['ASGS_DB_DATABASE'], 
+                             user=os.environ['ASGS_DB_USERNAME'], 
+                             host=os.environ['ASGS_DB_HOST'], 
+                             port=os.environ['ASGS_DB_PORT'], 
                              password=os.environ['ASGS_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
@@ -96,7 +98,7 @@ def getInputFileName(harvestDir,modelRunID):
         filelist = glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv')
         if len(filelist) == 0:
             logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
-            sys.exit(1)
+            sys.exit(0)
         elif len(filelist) > 0:
             return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
         else:
@@ -126,7 +128,7 @@ def getInputFileName(harvestDir,modelRunID):
         filelist = glob.glob(harvestDir+'adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv')
         if len(filelist) == 0:
             logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
-            sys.exit(1)
+            sys.exit(0)
         elif len(filelist) > 0:
             return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
         else:
