@@ -436,6 +436,9 @@ def runApsVizStationCreateIngest(ingestDir, modelRunID):
     logger.info('Create apsViz station file data, for model run ID '+modelRunID+', to be ingested into the apsviz_station table ')
     df = getApsVizStationInfo(modelRunID) 
 
+    # Create list of all location types
+    all_location_types = ','.join(df['location_type'].unique().tolist())
+
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
@@ -443,7 +446,7 @@ def runApsVizStationCreateIngest(ingestDir, modelRunID):
         program_list.append(['python','createIngestApsVizStationData.py','--harvestDir',row['dir_path'],'--ingestDir',ingestDir,
                              '--inputFilename',row['file_name'],'--timeMark',str(row['timemark']),'--modelRunID',row['model_run_id'],
                              '--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],
-                             '--inputLocationType',row['location_type'],'--gridName',row['grid_name'],'--csvURL',row['csvurl']])
+                             '--inputLocationType',row['location_type'],'--allLocationTypes',all_location_types,'--gridName',row['grid_name'],'--csvURL',row['csvurl']])
 
     # Run list of program commands using subprocess
     for program in program_list:

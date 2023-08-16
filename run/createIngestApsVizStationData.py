@@ -139,7 +139,7 @@ def getGaugeStationInfo(stationNames):
         logger.info(error)
 
 def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName,
-                             inputSourceArchive, inputLocationType, gridName, csvURL):
+                             inputSourceArchive, inputLocationType, allLocationTypes, gridName, csvURL):
     ''' Returns a csv file that containes station location data for the drf_apsviz_station table. The function adds a 
         timemark, that it gets from the input file name. The timemark values can be used to uniquely query an ADCIRC 
         forecast model run. It also adds a model_run_id, data_source, source_archive, grid_name, and csv_url. The 
@@ -168,6 +168,9 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
+            allLocationTypes: string
+                All the location types in drf_apsviz_station_file_meta for this model run id. This variable is used to determine 
+                what addtional locations types (e.g. coastal, river) need to be queried to get all stations with this date range.
             gridName: string
                 Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...)
             csvURL:
@@ -220,8 +223,24 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
     begin_date = time_mark - timedelta(days=1.5)
     end_date = time_mark
 
-    # Get Obs stations that overlap with begin date and end date derived from timeMark
-    dfObs = getObsStations(begin_date, end_date, inputLocationType)
+    if inputLocationType == 'tidal':
+        # In this step I need to create the code that diffs allLocationTypes and everyLocationTypes, and then for loops through the diffs  
+        # running getObsStations on each, and then concatinating them to dfObs.
+        dfObs = getObsStations(begin_date, end_date, inputLocationType)
+        logger.info('Added location type '+inputLocationType+' to dfObs')
+        everyLocationTypes = ['tidal', 'ocean', 'coastal', 'river']
+        diffLocationTypes = list(set(everyLocationTypes) - set(allLocationTypes))
+        if len(diffLocationTypes ) > 0:
+            for locationType in diffLocationTypes:
+                # Need to test this
+                dfObs = dfObs.append(getObsStations(begin_date, end_date, locationType),ignore_index=True)
+                logger.info('Added location type '+locationType+' to dfObs')
+        else:
+            logger.info('There are no additional location types')
+    else:
+        # Get Obs stations that overlap with begin date and end date derived from timeMark
+        dfObs = getObsStations(begin_date, end_date, inputLocationType)
+        logger.info('Added location type '+inputLocationType+' to dfObs')
 
     # Check if dataframe is not empty
     if not dfObs.empty:
@@ -306,6 +325,9 @@ def main(args):
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
+            allLocationTypes: string
+                All the location types in drf_apsviz_station_file_meta for this model run id. This variable is used to determine 
+                what addtional locations types (e.g. coastal, river) need to be queried to get all stations with this date range.
             gridName: string 
                 Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...)
             csvURL:
@@ -331,12 +353,13 @@ def main(args):
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputLocationType = args.inputLocationType
+    allLocationTypes = args.allLocationTypes.split(',')
     gridName = args.gridName
     csvURL = args.csvURL
         
     logger.info('Start processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
                 modelRunID+', timemark '+timeMark+', and csvURL '+csvURL+'.')
-    addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputLocationType, gridName, csvURL)
+    addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputLocationType, allLocationTypes, gridName, csvURL)
     logger.info('Finished processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
                 modelRunID+', timemark '+timeMark+', and csvURL '+csvURL+'.')
  
@@ -364,6 +387,9 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
+            allLocationTypes: string
+                All the location types in drf_apsviz_station_file_meta for this model run id. This variable is used to determine 
+                what addtional locations types (e.g. coastal, river) need to be queried to get all stations with this date range.
             gridName: string 
                 Name of grid being used in model run (e.g., ed95d, hsofs NCSC_SAB_v1.23...) 
             csvURL:
@@ -384,6 +410,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
     parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
+    parser.add_argument("--allLocationTypes", help="All location types", action="store", dest="allLocationTypes", required=True)
     parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)
     parser.add_argument("--csvURL", help="URL to SQL function that will retrieve a csv file", action="store", dest="csvURL", required=True)
 

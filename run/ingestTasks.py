@@ -511,10 +511,10 @@ def ingestApsVizStationData(ingestDir, inputFilename):
                              password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
                              autocommit=True) as conn:
             cur = conn.cursor()
-
+    
             # Run ingest query
             with open(ingestDir+ingestFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_archive,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,tz,gauge_owner,location_name,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_archive,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
