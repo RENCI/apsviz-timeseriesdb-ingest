@@ -156,7 +156,7 @@ if __name__ == "__main__":
     parser.add_argument("--ingestDIR", "--ingestDir", help="Output directory path", action="store", dest="ingestDir", required=True)
     parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
-    parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True) 
+    parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True) 
     parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=True)
     parser.add_argument("--inputLocationType", help="Input location type", action="store", dest="inputLocationType", required=True)
 

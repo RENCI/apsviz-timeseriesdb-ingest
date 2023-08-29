@@ -12,6 +12,9 @@ logger.add(log_path+'getDashboardMeta.log', level='DEBUG')
 logger.add(sys.stdout, level="DEBUG")
 logger.add(sys.stderr, level="ERROR")
 
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
 def getADCIRCFileNameVariables(modelRunID):
     ''' Returns DataFrame containing a list of variables (forcing.metclass, downloadurl, ADCIRCgrid, time.currentdate, time,currentcycle, advisory), 
         extracted from table ASGS_Mon_config_item, in the asgs_dashboard DB, using the public.get_adcirc_filename_variables 
@@ -25,8 +28,10 @@ def getADCIRCFileNameVariables(modelRunID):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_DB_DATABASE'], user=os.environ['ASGS_DB_USERNAME'], 
-                             host=os.environ['ASGS_DB_HOST'], port=os.environ['ASGS_DB_PORT'], 
+        with psycopg.connect(dbname=os.environ['ASGS_DB_DATABASE'], 
+                             user=os.environ['ASGS_DB_USERNAME'], 
+                             host=os.environ['ASGS_DB_HOST'], 
+                             port=os.environ['ASGS_DB_PORT'], 
                              password=os.environ['ASGS_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
@@ -91,12 +96,24 @@ def getInputFileName(harvestDir,modelRunID):
         day = currentDate[4:6]
         hour = df['time.currentcycle'].values[0]
         timemark = year+'-'+month+'-'+day+'T'+hour
-      
-        # Search for file name, and return it
-        filelist = glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv')
+    
+        # Define forecast obs station types for searching with glob 
+        forecast_obs_station_types = ['NOAASTATIONS','CONTRAILSCOASTAL','CONTRAILSRIVERS','NDBCBUOYS'] 
+
+        # Create filelist
+        filelist = []
+
+        # Loop through forecast_obs_station_types globing files, and append to filelist
+        for forecast_obs_station_type in forecast_obs_station_types:
+            # Search for file name, and return it
+            filelist.append(glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_'+forecast_obs_station_type+'_'+timemark+'*.csv'))
+
+        # Flatten file list
+        filelist = flatten(filelist)
+
         if len(filelist) == 0:
             logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
-            sys.exit(1)
+            sys.exit(0)
         elif len(filelist) > 0:
             return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
         else:
@@ -126,7 +143,7 @@ def getInputFileName(harvestDir,modelRunID):
         filelist = glob.glob(harvestDir+'adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv')
         if len(filelist) == 0:
             logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
-            sys.exit(1)
+            sys.exit(0)
         elif len(filelist) > 0:
             return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
         else:

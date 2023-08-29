@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#)!/usr/bin/env python
 # coding: utf-8
 
 # Import Python modules
@@ -34,9 +34,12 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
     '''         
 
     try:
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'],
-                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'],
-                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'],
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'],
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
     
             cur.execute("""DELETE FROM
@@ -89,7 +92,12 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -123,7 +131,12 @@ def ingestStations(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
 
             # Loop thru geom file list, ingesting each one
@@ -162,7 +175,12 @@ def ingestSourceData(ingestDir):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
 
             # Loop thru source file list, ingesting each one
@@ -203,7 +221,11 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
     try:
         # Create connection to database, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -249,7 +271,12 @@ def ingestHarvestDataFileMeta(ingestDir):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
 
             for infoFile in inputFiles:
@@ -287,18 +314,65 @@ def ingestApsVizStationFileMeta(ingestDir, inputFilename):
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
 
             # Run ingest query
             with open(ingestDir+inputFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,grid_name,model_run_id,timemark,location_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
             # Remove harvest meta file after ingesting it.
             logger.info('Remove apsVis station meta file: '+inputFilename+' after ingesting it')
             os.remove(ingestDir+inputFilename)
+
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
+def ingestRetainObsStationFileMeta(ingestDir):
+    ''' This function takes as input an ingest directory. It uses the input directory to seach for harvest_data_files
+        that need to be ingested. It uses the ingest directory to define the path of the retain_obs_station_file_metto ingesting.
+        The ingest directory is the directory path in the apsviz-timeseriesdb database container.
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files.
+        Returns
+            None
+    '''
+
+    inputFiles = glob.glob(ingestDir+"retain_obs_meta_files_*.csv")
+
+    try:
+        # Create connection to databaseset, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
+            cur = conn.cursor()
+
+            for infoFile in inputFiles:
+                # Run ingest query
+                with open(infoFile, "r") as f:
+                    with cur.copy("COPY drf_retain_obs_station_file_meta (dir_path,file_name,data_source,source_name,source_archive,location_type,timemark,begin_date,end_date,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
+
+                # Remove harvest meta file after ingesting it.
+                logger.info('Remove harvest meta file: '+infoFile+' after ingesting it')
+                os.remove(infoFile)
 
             # Close cursor and database connection
             cur.close()
@@ -339,7 +413,12 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
 
             # Loop thru DataFrame ingesting each data file
@@ -425,17 +504,73 @@ def ingestApsVizStationData(ingestDir, inputFilename):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
-
+    
             # Run ingest query
             with open(ingestDir+ingestFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,model_run_id,data_source,source_archive,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,tz,gauge_owner,location_name,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_archive,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
             # Run update 
             cur.execute("""UPDATE drf_apsviz_station_file_meta
+                           SET ingested = True
+                           WHERE file_name = %(update_file)s
+                           """,
+                        {'update_file': inputFilename})
+
+            # Remove ingest data file after ingesting it.
+            logger.info('Remove ingest data file: '+ingestDir+ingestFilename+' after ingesting it')
+            os.remove(ingestDir+ingestFilename)
+
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
+def ingestRetainObsStationData(ingestDir, inputFilename):
+    ''' This function takes an ingest directory and input dataset as input, and used them to ingest the data in the file, 
+        specified by the file name, into the drf_retain_obs_station table.
+        Parameters
+            ingestDir: string
+                Directory path to ingest data files, created from the harvest files.
+            inputFilename: string
+                The name of the input file. This is a full file name that is used when ingesting the Retain Obs Station data.
+        Returns
+            None
+    '''
+
+    ingestFilename = 'obs_station_data_copy_'+inputFilename
+    logger.info('Begin ingesting apsViz station data from file '+ingestFilename+', in directory '+ingestDir+'.')
+
+    try:
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
+            cur = conn.cursor()
+
+            # Run ingest query to input data with the following variables: station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,
+            # begin_date,end_date,data_source,source_archive into the drf_retain_obs_station table.
+            with open(ingestDir+ingestFilename, "r") as f:
+                with cur.copy("COPY drf_retain_obs_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,begin_date,end_date,data_source,source_name,source_archive,location_type) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    while data := f.read(100):
+                        copy.write(data)
+
+            # Run update 
+            cur.execute("""UPDATE drf_retain_obs_station_file_meta
                            SET ingested = True
                            WHERE file_name = %(update_file)s
                            """,
@@ -463,7 +598,12 @@ def createView():
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], autocommit=True) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -590,6 +730,11 @@ def main(args):
         logger.info('Ingesting input apsViz station meta file information.')
         ingestApsVizStationFileMeta(ingestDir, inputFilename)
         logger.info('Ingested input apsViz station meta file information.')
+    elif inputTask.lower() == 'ingestretainobsstationfilemeta':
+        ingestDir = os.path.join(args.ingestDir, '')
+        logger.info('Ingesting input obs station file information.')
+        ingestRetainObsStationFileMeta(ingestDir)
+        logger.info('Ingested input obs station file information.')
     elif inputTask.lower() == 'ingestdata':
         ingestDir = os.path.join(args.ingestDir, '')
         inputDataSource = args.inputDataSource
@@ -605,6 +750,12 @@ def main(args):
         logger.info('Ingesting apsViz station data from file '+inputFilename+', in directory '+ingestDir+'.')
         ingestApsVizStationData(ingestDir, inputFilename)
         logger.info('Ingested apsViz station data from file '+inputFilename+', in directory '+ingestDir+'.')
+    elif inputTask.lower() == 'ingestretainobsstationdata':
+        ingestDir = args.ingestDir
+        inputFilename = args.inputFilename
+        logger.info('Ingesting Retain Obs station data from file '+inputFilename+', in directory '+ingestDir+'.')
+        ingestRetainObsStationData(ingestDir, inputFilename)
+        logger.info('Ingested Retain Obs station data from file '+inputFilename+', in directory '+ingestDir+'.')
     elif inputTask.lower() == 'createview':
         logger.info('Creating view.')
         createView()
@@ -654,15 +805,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestSourceMeta','ingestStations','ingestSourceData', 'ingestHarvestDataFileMeta','ingestApsVizStationFileMeta','ingestData','ingestApsVizStationData','createView'], required=True)
+    parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestSourceMeta','ingestStations','ingestSourceData', 
+                                                                                                                'ingestHarvestDataFileMeta','ingestApsVizStationFileMeta',
+                                                                                                                'ingestRetainObsStationFileMeta','ingestData','ingestApsVizStationData',
+                                                                                                                'ingestRetainObsStationData','createView'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]
-
     if args.inputTask.lower() == 'ingestsourcemeta':
         parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
         parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
-        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", required=True)
         parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
         parser.add_argument("--inputFilenamePrefix", help="Input filename variables", action="store", dest="inputFilenamePrefix", required=True)
         parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
@@ -677,13 +830,18 @@ if __name__ == "__main__":
     elif args.inputTask.lower() == 'ingestapsvizstationfilemeta':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for apzViz station meta file", action="store", dest="inputFilename", required=True)
+    elif args.inputTask.lower() == 'ingestretainobsstationfilemeta':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'ingestdata':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
         parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
-        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", choices=['renci','contrails','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", required=True)
         parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
     elif args.inputTask.lower() == 'ingestapsvizstationdata':
+        parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
+        parser.add_argument("--inputFilename", help="Input filename to be processed", action="store", dest="inputFilename", required=True)
+    elif args.inputTask.lower() == 'ingestretainobsstationdata':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
         parser.add_argument("--inputFilename", help="Input filename to be processed", action="store", dest="inputFilename", required=True)
 

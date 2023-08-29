@@ -24,7 +24,11 @@ def getFileDateTime(inputFile):
     '''
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -63,18 +67,22 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
     '''
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
        
         # Run query
-        cur.execute("""SELECT * FROM drf_harvest_data_file_meta
+        cur.execute("""SELECT file_id, dir_path, file_name, data_date_time, data_begin_time, data_end_time, data_source, source_name, source_archive, timemark, ingested, overlap_past_file_date_time
+                       FROM drf_harvest_data_file_meta
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
                        source_archive = %(sourcearchive)s AND ingested = True""", 
                     {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
        
         # convert query output to Pandas dataframe 
-        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_paht', 'file_name', 'data_date_time', 
-                                                   'data_begin_time', 'data_end_time', 'data_source', 'source_name', 
+        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'data_date_time', 'data_begin_time', 'data_end_time', 'data_source', 'source_name', 
                                                    'source_archive', 'timemark', 'ingested', 'overlap_past_file_date_time'])
 
         # Close cursor and database connection
@@ -255,7 +263,7 @@ if __name__ == "__main__":
     parser.add_argument("--ingestDIR", "--ingestDir", help="Output directory path", action="store", dest="ingestDir", required=True)
     parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
-    parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", choices=['noaa','ndbc','contrails','renci'], required=True)
+    parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
     parser.add_argument("--inputFilenamePrefix", help="Input data filename prefix", action="store", dest="inputFilenamePrefix", required=True)
     parser.add_argument("--inputTimemark", help="Input timemark", action="store", dest="inputTimemark", required=False)
 
