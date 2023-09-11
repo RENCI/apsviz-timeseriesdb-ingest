@@ -106,13 +106,13 @@ def getInputFileName(harvestDir,modelRunID):
         # Loop through forecast_obs_station_types globing files, and append to filelist
         for forecast_obs_station_type in forecast_obs_station_types:
             # Search for file name, and return it
-            filelist.append(glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_'+forecast_obs_station_type+'_'+timemark+'*.csv'))
+            filelist.append(glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[-8:]+'_'+forecast_obs_station_type+'_'+timemark+'*.csv'))
 
         # Flatten file list
         filelist = flatten(filelist)
 
         if len(filelist) == 0:
-            logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[3:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
+            logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[-8:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
             sys.exit(0)
         elif len(filelist) > 0:
             return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
