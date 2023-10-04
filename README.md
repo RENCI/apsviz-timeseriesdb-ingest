@@ -222,7 +222,7 @@ This will ingest the data files, created in the above command, into the drf_gaug
 
 To add a new source, first create the source meta, and ingest it into the drf_source_meta table by running the following command:
 
-python ingestTasks.py --inputDataSource xxxxx_xxx --inputSourceName xxxxxx --inputSourceArchive xxxxxx --inputSourceVariable xxxxx_xxxxx --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx --inputLocationType xxxxxx --inputUnits x --inputTask Source_meta
+python ingestTasks.py --inputDataSource xxxxx_xxx --inputSourceName xxxxxx --inputSourceArchive xxxxxx --inputSourceVariable xxxxx_xxxxx --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx --inputLocationType xxxxxx --dataType xxx --inputUnits x --inputTask ingestSourceMeta
 
 where: 
   * --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, 
@@ -231,6 +231,7 @@ where:
   * --inputSourceVariable xxxxx_xxxxx is the source variable name such as water_level, 
   * --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx is the input file name prefix such as adcirc_stationdata_RENCI_NAMFORECAST_EC95D_FORECAST, 
   * --inputLocationType xxxxxx is the location type such as tidal, and 
+  * --dataType xxx this value is always obs when ingest a new source meta, because new a new source for model (ADCIRC) data are automatically ingested.
   * --inputUnits x is the variables units such as m for meters.
 
 In the next step create the source data files that will be ingested into the drf_gauge_source table by running the following command:
