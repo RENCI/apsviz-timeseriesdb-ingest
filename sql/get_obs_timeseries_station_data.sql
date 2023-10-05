@@ -12,6 +12,7 @@ AS $function$
                     CAST(d.time AS TEXT) AS id,
                     s.data_source AS category,
                     COALESCE(d.water_level,
+                    d.stream_elevation,
                     d.wave_height,
                     d.wind_speed,
                     d.air_pressure,
@@ -33,6 +34,7 @@ AS $function$
                                                   (''''tidal_predictions''''),
                                                   (''''coastal_gauge''''),
                                                   (''''river_gauge''''),
+                                                  (''''stream_gauge''''),
                                                   (''''wind_anemometer'''')) b(data_source)''
                 ) AS (
                  time_stamp TEXT,
@@ -43,6 +45,7 @@ AS $function$
                  "tidal_predictions" double precision,
                  "coastal_gauge_water_level" double precision,
                  "river_gauge_water_level" double precision,
+                 "stream_gauge_stream_elevation" double precision,
                  "wind_anemometer" double precision
                 )) AS ct';
 BEGIN
