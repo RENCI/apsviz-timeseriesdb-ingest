@@ -13,7 +13,7 @@ The Python scripts used to process the data are:
 * createIngestApsVizStationData.py - This script creates the ApsViz Station data, from the harvest meta files, and ingest that data.
 * getDashboardMeta.py - This script interacts with variables from the ASGS_Mon_config_item table, in the asgs_dashboard DB, that are used to add ADCIRC model source automatically.
 
-# Instal apsviz-timeseriesdb-ingest
+# Install apsviz-timeseriesdb-ingest
 
 To begin ingesting data, you first need to install the apsviz-timeseriesdb repo which can bet downloaded from:
 
