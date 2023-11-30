@@ -134,15 +134,27 @@ where xxxx is the instance ID, dddddddddd is the start time of the model run, an
 
 ## Ingest The Long Way
 
-### Create View
+### Create Obs View
 
 To create a view combining the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables run the following command:
 
-python prepare4Ingest.py --inputTask createView
+python prepare4Ingest.py --inputTask createObsView
 
 This will create a view (drf_gauge_station_source_data) that is accessible through the Django REST Framework API:
 
 http://xxxx.xxxx.xxx/api/gauge_station_source_data/
+
+where xxxx.xxxx.xxx is your server.
+
+### Create Model View
+
+To create a view combining the drf_gauge_station, drf_model_source, drf_model_instance, and drf_model_data tables run the following command:
+
+python prepare4Ingest.py --inputTask createModelView
+
+This will create a view (drf_model_station_source_data) that is accessible through the Django REST Framework API:
+
+http://xxxx.xxxx.xxx/api/model_station_source_data/
 
 where xxxx.xxxx.xxx is your server.
 

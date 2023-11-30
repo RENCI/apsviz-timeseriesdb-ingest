@@ -121,8 +121,8 @@ def runIngestSourceData(ingestDir):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-def runCreateView():
-    ''' This function runs ingestTasks.py with --inputTask createView, creating a view (drf_gauge_station_source_data) that combines 
+def runCreateObsView():
+    ''' This function runs ingestTasks.py with --inputTask createObsView, creating a view (drf_gauge_station_source_data) that combines 
         the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables.
         Parameters
             None
@@ -131,7 +131,24 @@ def runCreateView():
     ''' 
 
     # Create list of program commands
-    program_list = [['python','ingestTasks.py','--inputTask','createView']]
+    program_list = [['python','ingestTasks.py','--inputTask','createObsView']]
+ 
+    for program in program_list:
+        logger.info('Run '+" ".join(program))
+        output = subprocess.run(program, shell=False, check=True)
+        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+
+def runCreateModelView():
+    ''' This function runs ingestTasks.py with --inputTask createModelView, creating a view (drf_gauge_station_source_data) that combines 
+        the drf_gauge_station, drf_model_source, drf_model_instance, and drf_model_data tables.
+        Parameters
+            None
+        Returns
+            None
+    ''' 
+
+    # Create list of program commands
+    program_list = [['python','ingestTasks.py','--inputTask','createModelView']]
  
     for program in program_list:
         logger.info('Run '+" ".join(program))
@@ -139,7 +156,7 @@ def runCreateView():
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 def runSequenceIngest(ingestDir):
-    ''' Runs the runCreateView(), runIngestStations(), runIngestSourceMetat(), and runIngestSourceData() functions in sequence. 
+    ''' Runs the runCreateObsView(), runIngestStations(), runIngestSourceMetat(), and runIngestSourceData() functions in sequence. 
         Parameters
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
@@ -148,7 +165,7 @@ def runSequenceIngest(ingestDir):
             None, but the functions it calls return values, described above.
     '''
 
-    runCreateView()
+    runCreateObsView()
     runIngestStations(ingestDir)
     runIngestSourceMeta()
     runIngestSourceData(ingestDir)
@@ -160,7 +177,7 @@ def main(args):
             args: dictionary
                 contains the parameters listed below
             inputTask: string
-                The type of task ('IngestStations','ingestSourceMeta','ingestSourceData','createView', 'SequenceIngest'
+                The type of task ('IngestStations','ingestSourceMeta','ingestSourceData','createObsView','createModelView,'SequenceIngest'
                 SequenceIngest) to be perfomed.
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
@@ -194,10 +211,14 @@ def main(args):
         logger.info('Run source data.')
         runIngestSourceData(ingestDir)
         logger.info('Ran source data.')
-    elif inputTask.lower() == 'createview':
-        logger.info('Run create view.')
-        runCreateView()
-        logger.info('Ran create view.')
+    elif inputTask.lower() == 'createobsview':
+        logger.info('Run create obs view.')
+        runCreateObsView()
+        logger.info('Ran create obs view.')
+    elif inputTask.lower() == 'createmodelview':
+        logger.info('Run create model view.')
+        runCreateModelView()
+        logger.info('Ran create model view.')
     elif inputTask.lower() == 'sequenceingest':
         ingestDir = os.path.join(args.ingestDir, '')
         logger.info('Run sequence ingest.')
@@ -209,7 +230,7 @@ if __name__ == "__main__":
     ''' Takes argparse inputs and passes theme to the main function
         Parameters
             inputTask: string
-                The type of task ('IngestStations','ingestSourceMeta','ingestSourceData','createView', 'SequenceIngest'
+                The type of task ('IngestStations','ingestSourceMeta','ingestSourceData','createObsView','createModelView',createModelView,'SequenceIngest'
                 SequenceIngest) to be perfomed. The type of inputTaks can change what other types of inputs prepare4Ingest.py
                 requires. Below is a list of all inputs, with associated tasks.
             ingestDir: string
@@ -222,7 +243,7 @@ if __name__ == "__main__":
 
     # Non optional argument, input task 
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['IngestStations','ingestSourceMeta',
-                        'ingestSourceData','createView', 'SequenceIngest'], required=True)
+                        'ingestSourceData','createObsView','createModelView','SequenceIngest'], required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]

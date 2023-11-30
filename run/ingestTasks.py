@@ -453,18 +453,8 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
                     minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].min()
                     maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].max()
 
-                    if inputDataSource[0:7] == 'nowcast':
-                        logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
-                                    +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
-
-                        # Delete duplicate times
-                        deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, minTime, maxTime)
-
-                        logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
-                                    +', and input source archive: '+inputSourceArchive+' with start time of '+str(minTime)+' and end time of '+str(maxTime)+'.')
-                    else:
-                        logger.info('Data source '+inputDataSource+', with source name '+inputSourceName+', and source archive '+inputSourceArchive
-                                    +', with min time: '+str(minTime)+' and max time '+str(maxTime)+' does not need duplicate times removed.')
+                    logger.info('Data source '+inputDataSource+', with source name '+inputSourceName+', and source archive '+inputSourceArchive
+                                +', with min time: '+str(minTime)+' and max time '+str(maxTime)+' does not need duplicate times removed.')
 
                 # Run update 
                 cur.execute("""UPDATE drf_harvest_data_file_meta
@@ -588,7 +578,7 @@ def ingestRetainObsStationData(ingestDir, inputFilename):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def createView():
+def createObsView():
     ''' This function takes not input, and creates the drf_gauge_station_source_data view.
         Parameters
             None
@@ -644,6 +634,63 @@ def createView():
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
+def createModelView():
+    ''' This function takes not input, and creates the drf_gauge_station_source_data view.
+        Parameters
+            None
+        Returns
+            None
+    '''
+
+    try:
+        # Create connection to database, set autocommit, and get cursor
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
+            cur = conn.cursor()
+
+            # Run query
+            cur.execute("""CREATE or REPLACE VIEW drf_model_station_source_data AS
+                           SELECT d.model_id AS model_id,
+                                  i.instance_id  AS instance_id,
+                                  s.source_id AS source_id,
+                                  g.station_id AS station_id,
+                                  g.station_name AS station_name,
+                                  d.timemark AS timemark,
+                                  d.time AS time,
+                                  i.instance_name AS instance_name,
+                                  i.model_run_id AS model_run_id,
+                                  d.water_level AS water_level,
+                                  d.wave_height AS wave_height,
+                                  g.tz AS tz,
+                                  g.gauge_owner AS gauge_owner,
+                                  s.data_source AS data_source,
+                                  s.source_name AS source_name,
+                                  s.source_archive AS source_archive,
+                                  s.units AS units,
+                                  g.location_name AS location_name,
+                                  g.apsviz_station AS apsviz_station,
+                                  g.location_type AS location_type,
+                                  g.country AS country,
+                                  g.state AS state,
+                                  g.county AS county,
+                                  g.geom AS geom
+                           FROM drf_model_data d
+                           INNER JOIN drf_model_instance i ON i.instance_id=d.instance_id
+                           INNER JOIN drf_model_source s ON s.source_id=i.source_id
+                           INNER JOIN drf_gauge_station g ON s.station_id=g.station_id""")
+
+            # Close cursor and database connection
+            cur.close()
+            conn.close()
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
 # Main program function takes args as input, which contains the inputDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
 def main(args):
@@ -653,7 +700,7 @@ def main(args):
                 contains the parameters listed below.
             inputTask: string
                 The type of task (ingestSourceMeta, ingestStations, ingestSourceData, ingestHarvestDataFileMeta, ingestApsVizStationFileMeta,
-                ingestData, ingestApsVizStationData, createView ) to be perfomed. The type of inputTask can change what other types of inputs
+                ingestData, ingestApsVizStationData, createObsView. createModelView ) to be perfomed. The type of inputTask can change what other types of inputs
                 ingestTask.py requires. Below is a list of all inputs, with associated tasks.
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestStations, ingestSourceData,
@@ -756,10 +803,14 @@ def main(args):
         logger.info('Ingesting Retain Obs station data from file '+inputFilename+', in directory '+ingestDir+'.')
         ingestRetainObsStationData(ingestDir, inputFilename)
         logger.info('Ingested Retain Obs station data from file '+inputFilename+', in directory '+ingestDir+'.')
-    elif inputTask.lower() == 'createview':
-        logger.info('Creating view.')
-        createView()
-        logger.info('Created view.')
+    elif inputTask.lower() == 'createobsview':
+        logger.info('Creating obs view.')
+        createObsView()
+        logger.info('Created obs view.')
+    elif inputTask.lower() == 'createmodelview':
+        logger.info('Creating model view.')
+        createModelView()
+        logger.info('Created model view.')
 
 # Run main function takes inputDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive as input.
 if __name__ == "__main__":
@@ -767,7 +818,7 @@ if __name__ == "__main__":
         Parameters
             inputTask: string
                 The type of task (ingestSourceMeta, ingestStations, ingestSourceData, ingestHarvestDataFileMeta, ingestApsVizStationFileMeta, 
-                ingestData, ingestApsVizStationData, createView ) to be perfomed. The type of inputTask can change what other types of inputs
+                ingestData, ingestApsVizStationData, createObsView, createModelView ) to be perfomed. The type of inputTask can change what other types of inputs
                 ingestTask.py requires. Below is a list of all inputs, with associated tasks.
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestStations, ingestSourceData,
@@ -808,7 +859,8 @@ if __name__ == "__main__":
     parser.add_argument("--inputTask", help="Input task to be done", action="store", dest="inputTask", choices=['ingestSourceMeta','ingestStations','ingestSourceData', 
                                                                                                                 'ingestHarvestDataFileMeta','ingestApsVizStationFileMeta',
                                                                                                                 'ingestRetainObsStationFileMeta','ingestData','ingestApsVizStationData',
-                                                                                                                'ingestRetainObsStationData','createView'], required=True)
+                                                                                                                'ingestRetainObsStationData','createObsView','createModelView'], 
+                                                                                                                required=True)
 
     # get runScript argument to use in if statement
     args = parser.parse_known_args()[0]
