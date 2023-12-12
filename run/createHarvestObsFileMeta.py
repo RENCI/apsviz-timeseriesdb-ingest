@@ -15,7 +15,7 @@ from pathlib import Path
 from loguru import logger
 
 def getFileDateTime(inputFile):
-    ''' Returns a DataFrame containing a list of directory paths, and files, from table drf_harvest_data_file_meta, and weather they have been ingested.
+    ''' Returns a DataFrame containing a list of directory paths, and files, from table drf_harvest_obs_file_meta, and weather they have been ingested.
         Parameters
             inputFile: string
                 Name of input file
@@ -33,7 +33,7 @@ def getFileDateTime(inputFile):
 
         # Run query
         cur.execute("""SELECT dir_path, file_name, ingested, overlap_past_file_date_time
-                       FROM drf_harvest_data_file_meta
+                       FROM drf_harvest_obs_file_meta
                        WHERE file_name = %(input_file)s
                        ORDER BY file_name""",
                     {'input_file': inputFile})
@@ -53,7 +53,7 @@ def getFileDateTime(inputFile):
         logger.info(error)
 
 def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
-    ''' Returns a DataFrame containing a list of files, from table drf_harvest_data_file_meta, with specified data source, source name,
+    ''' Returns a DataFrame containing a list of files, from table drf_harvest_obs_file_meta, with specified data source, source name,
         and source_archive that have been ingested.
         Parameters
             inputDataSource: string
@@ -76,7 +76,7 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
        
         # Run query
         cur.execute("""SELECT file_id, dir_path, file_name, data_date_time, data_begin_time, data_end_time, data_source, source_name, source_archive, timemark, ingested, overlap_past_file_date_time
-                       FROM drf_harvest_data_file_meta
+                       FROM drf_harvest_obs_file_meta
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
                        source_archive = %(sourcearchive)s AND ingested = True""", 
                     {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
@@ -97,10 +97,10 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive):
         logger.info(error)
 
 # This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
-# It uses them to create a file list that is then ingested into the drf_harvest_data_file_meta table, and used to ingest the
+# It uses them to create a file list that is then ingested into the drf_harvest_obs_file_meta table, and used to ingest the
 # data files. This function also returns first_time, and last_time which are used in cross checking the data.
 def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArchive, inputFilenamePrefix, inputTimemark):
-    ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_harvest_data_file_meta. It also returns
+    ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_harvest_obs_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
             harvestDir: string
@@ -156,7 +156,7 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
     # Get DataFrame of existing list of files, in the database, that have been ingested.
     dfold = getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive)
 
-    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
+    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta.
     df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
     if len(df.values) == 0:
@@ -175,7 +175,7 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
 @logger.catch
 def main(args):
     ''' Main program function takes args as input, starts logger, runs createFileList, and writes output to CSV file.
-        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runIngest.py
+        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runObsIngest.py
         Parameters
             args: dictionary 
                 contains the parameters listed below

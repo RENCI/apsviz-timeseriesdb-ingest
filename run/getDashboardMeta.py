@@ -17,7 +17,7 @@ def flatten(l):
 
 def getADCIRCFileNameVariables(modelRunID):
     ''' Returns DataFrame containing a list of variables (forcing.metclass, downloadurl, ADCIRCgrid, time.currentdate, time,currentcycle, advisory), 
-        extracted from table ASGS_Mon_config_item, in the asgs_dashboard DB, using the public.get_adcirc_filename_variables 
+        extracted from table ASGS_Mon_config_item, in the asgs_dashboard DB, using the public.get_adcirc_filename_variables_test 
         SQL function with modelRunID as input. These variables are used to construct filenames.
         Parameters
             modelRunID: string
@@ -36,7 +36,7 @@ def getADCIRCFileNameVariables(modelRunID):
             cur = conn.cursor()
 
             # Run query
-            cur.execute("""SELECT * FROM public.get_adcirc_filename_variables(_run_id := %(modelRunID)s);""", 
+            cur.execute("""SELECT * FROM public.get_adcirc_filename_variables_test(_run_id := %(modelRunID)s);""", 
                         {'modelRunID':modelRunID})
 
             # convert query output to Pandas dataframe
@@ -70,8 +70,9 @@ def getInputFileName(harvestDir,modelRunID):
     # Get ADCIRC filename variables
     df = getADCIRCFileNameVariables(modelRunID)
     
-    # Get forcing metaclass 
+    # Get forcing metaclass, instanceName, and workflowType 
     forcingMetaClass = df['forcing.metclass'].values[0]
+    instanceName = df['instancename'].values[0] 
     workflowType = df['workflow_type'].values[0]
 
     # Check it run is from a hurricane. 
@@ -115,10 +116,10 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[-8:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
             sys.exit(0)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
+            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, forcingMetaClass, instanceName, workflowType)
         else:
             return(modelRunID)
-    else:
+    elif forcingMetaClass == 'tropical':
         # Extract storm ID from forcingMetaClass
         storm = 'al'+df['stormnumber'].values[0].zfill(2)
 
@@ -145,13 +146,15 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
             sys.exit(0)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, workflowType)
+            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, forcingMetaClass, instanceName, workflowType)
         else:
             return(modelRunID)
+    else: 
+        logger.info('Forcing meta class is not synoptic or tropical, so this must be at hybrid '+forcingMetaClass)
 
-def checkSourceMeta(filename_prefix):
-    ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_meta, using a filename_prefix. This function
-        is used by the runHarvestFile() function, in runIngest.py, to see if a source exist. This is only done for ADCIRC source. If
+def checkObsSourceMeta(filename_prefix):
+    ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_obs_meta, using a filename_prefix. This function
+        is used by the runHarvestFile() function, in runObsIngest.py, to see if a source exist. This is only done for ADCIRC source. If
         the source does not exist than runHarvestFile() has a method for adding one. 
         Parameters
             inputFilenamePrefix: string
@@ -169,14 +172,58 @@ def checkSourceMeta(filename_prefix):
 
         # Run query
         cur.execute("""SELECT data_source, source_name, source_archive, source_variable, 
-                              filename_prefix, location_type, units FROM drf_source_meta
-                       WHERE filename_prefix = %(filename_prefix)s ORDER BY filename_prefix""",
+                              filename_prefix, location_type, units 
+                       FROM drf_source_obs_meta
+                       WHERE filename_prefix = %(filename_prefix)s 
+                       ORDER BY filename_prefix""",
                        {'filename_prefix':filename_prefix})
 
         # convert query output to Pandas dataframe
         df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 
                                                    'source_variable', 'filename_prefix', 'location_type', 
                                                    'units'])
+
+        # Close cursor and database connection
+        cur.close()
+        conn.close()
+
+        # return DataFrame
+        return(df)
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
+def checkModelSourceMeta(filename_prefix):
+    ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_model_meta, using a filename_prefix. This function
+        is used by the runHarvestFile() function, in runModelIngest.py, to see if a source exist. This is only done for ADCIRC source. If
+        the source does not exist than runHarvestFile() has a method for adding one. 
+        Parameters
+            inputFilenamePrefix: string
+                Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
+        Returns
+            DataFrame 
+    '''
+
+    try:
+        # Create connection to database and get cursor
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        cur = conn.cursor()
+
+        # Run query
+        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, source_instance
+                              forcing_metaclass, filename_prefix, location_type, data_type, units 
+                       FROM drf_source_model_meta
+                       WHERE filename_prefix = %(filename_prefix)s 
+                       ORDER BY filename_prefix""",
+                       {'filename_prefix':filename_prefix})
+
+        # convert query output to Pandas dataframe
+        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_instance',
+                                                   'forcing_metaclass', 'source_variable', 'filename_prefix', 'location_type', 
+                                                   'data_type', 'units'])
 
         # Close cursor and database connection
         cur.close()

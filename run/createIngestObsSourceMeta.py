@@ -47,16 +47,16 @@ def getStationID(locationType):
 def addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputUnits, inputLocationType):
     ''' Returns a CSV file that containes source information specific to station IDs that have been extracted from the drf_gauge_station table.
         The function adds additional source information (data source, source name, source archive, data units) to the station IDs. This 
-        information is latter ingested into table drf_gauge_source by running the ingestSourceData() function in ingetTask.py
+        information is latter ingested into table drf_gauge_source by running the ingestObsSourceData() function in ingetTask.py
         Parameters
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files
             inputDataSource: string
-                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer...)
             inputSourceName: string
-                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+                Organization that owns original source data (e.g., ncem, ndbc, noaa...)
             inputSourceArchive: string
-                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+                Where the original data source is archived (e.g., contrails, ndbc, noaa...)
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
             inputLocationType: string
@@ -87,7 +87,7 @@ def addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inp
 @logger.catch
 def main(args):
     ''' Main program function takes args as input, starts logger, runs addMeta(), which writes output to CSV file.
-        The CSV file will be ingest into table drf_gauge_source when ingestSourceData() function is run in ingetTask.py
+        The CSV file will be ingest into table drf_gauge_source when ingestObsSourceData() function is run in ingestObsTask.py
         Parameters
             args: dictionary
                 contains the parameters listed below
@@ -96,11 +96,11 @@ def main(args):
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files
             inputDataSource: string
-                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer...)
             inputSourceName: string
-                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+                Organization that owns original source data (e.g., ncem, ndbc, noaa...)
             inputSourceArchive: string
-                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+                Where the original data source is archived (e.g., contrails, ndbc, noaa...)
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
             inputLocationType: string
@@ -112,7 +112,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createIngestSourceMeta.log', level='DEBUG')
+    logger.add(log_path+'createIngestObsSourceMeta.log', level='DEBUG')
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
@@ -137,11 +137,11 @@ if __name__ == "__main__":
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files
             inputDataSource: string
-                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer...)
             inputSourceName: string
-                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
+                Organization that owns original source data (e.g., ncem, ndbc, noaa...)
             inputSourceArchive: string
-                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+                Where the original data source is archived (e.g., contrails, ndbc, noaa,...)
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
             inputLocationType: string

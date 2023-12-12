@@ -43,9 +43,9 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
             cur = conn.cursor()
     
             cur.execute("""DELETE FROM
-                               drf_gauge_data a
-                                   USING drf_gauge_data b,
-                                         drf_gauge_source s
+                               drf_obs_data a
+                                   USING drf_obs_data b,
+                                         drf_obs_source s
                            WHERE
                                s.data_source = %(datasource)s AND s.source_name = %(sourcename)s AND s.source_archive = %(sourcearchive)s AND
                                a.time >= %(mintime)s AND a.time <= %(maxtime)s AND
@@ -63,8 +63,8 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
 
 def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, dataType, inputUnits):
     ''' This function takes data source, source name, source archive, source variable, filename prefix, location type, data type, and 
-        units  as input. It ingest these variables into the source meta table (drf_source_meta). The variables in this table are then 
-        used as inputs in runIngest.py.
+        units  as input. It ingest these variables into the source meta table (drf_source_obs_meta). The variables in this table are then 
+        used as inputs in runObsIngest.py.
         Parameters
             inputDataSource: string
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
@@ -101,7 +101,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
             cur = conn.cursor()
 
             # Run query
-            cur.execute("""INSERT INTO drf_source_meta(data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units)
+            cur.execute("""INSERT INTO drf_source_obs_meta(data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units)
                            VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s, %(filenamevariable)s, %(locationtype)s, %(datatype)s,  %(units)s)""",
                         {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'datatype': dataType, 'units': inputUnits})
 
@@ -161,7 +161,7 @@ def ingestStations(ingestDir):
 
 def ingestSourceData(ingestDir):
     ''' This function takes as input an ingest directory. It uses the input directory to search for source CSV files, that where
-        created by the createIngestSourceMeta.py program. It uses the ingest directory to define the path of the file that is to
+        created by the createIngestObsSourceMeta.py program. It uses the ingest directory to define the path of the file that is to
         be ingested. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
         Parameters
             ingestDir: string
@@ -187,7 +187,7 @@ def ingestSourceData(ingestDir):
             for sourceFile in inputFiles:
                 # Run ingest query
                 with open(sourceFile, "r") as f:
-                    with cur.copy("COPY drf_gauge_source (station_id,data_source,source_name,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_obs_source (station_id,data_source,source_name,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -205,7 +205,7 @@ def ingestSourceData(ingestDir):
 
 def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive):
     ''' This function takes a data source, source name, and source archive as inputs and uses them to query 
-        the drf_harvest_data_file_meta table, creating a DataFrame that contains a list of data files to 
+        the drf_harvest_obs_file_meta table, creating a DataFrame that contains a list of data files to 
         ingest. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
         Parameters
             inputDataSource: string
@@ -230,7 +230,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
 
             # Run query
             cur.execute("""SELECT dir_path, file_name
-                           FROM drf_harvest_data_file_meta
+                           FROM drf_harvest_obs_file_meta
                            WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
                            source_archive = %(sourcearchive)s AND ingested = False
                            ORDER BY data_date_time""",
@@ -282,7 +282,7 @@ def ingestHarvestDataFileMeta(ingestDir):
             for infoFile in inputFiles:
                 # Run ingest query
                 with open(infoFile, "r") as f:
-                    with cur.copy("COPY drf_harvest_data_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_harvest_obs_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -385,9 +385,9 @@ def ingestRetainObsStationFileMeta(ingestDir):
 def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
     ''' This function takes an ingest directory, data source, source name, source archive, and source variable as input,
         and uses them to run the getHarvestDataFileMeta function. The getHarvestDataFileMeta function produces a DataFrame 
-        (dfDirFiles) that contains a list of data files, that are queried from the drf_harvest_data_file_meta table. These 
-        files are then ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column 
-        "ingested", in the drf_harvest_data_file_meta table, is updated from False to True. The ingest directory is the 
+        (dfDirFiles) that contains a list of data files, that are queried from the drf_harvest_obs_file_meta table. These 
+        files are then ingested into the drf_obs_data table. After the data has been ingested, from a file, the column 
+        "ingested", in the drf_harvest_obs_file_meta table, is updated from False to True. The ingest directory is the 
         directory path in the apsviz-timeseriesdb database container.
         Parameters
             ingestDir: string
@@ -428,7 +428,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
                 logger.info('Ingest file: '+ingestPathFile)
 
                 with open(ingestPathFile, "r") as f:
-                    with cur.copy(sql.SQL("""COPY drf_gauge_data (source_id,timemark,time,{}) 
+                    with cur.copy(sql.SQL("""COPY drf_obs_data (source_id,timemark,time,{}) 
                                              FROM STDIN WITH (FORMAT CSV)""").format(sql.Identifier(inputSourceVariable))) as copy:
                         while data := f.read(100):
                             copy.write(data)
@@ -457,7 +457,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
                                 +', with min time: '+str(minTime)+' and max time '+str(maxTime)+' does not need duplicate times removed.')
 
                 # Run update 
-                cur.execute("""UPDATE drf_harvest_data_file_meta
+                cur.execute("""UPDATE drf_harvest_obs_file_meta
                                SET ingested = True
                                WHERE file_name = %(update_file)s
                                """,
@@ -622,8 +622,8 @@ def createObsView():
                                   g.state AS state,
                                   g.county AS county,
                                   g.geom AS geom
-                           FROM drf_gauge_data d
-                           INNER JOIN drf_gauge_source s ON s.source_id=d.source_id
+                           FROM drf_obs_data d
+                           INNER JOIN drf_obs_source s ON s.source_id=d.source_id
                            INNER JOIN drf_gauge_station g ON s.station_id=g.station_id""")
 
             # Close cursor and database connection

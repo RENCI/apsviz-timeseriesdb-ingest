@@ -14,7 +14,7 @@ import getDashboardMeta as gdm
 from loguru import logger
 
 def getSourceMeta(dataType):
-    ''' Returns DataFrame containing source meta-data queried from the drf_source_meta table. 
+    ''' Returns DataFrame containing source meta-data queried from the drf_source_obs_meta table. 
         Parameters
             dataType: string
                 Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC.
@@ -32,7 +32,7 @@ def getSourceMeta(dataType):
         cur = conn.cursor()
 
         # Run query
-        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units FROM drf_source_meta 
+        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units FROM drf_source_obs_meta 
                        WHERE data_type = %(datatype)s ORDER BY filename_prefix""", {'datatype': dataType})
 
         # convert query output to Pandas dataframe
@@ -127,8 +127,8 @@ def getRetainObsStationInfo():
         logger.info(error)
 
 def runHarvestFile(harvestDir, ingestDir, modelRunID):
-    ''' This function runs createHarvestDataFileMeta.py, which creates harvest meta data files, that are ingested into the 
-        drf_harvest_data_file_meta table, in the database, by running ingestTasks.py using --inputTask ingestHarvestDataFileMeta.
+    ''' This function runs createHarvestObsFileMeta.py, which creates harvest meta data files, that are ingested into the 
+        drf_harvest_obs_file_meta table, in the database, by running ingestObsTasks.py using --inputTask ingestHarvestDataFileMeta.
         Parameters
             harvestDir: string
                 Directory path to harvest data files. Used by the ingestHarvestDataFileMeta, and ingestHarvestDataFileMeta tasks.
@@ -138,11 +138,11 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             modelRunID: string
                 Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db.
         Returns
-            None, but it create harvest meta data files, that are then ingested into the drf_harvest_data_file_meta table.
+            None, but it create harvest meta data files, that are then ingested into the drf_harvest_obs_file_meta table.
     '''
 
     if modelRunID != None:
-        # Sources from drf_source_meta will not be used in this run
+        # Sources from drf_source_obs_meta will not be used in this run
         logger.info('Process data for ADCIRC model run: '+modelRunID)
 
         # Get input file name, grid_name, timemark, forcing_meta_class, storm, and workflow_type
@@ -214,25 +214,25 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                 sys.exit(1)
 
             # Check to see if forecast source exists
-            dfcheck = gdm.checkSourceMeta(forecast_prefix)
+            dfcheck = gdm.checkObsSourceMeta(forecast_prefix)
    
-            # Check if dfcheck is empty, for forecast. If it is a new source is added to the drf_source_meta table ,and then drf_gauge_source table. 
+            # Check if dfcheck is empty, for forecast. If it is a new source is added to the drf_source_obs_meta table ,and then drf_obs_source table. 
             if dfcheck.empty:
                 # Log results
-                logger.info('The following source does not exist in the drf_source_meta table:\n '+
+                logger.info('The following source does not exist in the drf_source_obs_meta table:\n '+
                             forecast_data_source+','+source_name+','+source_archive+','+source_variable+','+
                             forecast_prefix_ta+','+location_type+','+units)
                 program_list = []
-                program_list.append(['python','ingestTasks.py','--inputDataSource',forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',
+                program_list.append(['python','ingestObsTasks.py','--inputDataSource',forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',
                                      source_archive,'--inputSourceVariable',source_variable,'--inputFilenamePrefix',forecast_prefix,'--inputLocationType',
                                      location_type,'--dataType','model','--inputUnits',units,'--inputTask','ingestSourceMeta'])
-                program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',forecast_data_source,'--inputSourceName',
+                program_list.append(['python','createIngestObsSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',forecast_data_source,'--inputSourceName',
                                      source_name,'--inputSourceArchive',source_archive,'--inputUnits',units,'--inputLocationType',location_type])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
-                program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', 
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
+                program_list.append(['python','createHarvestObsFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', 
                                      forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',
                                      forecast_prefix_ta,'--inputTimemark',timemark])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
 	            # Check if model type is FORECAST and if so create harvest station file meta and ingest it into the drf_apsviz_stationn table. This table is used
                 # to display the stations, that have data for a specific model run, in the apsViz map.
@@ -242,7 +242,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                                      forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
                                      apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
                                      '--inputLocationType',location_type,'--csvURL',csv_url,'--dataDateTime',data_date_time])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
                                      '--inputTask','ingestApsVizStationFileMeta'])
 
                 # Run list of program commands using subprocess
@@ -256,10 +256,10 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                 logger.info(forecast_data_source+','+source_name+','+source_archive+','+source_variable+','+
                             forecast_prefix_ta+','+location_type+','+units)
                 program_list = []
-                program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', forecast_data_source,
+                program_list.append(['python','createHarvestObsFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', forecast_data_source,
                                      '--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',forecast_prefix_ta,'--inputTimemark', 
                                      timemark])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
                 # Check if model type is FORECAST and if so create harvest station file meta and ingest it into the drf_apsviz_stationn table. This table is used
                 # to display the stations, that have data for a specific model run, in the apsViz map.
@@ -269,7 +269,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                                      forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilename',
                                      apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,'--timeMark',timemark+':00:00',
                                      '--inputLocationType',location_type,'--csvURL',csv_url,'--dataDateTime',data_date_time])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputFilename', 'harvest_meta_files_'+apsviz_station_meta_filename,
                                      '--inputTask','ingestApsVizStationFileMeta'])
 
                 # Run list of program commands using subprocess
@@ -279,25 +279,25 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                     logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
             # Check to see if nowcast source exists
-            dfcheck = gdm.checkSourceMeta(nowcast_prefix)
+            dfcheck = gdm.checkObsSourceMeta(nowcast_prefix)
 
-            # Check if dfcheck is empty, for nowcast data. If it is a new source is added to the drf_source_meta table ,and then drf_gauge_source table.
+            # Check if dfcheck is empty, for nowcast data. If it is a new source is added to the drf_source_obs_meta table ,and then drf_obs_source table.
             if dfcheck.empty:
                 # Log results
-                logger.info('The following source does not exist in the drf_source_meta table:\n '+
+                logger.info('The following source does not exist in the drf_source_obs_meta table:\n '+
                             nowcast_data_source+','+source_name+','+source_archive+','+source_variable+','+
                             nowcast_prefix_ta+','+location_type+','+units)
                 program_list = []
-                program_list.append(['python','ingestTasks.py','--inputDataSource',nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',
+                program_list.append(['python','ingestObsTasks.py','--inputDataSource',nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',
                                      source_archive,'--inputSourceVariable',source_variable,'--inputFilenamePrefix',nowcast_prefix,'--inputLocationType',
                                      location_type,'--dataType','model','--inputUnits',units,'--inputTask','ingestSourceMeta'])
-                program_list.append(['python','createIngestSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',nowcast_data_source,'--inputSourceName',
+                program_list.append(['python','createIngestObsSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',nowcast_data_source,'--inputSourceName',
                                      source_name,'--inputSourceArchive',source_archive,'--inputUnits',units,'--inputLocationType',location_type])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
-                program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
+                program_list.append(['python','createHarvestObsFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource',
                                      nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',
                                      nowcast_prefix_ta,'--inputTimemark',timemark])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
                 # Run list of program commands using subprocess
                 for program in program_list:
@@ -310,10 +310,10 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                 logger.info(nowcast_data_source+','+source_name+','+source_archive+','+source_variable+','+
                             nowcast_prefix_ta+','+location_type+','+units)
                 program_list = []
-                program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', nowcast_data_source,
+                program_list.append(['python','createHarvestObsFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', nowcast_data_source,
                                      '--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputFilenamePrefix',nowcast_prefix_ta,'--inputTimemark',
                                      timemark])
-                program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
+                program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
                 # Run list of program commands using subprocess
                 for program in program_list:
@@ -327,11 +327,11 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
         # Create list of program commands to ingest meta-data on harvest files
         program_list = []
         for index, row in df.iterrows():
-            program_list.append(['python','createHarvestDataFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],
+            program_list.append(['python','createHarvestObsFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],
                                  '--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
 
         # Ingest meta-data on harvest files created above
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
+        program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
 
         # Run list of program commands using subprocess
         for program in program_list:
@@ -353,7 +353,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
                                  '--inputLocationType',row['location_type'],'--inputFilenamePrefix',meta_filename_prefix])
 
         # Ingest meta-data on harvest files created above
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationFileMeta'])
+        program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationFileMeta'])
 
         # Run list of program commands using subprocess
         if len(program_list) > 0:
@@ -365,7 +365,7 @@ def runHarvestFile(harvestDir, ingestDir, modelRunID):
             logger.info('Program list has 0 length, so continue')
 
 def runDataCreate(ingestDir, dataType):
-    ''' This function runs createIngestData.py, which ureates gauge data, from the original harvest data files, that will be 
+    ''' This function runs createIngestObsData.py, which ureates gauge data, from the original harvest data files, that will be 
         ingested into the database using the runDataIngest function.
         Parameters
             dataType: string
@@ -374,7 +374,7 @@ def runDataCreate(ingestDir, dataType):
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
                 DataIngest, runApsVizStationCreateIngest, SequenceIngest.
         Returns
-            None, but it runs createIngestData.py, which returns a CSV file
+            None, but it runs createIngestObsData.py, which returns a CSV file
     '''
 
     # get source meta
@@ -383,7 +383,7 @@ def runDataCreate(ingestDir, dataType):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','createIngestData.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],
+        program_list.append(['python','createIngestObsData.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],
                              '--inputSourceArchive',row['source_archive']])
 
     # Run list of program commands using subprocess
@@ -393,7 +393,7 @@ def runDataCreate(ingestDir, dataType):
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 def runDataIngest(ingestDir, dataType):
-    ''' This function runs ingestTasks.py with --inputTask ingestData, ingest gauge data into the drf_gauge_data table, in the database. 
+    ''' This function runs ingestObsTasks.py with --inputTask ingestData, ingest gauge data into the drf_obs_data table, in the database. 
         Parameters
             dataType: string
                 Type of data, obs for observation data, such as noaa gauge data, and model for model such as ADCIRC.
@@ -410,7 +410,7 @@ def runDataIngest(ingestDir, dataType):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestData','--inputDataSource',row['data_source'],
+        program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestData','--inputDataSource',row['data_source'],
                              '--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'], '--inputSourceVariable',row['source_variable']])
 
     # Run list of program commands using subprocess
@@ -459,7 +459,7 @@ def runApsVizStationCreateIngest(ingestDir, modelRunID):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputFilename',row['file_name'],'--inputTask','ingestApsVizStationData'])
+        program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputFilename',row['file_name'],'--inputTask','ingestApsVizStationData'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -505,7 +505,7 @@ def runRetainObsStationCreateIngest(ingestDir):
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--inputFilename',row['file_name'],'--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationData'])
+        program_list.append(['python','ingestObsTasks.py','--inputFilename',row['file_name'],'--ingestDir',ingestDir,'--inputTask','ingestRetainObsStationData'])
 
     # Run list of program commands using subprocess
     for program in program_list:

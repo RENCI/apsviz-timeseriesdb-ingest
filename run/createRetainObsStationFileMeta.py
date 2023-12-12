@@ -122,7 +122,7 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
         # Get DataFrame of existing list of files, in the database, that have been ingested.
         dfold = getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType)
 
-        # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
+        # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta.
         df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
         # Check to see if there are any files 
