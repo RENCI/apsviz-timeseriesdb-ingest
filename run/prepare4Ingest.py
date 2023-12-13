@@ -19,7 +19,7 @@ def runIngestStations(ingestDir):
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestObsFileMeta, DataCreate,
                 DataIngest, runApsVizStationCreateIngest, SequenceIngest.
         Returns
-            None, but it runs ingestTasks.py, which ingest station data from CSV files in /home/nru/stations into the 
+            None, but it runs ingestObsTasks.py, which ingest station data from CSV files in /home/nru/stations into the 
             drf_gauge_station table.
     '''
 
@@ -28,7 +28,7 @@ def runIngestStations(ingestDir):
     shutil.copytree('/home/nru/stations', ingestDir+'stations', dirs_exist_ok=True)
 
     # Create list of program commands
-    program_list = [['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestStations']]
+    program_list = [['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestStations']]
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -45,7 +45,7 @@ def runIngestObsSourceMeta():
         Parameters
             None
         Returns
-            None, but it runs ingestTasks.py, which ingest source meta data, from the CSV file /home/nru/source_obs_meta.csv into the
+            None, but it runs ingestObsTasks.py, which ingest source meta data, from the CSV file /home/nru/source_obs_meta.csv into the
             drf_source_obs_meta table.
     '''
 
@@ -55,7 +55,7 @@ def runIngestObsSourceMeta():
     program_list = []
     # data_source,source_name,source_archive,location_type
     for index, row in df.iterrows():
-        program_list.append(['python','ingestTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--dataType',row['data_type'],'--inputUnits',row['units'],'--inputTask','ingestSourceMeta'])
+        program_list.append(['python','ingestObsTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--dataType',row['data_type'],'--inputUnits',row['units'],'--inputTask','ingestSourceMeta'])
 
     # Run programe list using subprocess
     for program in program_list:
@@ -95,14 +95,14 @@ def getSourceObsMeta():
 
 def runIngestObsSourceData(ingestDir):
     ''' This function runs createIngestObsSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source 
-        table, in the database, by running ingestTasks.py using --inputTask ingestObsSourceData.
+        table, in the database, by running ingestObsTasks.py using --inputTask ingestObsSourceData.
         Parameters
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestObsFileMeta, DataCreate,
                 DataIngest, runApsVizStationCreateIngest, SequenceIngest.
         Returns
             None, but it runs createIngestObsSourceMeta.py, which creates CSV files containing source meta-data, and then runs 
-            ingestTasks.py which ingest the CSV file into the drf_gauge_source table.
+            ingestObsTasks.py which ingest the CSV file into the drf_gauge_source table.
     '''
 
     # get source meta
@@ -113,7 +113,7 @@ def runIngestObsSourceData(ingestDir):
     for index, row in df.iterrows():
         program_list.append(['python','createIngestObsSourceMeta.py','--ingestDir',ingestDir,'--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputUnits',row['units'],'--inputLocationType',row['location_type']])
 
-    program_list.append(['python','ingestTasks.py','--ingestDir',ingestDir,'--inputTask','ingestObsSourceData'])
+    program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestSourceData'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -122,7 +122,7 @@ def runIngestObsSourceData(ingestDir):
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 def runCreateObsView():
-    ''' This function runs ingestTasks.py with --inputTask createObsView, creating a view (drf_gauge_station_source_data) that combines 
+    ''' This function runs ingestObsTasks.py with --inputTask createObsView, creating a view (drf_gauge_station_source_data) that combines 
         the drf_gauge_station, drf_gauge_source, and drf_gauge_data tables.
         Parameters
             None
@@ -139,7 +139,7 @@ def runCreateObsView():
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
 def runCreateModelView():
-    ''' This function runs ingestTasks.py with --inputTask createModelView, creating a view (drf_gauge_station_source_data) that combines 
+    ''' This function runs ingestModelTasks.py with --inputTask createModelView, creating a view (drf_gauge_station_source_data) that combines 
         the drf_gauge_station, drf_model_source, drf_model_instance, and drf_model_data tables.
         Parameters
             None
@@ -169,7 +169,7 @@ def runSequenceIngest(ingestDir):
     runIngestStations(ingestDir)
     runIngestObsSourceMeta()
     runIngestObsSourceData(ingestDir)
-    runCreateModelView()
+    # runCreateModelView()
 
 @logger.catch
 def main(args):
