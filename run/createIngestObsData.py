@@ -27,7 +27,7 @@ def getFileMetaTimemark(inputFile):
 
         # Run query
         cur.execute("""SELECT file_name, timemark
-                       FROM drf_harvest_data_file_meta
+                       FROM drf_harvest_obs_file_meta
                        WHERE file_name = %(inputfile)s 
                        ORDER BY timemark""",
                     {'inputfile': inputFile})
@@ -66,7 +66,7 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
 
         # Run query
         cur.execute("""SELECT dir_path, file_name 
-                       FROM drf_harvest_data_file_meta 
+                       FROM drf_harvest_obs_file_meta 
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
                        source_archive = %(sourcearchive)s AND ingested = False
                        ORDER BY data_date_time""",
@@ -174,7 +174,7 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     # Get the timemark from the the data filename NEED TO DEAL WITH HURRICANE AND ENSEMBLES
     datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
     if inputSourceName == 'adcirc':
-        # Get timemark from the drf_harvest_data_file_meta table
+        # Get timemark from the drf_harvest_obs_file_meta table
         dftimemark = getFileMetaTimemark(inputFile)
         if re.search('forecast', inputDataSource.lower()):
             # If the inputDataSource has forecast in its name get the first datetime in the filename
@@ -248,7 +248,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createIngestData.log', level='DEBUG')
+    logger.add(log_path+'createIngestObsData.log', level='DEBUG')
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

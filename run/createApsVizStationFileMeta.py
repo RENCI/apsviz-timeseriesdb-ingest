@@ -107,7 +107,7 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     # Get DataFrame of existing list of files, in the database, that have been ingested.
     dfold = getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, modelRunID, inputLocationType)
 
-    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
+    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta and drf_harvest_model_file_meta.
     df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
     if len(df.values) == 0:

@@ -43,9 +43,9 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
             cur = conn.cursor()
     
             cur.execute("""DELETE FROM
-                               drf_obs_data a
-                                   USING drf_obs_data b,
-                                         drf_obs_source s
+                               drf_gauge_data a
+                                   USING drf_gauge_data b,
+                                         drf_gauge_source s
                            WHERE
                                s.data_source = %(datasource)s AND s.source_name = %(sourcename)s AND s.source_archive = %(sourcearchive)s AND
                                a.time >= %(mintime)s AND a.time <= %(maxtime)s AND
@@ -187,7 +187,7 @@ def ingestSourceData(ingestDir):
             for sourceFile in inputFiles:
                 # Run ingest query
                 with open(sourceFile, "r") as f:
-                    with cur.copy("COPY drf_obs_source (station_id,data_source,source_name,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_gauge_source (station_id,data_source,source_name,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -386,7 +386,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
     ''' This function takes an ingest directory, data source, source name, source archive, and source variable as input,
         and uses them to run the getHarvestDataFileMeta function. The getHarvestDataFileMeta function produces a DataFrame 
         (dfDirFiles) that contains a list of data files, that are queried from the drf_harvest_obs_file_meta table. These 
-        files are then ingested into the drf_obs_data table. After the data has been ingested, from a file, the column 
+        files are then ingested into the drf_gauge_data table. After the data has been ingested, from a file, the column 
         "ingested", in the drf_harvest_obs_file_meta table, is updated from False to True. The ingest directory is the 
         directory path in the apsviz-timeseriesdb database container.
         Parameters
@@ -428,7 +428,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
                 logger.info('Ingest file: '+ingestPathFile)
 
                 with open(ingestPathFile, "r") as f:
-                    with cur.copy(sql.SQL("""COPY drf_obs_data (source_id,timemark,time,{}) 
+                    with cur.copy(sql.SQL("""COPY drf_gauge_data (source_id,timemark,time,{}) 
                                              FROM STDIN WITH (FORMAT CSV)""").format(sql.Identifier(inputSourceVariable))) as copy:
                         while data := f.read(100):
                             copy.write(data)
@@ -622,8 +622,8 @@ def createObsView():
                                   g.state AS state,
                                   g.county AS county,
                                   g.geom AS geom
-                           FROM drf_obs_data d
-                           INNER JOIN drf_obs_source s ON s.source_id=d.source_id
+                           FROM drf_gauge_data d
+                           INNER JOIN drf_gauge_source s ON s.source_id=d.source_id
                            INNER JOIN drf_gauge_station g ON s.station_id=g.station_id""")
 
             # Close cursor and database connection
@@ -737,7 +737,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'ingestTasks.log', level='DEBUG')
+    logger.add(log_path+'ingestObsTasks.log', level='DEBUG')
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
