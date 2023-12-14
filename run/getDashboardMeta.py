@@ -36,7 +36,7 @@ def getADCIRCFileNameVariables(modelRunID):
             cur = conn.cursor()
 
             # Run query
-            cur.execute("""SELECT * FROM public.get_adcirc_filename_variables_test(_run_id := %(modelRunID)s);""", 
+            cur.execute("""SELECT * FROM public.get_adcirc_filename_variables(_run_id := %(modelRunID)s);""", 
                         {'modelRunID':modelRunID})
 
             # convert query output to Pandas dataframe
@@ -116,7 +116,7 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[-8:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
             sys.exit(0)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, forcingMetaClass, instanceName, workflowType)
+            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, instanceName, workflowType)
         else:
             return(modelRunID)
     elif forcingMetaClass == 'tropical':
@@ -146,7 +146,7 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
             sys.exit(0)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, forcingMetaClass, instanceName, workflowType)
+            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, instanceName, workflowType)
         else:
             return(modelRunID)
     else: 

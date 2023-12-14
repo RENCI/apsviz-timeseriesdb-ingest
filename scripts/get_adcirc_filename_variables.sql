@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.get_adcirc_filename_variables_test(_run_id character varying)
+CREATE OR REPLACE FUNCTION public.get_adcirc_filename_variables(_run_id character varying)
  RETURNS json
  LANGUAGE plpgsql
 AS $function$
