@@ -71,12 +71,12 @@ def getInputFileName(harvestDir,modelRunID):
     df = getADCIRCFileNameVariables(modelRunID)
     
     # Get forcing metaclass, instanceName, and workflowType 
-    forcingMetaClass = df['forcing.metclass'].values[0]
-    instanceName = df['instancename'].values[0] 
+    forcingMetaclass = df['forcing.metclass'].values[0]
+    sourceInstance = df['instancename'].values[0] 
     workflowType = df['workflow_type'].values[0]
 
     # Check it run is from a hurricane. 
-    if forcingMetaClass == 'synoptic':
+    if forcingMetaclass == 'synoptic':
         # Create storm variable with value of None since this is a synoptic run
         storm = None
 
@@ -116,11 +116,11 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[-8:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
             sys.exit(0)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, instanceName, workflowType)
+            return(filelist, grid, advisory, timemark, forcingMetaclass, storm, sourceInstance, workflowType)
         else:
             return(modelRunID)
-    elif forcingMetaClass == 'tropical':
-        # Extract storm ID from forcingMetaClass
+    elif forcingMetaclass == 'tropical':
+        # Extract storm ID from forcingMetaclass
         storm = 'al'+df['stormnumber'].values[0].zfill(2)
 
         # Get downloadurl, and extract model run type
@@ -146,11 +146,11 @@ def getInputFileName(harvestDir,modelRunID):
             logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
             sys.exit(0)
         elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaClass, storm, instanceName, workflowType)
+            return(filelist, grid, advisory, timemark, forcingMetaclass, storm, sourceInstance, workflowType)
         else:
             return(modelRunID)
     else: 
-        logger.info('Forcing meta class is not synoptic or tropical, so this must be at hybrid '+forcingMetaClass)
+        logger.info('Forcing meta class is not synoptic or tropical, so this must be at hybrid '+forcingMetaclass)
 
 def checkObsSourceMeta(filename_prefix):
     ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_obs_meta, using a filename_prefix. This function

@@ -13,7 +13,7 @@ import numpy as np
 from loguru import logger
 
 def getFileMetaTimemark(inputFile):
-    ''' Returns DataFrame containing a timemark value, from the table drf_havest_data_file_meta.
+    ''' Returns DataFrame containing a timemark value, from the table drf_havest_obs_file_meta.
         Parameters
             inputFile: string
                 Input file name for the file to get the timemark for.
@@ -22,7 +22,11 @@ def getFileMetaTimemark(inputFile):
     '''
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -47,7 +51,7 @@ def getFileMetaTimemark(inputFile):
 
 
 def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
-    ''' Returns DataFrame containing a list of filenames, from the table drf_havest_data_file_meta, that have not been ingested yet.
+    ''' Returns DataFrame containing a list of filenames, from the table drf_havest_obs_file_meta, that have not been ingested yet.
         Parameters
             inputDataSource: string
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
@@ -61,7 +65,11 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -79,11 +87,6 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
         cur.close()
         conn.close()
 
-        # Return Pandas dataframe
-        #if inputSourceName == 'adcirc':
-        #    return(df.head(100))
-        #else:  
-        #    return(df.head(50))
         return(df)
 
     # If exception log error
@@ -107,7 +110,11 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_li
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -171,29 +178,11 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     # Run getSourceID function to get the source_id(s)
     dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list)
 
-    # Get the timemark from the the data filename NEED TO DEAL WITH HURRICANE AND ENSEMBLES
+    # Get the timemark from the the data filename
     datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',inputFile)
-    if inputSourceName == 'adcirc':
-        # Get timemark from the drf_harvest_obs_file_meta table
-        dftimemark = getFileMetaTimemark(inputFile)
-        if re.search('forecast', inputDataSource.lower()):
-            # If the inputDataSource has forecast in its name get the first datetime in the filename
-            df['timemark'] = dftimemark['timemark'].values[0]
-        elif re.search('nowcast', inputDataSource.lower()):
-            # If the inputDataSource has nowcast in its name get the third datetime in the filename
-            # if it is a synoptic run, and the second datetime in the filename if it is a hurricane run
-            if inputDataSource[0:2] == 'al':
-                # Hurricane run
-                df['timemark'] = dftimemark['timemark'].values[0]
-            else:
-                # Synoptic run
-                df['timemark'] = dftimemark['timemark'].values[0]
-        else:
-            # If the inputDataSource is a hurricane for ensemble  get the second datetime in the filename
-            df['timemark'] = dftimemark['timemark'].values[0]
-    else:
-        # If the inputDataSource does not have forecast or  nowcast in its name get the first datetime in the filename
-        df['timemark'] = datetimes[0] 
+
+    # If the inputDataSource does not have forecast or  nowcast in its name get the first datetime in the filename
+    df['timemark'] = datetimes[0] 
 
     # Add source id(s) to dataframe 
     for index, row in dfstations.iterrows():
