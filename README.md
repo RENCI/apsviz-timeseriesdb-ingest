@@ -216,6 +216,8 @@ The next step is to ingest the files by running the following command:
 
 python runIngest.py --ingestDir /data/ast-run-ingester/ --dataType obs --inputTask DataIngest
 
+python runObsIngest.py --ingestDir /data/ast-run-ingester/ --inputTask runRetainObsStationCreateIngest
+
 This will ingest the data files, created in the above command, into the drf_gauge_data table in the database. 
 
 #### To create and ingest the ADCIRC model data files first run the command:

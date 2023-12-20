@@ -10,7 +10,6 @@ import shutil
 import psycopg
 import subprocess
 import pandas as pd
-import getDashboardMeta as gdm
 from loguru import logger
 
 def getSourceMeta(dataType):
@@ -105,11 +104,12 @@ def runHarvestFile(harvestDir, ingestDir):
     program_list = []
     for index, row in df.iterrows():
         program_list.append(['python','createHarvestObsFileMeta.py','--harvestDir',harvestDir,'--ingestDir',ingestDir,'--inputDataSource', row['data_source'],
-                             '--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputFilenamePrefix',row['filename_prefix']])
+                             '--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],
+                             '--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type']])
 
     # Ingest meta-data on harvest files created above
     program_list.append(['python','ingestObsTasks.py','--ingestDir',ingestDir,'--inputTask','ingestHarvestDataFileMeta'])
-
+    
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))

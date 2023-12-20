@@ -101,9 +101,12 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
             cur = conn.cursor()
 
             # Run query
-            cur.execute("""INSERT INTO drf_source_obs_meta(data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units)
-                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s, %(filenamevariable)s, %(locationtype)s, %(datatype)s,  %(units)s)""",
-                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'datatype': dataType, 'units': inputUnits})
+            cur.execute("""INSERT INTO drf_source_obs_meta(data_source, source_name, source_archive, source_variable, filename_prefix, 
+                                       location_type, data_type, units)
+                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s, %(filenamevariable)s, %(locationtype)s, 
+                                   %(datatype)s,  %(units)s)""",
+                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 
+                         'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'datatype': dataType, 'units': inputUnits})
 
             # Close cursor and database connection
             cur.close()
@@ -203,7 +206,7 @@ def ingestSourceData(ingestDir):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive):
+def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
     ''' This function takes a data source, source name, and source archive as inputs and uses them to query 
         the drf_harvest_obs_file_meta table, creating a DataFrame that contains a list of data files to 
         ingest. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
@@ -232,9 +235,10 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
             cur.execute("""SELECT dir_path, file_name
                            FROM drf_harvest_obs_file_meta
                            WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                           source_archive = %(sourcearchive)s AND ingested = False
+                           source_archive = %(sourcearchive)s AND source_variable = %(sourcevariable)s AND ingested = False
                            ORDER BY data_date_time""",
-                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive})
+                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 
+                         'sourcevariable': inputSourceVariable})
 
             # convert query output to Pandas dataframe
             df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name'])
@@ -275,7 +279,7 @@ def ingestHarvestDataFileMeta(ingestDir):
             for infoFile in inputFiles:
                 # Run ingest query
                 with open(infoFile, "r") as f:
-                    with cur.copy("COPY drf_harvest_obs_file_meta (dir_path,file_name,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_harvest_obs_file_meta (dir_path,file_name,processing_datetime,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,source_variable,location_type,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -360,7 +364,9 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
 
     logger.info('Begin ingesting data source '+inputDataSource+', with source name '+inputSourceName+', source variable '+inputSourceVariable+' and source archive '+inputSourceArchive)
     # Get DataFrame the contains list of data files that need to be ingested
-    dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive)
+    # NEED TO ADD SOURCE VARIABLE TO getHarvestDataFileMeta, WHICH MEAND I NEED TO ADD IT TO drf_harvest_obs_file_meta AS WELL
+    # DOING SO WILL SOLVE THE PROBLEM THAT OCCURRED WITH water_level BEING INGESTED INTO THE flow_volume COLUMN
+    dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable)
 
     try:
         # Create connection to database, set autocommit, and get cursor
@@ -499,7 +505,7 @@ def createObsView():
                                   d.wave_height AS wave_height,
                                   d.wind_speed AS wind_speed,
                                   d.air_pressure AS air_pressure,
-                                  d.flow_volume AS flow_volume, 
+                                  d.stream_elevation AS stream_elevation, 
                                   g.tz AS tz,
                                   g.gauge_owner AS gauge_owner,
                                   s.data_source AS data_source,
