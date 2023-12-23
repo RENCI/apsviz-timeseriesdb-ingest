@@ -363,9 +363,8 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
     '''
 
     logger.info('Begin ingesting data source '+inputDataSource+', with source name '+inputSourceName+', source variable '+inputSourceVariable+' and source archive '+inputSourceArchive)
+
     # Get DataFrame the contains list of data files that need to be ingested
-    # NEED TO ADD SOURCE VARIABLE TO getHarvestDataFileMeta, WHICH MEAND I NEED TO ADD IT TO drf_harvest_obs_file_meta AS WELL
-    # DOING SO WILL SOLVE THE PROBLEM THAT OCCURRED WITH water_level BEING INGESTED INTO THE flow_volume COLUMN
     dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable)
 
     try:

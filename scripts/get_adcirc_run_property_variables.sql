@@ -15,11 +15,12 @@ AS $function$
 		    FROM
 			"ASGS_Mon_config_item"
 		    WHERE
-			key IN (''''ADCIRCgrid'''', ''''advisory'''', ''''forcing.ensemblename'''', ''''forcing.metclass'''', ''''instancename'''', ''''storm'''', ''''stormname'''', ''''stormnumber'''',''''physical_location'''', ''''time.currentdate'''', ''''time.currentcycle'''', ''''workflow_type'''')
+			key IN (''''suite.model'''', ''''ADCIRCgrid'''', ''''advisory'''', ''''forcing.ensemblename'''', ''''forcing.metclass'''', ''''instancename'''', ''''storm'''', ''''stormname'''', ''''stormnumber'''',''''physical_location'''', ''''time.currentdate'''', ''''time.currentcycle'''', ''''workflow_type'''')
 			and instance_id || ''''-'''' || uid = ''''' || _run_id || '''''
 		    ORDER BY id ASC, key ASC'',
 		    ''SELECT data_source
 		     FROM (VALUES
+                        (''''suite.model''''),
 			(''''ADCIRCgrid''''),
 			(''''advisory''''),
 			(''''forcing.ensemblename''''),
@@ -34,6 +35,7 @@ AS $function$
                         (''''workflow_type'''')) b(data_source)''
 		) AS (
 		    id INT,
+                    "suite.model" TEXT,
 		    "ADCIRCgrid" TEXT,
 		    "advisory" TEXT,
 		    "forcing.ensemblename" TEXT,

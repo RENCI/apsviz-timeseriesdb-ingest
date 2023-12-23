@@ -142,7 +142,7 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
 @logger.catch
 def main(args):
     ''' Main program function takes args as input, starts logger, runs createFileList, and writes output to CSV file. 
-        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runIngest.py
+        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runObsIngest.py
         Parameters
             args: dictionary 
                 contains the parameters listed below

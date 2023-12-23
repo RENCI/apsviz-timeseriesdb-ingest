@@ -15,7 +15,7 @@ logger.add(sys.stderr, level="ERROR")
 def flatten(l):
     return [item for sublist in l for item in sublist]
 
-def getADCIRCFileNameVariables(modelRunID):
+def getADCIRCRunPropertyVariables(modelRunID):
     ''' Returns DataFrame containing a list of variables (forcing.metclass, downloadurl, ADCIRCgrid, time.currentdate, time,currentcycle, advisory), 
         extracted from table ASGS_Mon_config_item, in the asgs_dashboard DB, using the public.get_adcirc_filename_variables_test 
         SQL function with modelRunID as input. These variables are used to construct filenames.
@@ -36,7 +36,7 @@ def getADCIRCFileNameVariables(modelRunID):
             cur = conn.cursor()
 
             # Run query
-            cur.execute("""SELECT * FROM public.get_adcirc_filename_variables(_run_id := %(modelRunID)s);""", 
+            cur.execute("""SELECT * FROM public.get_adcirc_run_property_variables(_run_id := %(modelRunID)s);""", 
                         {'modelRunID':modelRunID})
 
             # convert query output to Pandas dataframe
@@ -70,9 +70,18 @@ def getInputFileName(harvestDir,modelRunID):
     # Get ADCIRC filename variables
     df = getADCIRCFileNameVariables(modelRunID)
     
-    # Get forcing metaclass, instanceName, and workflowType 
+    # define all gdm variables
+    ADCIRCgrid = df['ADCIRCgrid'].values[0]
+    advisory = df['advisory'].values[0]
+    forcingEnsemblename = df['forcing.ensemblename'].values[0]
     forcingMetaclass = df['forcing.metclass'].values[0]
-    sourceInstance = df['instancename'].values[0] 
+    sourceInstance = df['instancename'].values[0]
+    storm = df['storm'].values[0]
+    stormname = df['stormname'].values[0]
+    stormnumber = df['stormnumber'].values[0]
+    physical_location = df['physical_location'].values[0] 
+    time_currentdate = df['time.currentdate'].values[0]
+    time_currentcycle = df['time.currentcycle'].values[0]
     workflowType = df['workflow_type'].values[0]
 
     # Check it run is from a hurricane. 
@@ -165,8 +174,10 @@ def checkObsSourceMeta(filename_prefix):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
-                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
                                password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
@@ -207,23 +218,24 @@ def checkModelSourceMeta(filename_prefix):
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
-                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
                                password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
-        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, source_instance
-                              forcing_metaclass, filename_prefix, location_type, data_type, units 
+        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, source_instance,
+                              forcing_metaclass, filename_prefix, location_type, units 
                        FROM drf_source_model_meta
                        WHERE filename_prefix = %(filename_prefix)s 
                        ORDER BY filename_prefix""",
                        {'filename_prefix':filename_prefix})
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_instance',
-                                                   'forcing_metaclass', 'source_variable', 'filename_prefix', 'location_type', 
-                                                   'data_type', 'units'])
+        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 
+                                                   'source_instance', 'forcing_metaclass', 'filename_prefix', 'location_type', 'units'])
 
         # Close cursor and database connection
         cur.close()
