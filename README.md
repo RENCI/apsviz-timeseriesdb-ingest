@@ -192,7 +192,7 @@ This will create Harvest meta data files in /data/ast-run-ingester and then inge
 
 To create and ingest the harvest file meta data, for ADCIRC model data, run the following command:
 
-python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID xxxx-dddddddddd-mmmmmmmmmmm 
+python runModelIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID xxxx-dddddddddd-mmmmmmmmmmm 
 
 where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-namforecast shows.
 

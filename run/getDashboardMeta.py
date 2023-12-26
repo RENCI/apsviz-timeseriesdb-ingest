@@ -1,6 +1,6 @@
 import sys
 import os
-import glob
+
 import psycopg
 import pandas as pd
 from loguru import logger
@@ -53,114 +53,6 @@ def getADCIRCRunPropertyVariables(modelRunID):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def getInputFileName(harvestDir,modelRunID):
-    ''' Returns a file name, with directory path, that will be used to search for the file using glob. It uses 
-        the getADCIRCFileNameVariables(modelRunID) function to get a list of variables, by using a modelRunID 
-        to query the ASGS_Mon_config_item table in the  asgs_dashboard database. the variables are then used to 
-        construct a filename. 
-        Parameters
-            harvestDir: string
-                Directory path to harvest data files
-            modelRunID: string
-                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
-        Returns
-            File name, with directory path.
-    '''
-
-    # Get ADCIRC filename variables
-    df = getADCIRCFileNameVariables(modelRunID)
-    
-    # define all gdm variables
-    ADCIRCgrid = df['ADCIRCgrid'].values[0]
-    advisory = df['advisory'].values[0]
-    forcingEnsemblename = df['forcing.ensemblename'].values[0]
-    forcingMetaclass = df['forcing.metclass'].values[0]
-    sourceInstance = df['instancename'].values[0]
-    storm = df['storm'].values[0]
-    stormname = df['stormname'].values[0]
-    stormnumber = df['stormnumber'].values[0]
-    physical_location = df['physical_location'].values[0] 
-    time_currentdate = df['time.currentdate'].values[0]
-    time_currentcycle = df['time.currentcycle'].values[0]
-    workflowType = df['workflow_type'].values[0]
-
-    # Check it run is from a hurricane. 
-    if forcingMetaclass == 'synoptic':
-        # Create storm variable with value of None since this is a synoptic run
-        storm = None
-
-        # Get downloadurl, and extract model run type
-        model = df['downloadurl'].values[0].split('/')[-1].upper()
-        
-        # Get grid
-        grid = df['ADCIRCgrid'].values[0].upper()
-
-        # Get advisory number or date for synoptic runs
-        advisory = df['advisory'].values[0]
-        
-        # Get time.currentdate, and timecurrentcycle, extract time variables, and create timemark
-        # This step was add for ECFLOW runs
-        currentDate = df['time.currentdate'].values[0]
-        year = '20'+currentDate[0:2]
-        month = currentDate[2:4]
-        day = currentDate[4:6]
-        hour = df['time.currentcycle'].values[0]
-        timemark = year+'-'+month+'-'+day+'T'+hour
-    
-        # Define forecast obs station types for searching with glob 
-        forecast_obs_station_types = ['NOAASTATIONS','CONTRAILSCOASTAL','CONTRAILSRIVERS','NDBCBUOYS'] 
-
-        # Create filelist
-        filelist = []
-
-        # Loop through forecast_obs_station_types globing files, and append to filelist
-        for forecast_obs_station_type in forecast_obs_station_types:
-            # Search for file name, and return it
-            filelist.append(glob.glob(harvestDir+'adcirc_[!meta]*_'+model+'_'+grid+'_'+model[-8:]+'_'+forecast_obs_station_type+'_'+timemark+'*.csv'))
-
-        # Flatten file list
-        filelist = flatten(filelist)
-
-        if len(filelist) == 0:
-            logger.info('The following file: adcirc_[!meta]*_'+model+'_'+grid+'_'+model[-8:]+'_*_'+timemark+'*.csv was not found for model run ID: '+modelRunID)
-            sys.exit(0)
-        elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaclass, storm, sourceInstance, workflowType)
-        else:
-            return(modelRunID)
-    elif forcingMetaclass == 'tropical':
-        # Extract storm ID from forcingMetaclass
-        storm = 'al'+df['stormnumber'].values[0].zfill(2)
-
-        # Get downloadurl, and extract model run type
-        model = df['downloadurl'].values[0].split('/')[-1].upper()
-        
-        # Get grid
-        grid = df['ADCIRCgrid'].values[0].upper()
-        
-        # Get advisory number
-        advisory = df['advisory'].values[0]
-        
-        # Get startTime, extracet time variables, and create timemark
-        currentDate = df['time.currentdate'].values[0]
-        year = '20'+currentDate[0:2]
-        month = currentDate[2:4]
-        day = currentDate[4:6]
-        hour = df['time.currentcycle'].values[0]
-        timemark = year+'-'+month+'-'+day+'T'+hour
-
-        # Search for file name, and return it
-        filelist = glob.glob(harvestDir+'adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv')
-        if len(filelist) == 0:
-            logger.info('The following file: adcirc_'+storm+'_*_'+model+'_'+grid+'_*_'+advisory+'_*.csv was not found for model run ID: '+modelRunID)
-            sys.exit(0)
-        elif len(filelist) > 0:
-            return(filelist, grid, advisory, timemark, forcingMetaclass, storm, sourceInstance, workflowType)
-        else:
-            return(modelRunID)
-    else: 
-        logger.info('Forcing meta class is not synoptic or tropical, so this must be at hybrid '+forcingMetaclass)
-
 def checkObsSourceMeta(filename_prefix):
     ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_obs_meta, using a filename_prefix. This function
         is used by the runHarvestFile() function, in runObsIngest.py, to see if a source exist. This is only done for ADCIRC source. If
@@ -205,7 +97,7 @@ def checkObsSourceMeta(filename_prefix):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def checkModelSourceMeta(filename_prefix):
+def checkModelSourceMeta(filename_prefix, source_instance):
     ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_model_meta, using a filename_prefix. This function
         is used by the runHarvestFile() function, in runModelIngest.py, to see if a source exist. This is only done for ADCIRC source. If
         the source does not exist than runHarvestFile() has a method for adding one. 
@@ -229,13 +121,14 @@ def checkModelSourceMeta(filename_prefix):
         cur.execute("""SELECT data_source, source_name, source_archive, source_variable, source_instance,
                               forcing_metaclass, filename_prefix, location_type, units 
                        FROM drf_source_model_meta
-                       WHERE filename_prefix = %(filename_prefix)s 
+                       WHERE filename_prefix = %(filename_prefix)s AND source_instance = %(source_instance)s
                        ORDER BY filename_prefix""",
-                       {'filename_prefix':filename_prefix})
+                       {'filename_prefix':filename_prefix, 'source_instance': source_instance})
 
         # convert query output to Pandas dataframe
         df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 
-                                                   'source_instance', 'forcing_metaclass', 'filename_prefix', 'location_type', 'units'])
+                                                   'source_instance', 'forcing_metaclass', 'filename_prefix', 'location_type', 
+                                                   'units'])
 
         # Close cursor and database connection
         cur.close()

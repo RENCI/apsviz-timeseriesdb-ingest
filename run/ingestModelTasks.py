@@ -175,6 +175,7 @@ def ingestHarvestDataFileMeta(ingestPath):
             None
     '''
 
+    # Get input files for ingesting
     inputFiles = glob.glob(ingestPath+"harvest_data_files_*.csv")
 
     try:
@@ -190,7 +191,7 @@ def ingestHarvestDataFileMeta(ingestPath):
             for infoFile in inputFiles:
                 # Run ingest query
                 with open(infoFile, "r") as f:
-                    with cur.copy("COPY drf_harvest_model_file_meta (dir_path,file_name,processing_datetime,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,source_instance,forcing_metaclass,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_harvest_model_file_meta (dir_path,file_name,model_run_id,processing_datetime,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,source_instance,forcing_metaclass,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -206,7 +207,7 @@ def ingestHarvestDataFileMeta(ingestPath):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def ingestApsVizStationFileMeta(ingestPath, inputFilename):
+def ingestApsVizStationFileMeta(ingestPath):
     ''' This function takes an ingest directory, and filename as input. It uses the input filename, along with the input
         directory, to ingest the specified file into the drf_apsviz_station_file_meta directory. The ingest directory 
         is the directory path in the apsviz-timeseriesdb database container.
@@ -214,12 +215,12 @@ def ingestApsVizStationFileMeta(ingestPath, inputFilename):
             ingestPath: string
                 Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
                 path.
-            inputFilename: string
-                The name of the input file. This is a full file name that is used when ingesting ApsViz Station data. Used by
-                ingestApsVizStationFileMeta, and ingestApsVizStationData.
         Returns
             None
     '''
+
+    # Get input files for ingesting
+    inputFiles = glob.glob(ingestPath+"harvest_meta_files_*.csv")
 
     try:
         # Create connection to databaseset, set autocommit, and get cursor
@@ -231,15 +232,16 @@ def ingestApsVizStationFileMeta(ingestPath, inputFilename):
                              autocommit=True) as conn:
             cur = conn.cursor()
 
+            for infoFile in inputFiles:
             # Run ingest query
-            with open(ingestPath+inputFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,source_instance,forcing_metaclass,grid_name,model_run_id,timemark,location_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
-                    while data := f.read(100):
-                        copy.write(data)
+                with open(infoFile, "r") as f:
+                    with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,source_instance,forcing_metaclass,grid_name,model_run_id,timemark,location_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                        while data := f.read(100):
+                            copy.write(data)
 
-            # Remove harvest meta file after ingesting it.
-            logger.info('Remove apsVis station meta file: '+inputFilename+' after ingesting it')
-            os.remove(ingestPath+inputFilename)
+                # Remove harvest meta file after ingesting it.
+                logger.info('Remove apsVis station meta file: '+infoFile+' after ingesting it')
+                os.remove(infoFile)
 
             # Close cursor and database connection
             cur.close()
@@ -518,9 +520,8 @@ def main(args):
         logger.info('Ingested input data file information.')
     elif inputTask.lower() == 'ingestapsvizstationfilemeta':
         ingestPath = os.path.join(args.ingestPath, '')
-        inputFilename = args.inputFilename
         logger.info('Ingesting input apsViz station meta file information.')
-        ingestApsVizStationFileMeta(ingestPath, inputFilename)
+        ingestApsVizStationFileMeta(ingestPath)
         logger.info('Ingested input apsViz station meta file information.')
     elif inputTask.lower() == 'ingestdata':
         ingestPath = os.path.join(args.ingestPath, '')
@@ -536,9 +537,9 @@ def main(args):
     elif inputTask.lower() == 'ingestapsvizstationdata':
         ingestPath = args.ingestPath
         inputFilename = args.inputFilename
-        logger.info('Ingesting apsViz station data from file '+inputFilename+', in directory '+ingestPath+'.')
+        logger.info('Ingesting apsViz station data '+inputFilename+' files, in directory '+ingestPath+'.')
         ingestApsVizStationData(ingestPath, inputFilename)
-        logger.info('Ingested apsViz station data from file '+inputFilename+', in directory '+ingestPath+'.')
+        logger.info('Ingested apsViz station data '+inputFilename+' file, in directory '+ingestPath+'.')
     elif inputTask.lower() == 'createmodelview':
         logger.info('Creating model view.')
         createModelView()
@@ -613,7 +614,6 @@ if __name__ == "__main__":
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
     elif args.inputTask.lower() == 'ingestapsvizstationfilemeta':
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
-        parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for apzViz station meta file", action="store", dest="inputFilename", required=True)
     elif args.inputTask.lower() == 'ingestdata':
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
         parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
@@ -624,7 +624,7 @@ if __name__ == "__main__":
         parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
     elif args.inputTask.lower() == 'ingestapsvizstationdata':
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
-        parser.add_argument("--inputFilename", help="Input filename to be processed", action="store", dest="inputFilename", required=True)
+        parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for apzViz station meta file", action="store", dest="inputFilename", required=True)
 
     # Parse arguments
     args = parser.parse_args()

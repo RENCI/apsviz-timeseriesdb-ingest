@@ -3,116 +3,24 @@
 
 # Import python modules
 import argparse
-import glob
 import sys
 import os
-import re
 import datetime
-import psycopg
 import pandas as pd
-import numpy as np
 from pathlib import Path
 from loguru import logger
-
-def getFileDateTime(inputFile):
-    ''' Returns a DataFrame containing a list of directory paths, and files, from table drf_harvest_model_file_meta, and weather they have been ingested.
-        Parameters
-            inputFile: string
-                Name of input file
-        Returns
-            DataFrame
-    '''
-    try:
-        # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
-                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
-                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
-                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
-                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
-        cur = conn.cursor()
-
-        # Run query
-        cur.execute("""SELECT dir_path, file_name, ingested, overlap_past_file_date_time
-                       FROM drf_harvest_model_file_meta
-                       WHERE file_name = %(input_file)s
-                       ORDER BY file_name""",
-                    {'input_file': inputFile})
-
-        # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['dir_path', 'file_name', 'ingested', 'overlap_past_file_date_time'])
-
-        # Close cursor and database connection
-        cur.close()
-        conn.close()
-
-        # Return DataFrame
-        return(df)
-
-    # If exception log error
-    except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-
-def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass):
-    ''' Returns a DataFrame containing a list of files, from table drf_harvest_model_file_meta, with specified data source, source name,
-        and source_archive that have been ingested.
-        Parameters
-            inputDataSource: string
-                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
-            inputSourceName: string
-                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
-            inputSourceArchive: string
-                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
-            inputSourceInstance: string
-                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
-                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
-        Returns
-            DataFrame
-    '''
-    try:
-        # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
-                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
-                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
-                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
-                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
-        cur = conn.cursor()
-       
-        # Run query
-        cur.execute("""SELECT file_id, dir_path, file_name, processing_datetime, data_date_time, data_begin_time, data_end_time, data_source, source_name, source_archive, 
-                              timemark, ingested, overlap_past_file_date_time
-                       FROM drf_harvest_model_file_meta
-                       WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                       source_archive = %(sourcearchive)s AND source_instance = %(sourceinstance)s AND 
-                       forcing_metaclass = %(forcingmetaclass)s AND ingested = True""", 
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourceinstance': inputSourceInstance, 
-                     'forcingmetaclass': inputForcingMetaclass})
-       
-        # convert query output to Pandas dataframe 
-        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'processing_datetime', 'data_date_time', 'data_begin_time', 
-                                                   'data_end_time', 'data_source', 'source_name', 'source_archive',  'source_instance', 'forcing_metaclass', 
-                                                   'timemark', 'ingested', 'overlap_past_file_date_time'])
-
-        # Close cursor and database connection
-        cur.close()
-        conn.close()
-
-        # Return DataFrame
-        return(df)
-
-    # If exception log error    
-    except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
 
 # This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
 # It uses them to create a file list that is then ingested into the drf_harvest_model_file_meta table, and used to ingest the
 # data files. This function also returns first_time, and last_time which are used in cross checking the data.
-def createFileList(harvestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputFilenamePrefix, inputTimemark):
+def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputFilenamePrefix, inputTimemark):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_harvest_model_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
-            harvestPath: string
-                Directory path to harvest data files
+            dirInputFile: string
+                Directory path and harvest file to be ingested.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db.
             inputDataSource: string
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
             inputSourceName: string
@@ -131,59 +39,39 @@ def createFileList(harvestPath, inputDataSource, inputSourceName, inputSourceArc
             DataFrame, first_time, last_time
     '''
 
-    # Search for files in the harvestPath that have inputDataset name in them, and generate a list of files found
-    dirInputFiles = glob.glob(harvestPath+inputFilenamePrefix+"*.csv")
+    # Define db model_run_id from input modelRunID
+    model_run_id = modelRunID
 
-    # Define outputList variable
-    outputList = []
-
-    # Loop through dirOutputFiles, generate new variables and add them to outputList
-    for dirInputFile in dirInputFiles:
-        dir_path = dirInputFile.split(inputFilenamePrefix)[0]
-        file_name = Path(dirInputFile).parts[-1] 
+    # Defind dir_path and file_namne from dirInputFile
+    path_file = Path(dirInputFile)
+    dir_path = os.path.join(str(path_file.parent), '')
+    file_name = path_file.name
  
-        data_date_time = inputTimemark
-        processing_datetime = datetime.datetime.today().isoformat().split('.')[0]
+    # Define data_date_time and processing_datetime
+    data_date_time = inputTimemark
+    processing_datetime = datetime.datetime.today().isoformat().split('.')[0]
 
-        df = pd.read_csv(dirInputFile)
-        data_begin_time = df['TIME'].min()
-        data_end_time = df['TIME'].max()
+    # Read data file and extract data_begin_time and data_end_time
+    df = pd.read_csv(dirInputFile)
+    data_begin_time = df['TIME'].min()
+    data_end_time = df['TIME'].max()
 
-        # This step checks to see if begin_time, and end_time or null, and if they are it marks the file as being ingested
-        # This step was added to deal with some erroneous runs, and may be removed in the future. NO LONGER NEED THIS!
-        if pd.isnull(data_begin_time) and pd.isnull(data_end_time):
-            ingested = 'True'
-        else:
-            ingested = 'False'
+    # Define ingested and overlap_past_file_date_time
+    ingested = 'False'
+    overlap_past_file_date_time = 'False'
 
-        overlap_past_file_date_time = 'False'
-
-        outputList.append([dir_path,file_name,processing_datetime,data_date_time,data_begin_time,data_end_time,inputDataSource,inputSourceName,
-                           inputSourceArchive,inputSourceInstance,inputForcingMetaclass,inputTimemark,ingested,overlap_past_file_date_time]) 
+    outputList = []
+    outputList.append([dir_path,file_name,model_run_id,processing_datetime,data_date_time,data_begin_time,data_end_time,inputDataSource,inputSourceName,
+                       inputSourceArchive,inputSourceInstance,inputForcingMetaclass,inputTimemark,ingested,overlap_past_file_date_time]) 
 
     # Convert outputList to a DataFrame
-    dfnew = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'processing_datetime', 'data_date_time', 'data_begin_time', 'data_end_time', 
-                                              'data_source', 'source_name', 'source_archve', 'source_instance' , 'forcing_metaclass', 'timemark', 
-                                              'ingested', 'overlap_past_file_date_time'])
+    df = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'model_run_id', 'processing_datetime', 'data_date_time', 'data_begin_time', 'data_end_time', 
+                                            'data_source', 'source_name', 'source_archve', 'source_instance' , 'forcing_metaclass', 'timemark', 
+                                            'ingested', 'overlap_past_file_date_time'])
 
-    # Get DataFrame of existing list of files, in the database, that have been ingested.
-    dfold = getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass)
-
-    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_model_file_meta.
-    df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
-
-    if len(df.values) == 0:
-        logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
-        first_time = np.nan
-        last_time = np.nan
-    else:
-        logger.info('There are '+str(len(df.values))+' new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive')
-        # Get first time, and last time from the list of files. This will be used in the filename, to enable checking for time overlap in files
-        first_time = df['data_date_time'].iloc[0]
-        last_time = df['data_date_time'].iloc[-1] 
 
     # Return DataFrame first time, and last time
-    return(df, first_time, last_time)
+    return(df, file_name)
 
 @logger.catch
 def main(args):
@@ -192,11 +80,14 @@ def main(args):
         Parameters
             args: dictionary 
                 contains the parameters listed below
-            harvestPath: string
-                Directory path to harvest data files 
+            dirInputFile: string
+                Directory path and harvest file to be ingested. 
             ingestPath: string
                 Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
                 path.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db. Used by createFileList(),
+                getOldHarvestFiles() and getFileDateTime(). 
             inputDataSource: string
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
             inputSourceName: string
@@ -220,14 +111,16 @@ def main(args):
     logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
-    harvestPath = os.path.join(args.harvestPath, '')
+    dirInputFile = args.dirInputFile
     ingestPath = os.path.join(args.ingestPath, '')
+    modelRunID = args.modelRunID
     inputDataSource = args.inputDataSource
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputSourceInstance = args.inputSourceInstance
     inputForcingMetaclass = args.inputForcingMetaclass
     inputFilenamePrefix = args.inputFilenamePrefix
+    inputTimemark = args.inputTimemark
 
     if not os.path.exists(ingestPath):
         os.mkdir(ingestPath)
@@ -235,40 +128,31 @@ def main(args):
     else:
         logger.info("Directory %s already exists" % ingestPath)
 
-    if args.inputTimemark:
-        inputTimemark = args.inputTimemark
-    else:
-        inputTimemark = None
-
-    logger.info('Start processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+', with filename prefix '+inputFilenamePrefix+'.')
+    logger.info('Start processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+
+                ', with filename prefix '+inputFilenamePrefix+' and modelRunID '+modelRunID+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    df, first_time, last_time = createFileList(harvestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputFilenamePrefix, inputTimemark)
+    df, file_name = createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputFilenamePrefix, inputTimemark)
 
-    if pd.isnull(first_time) and pd.isnull(last_time):
-        logger.info('No new files for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+'.')
-    else:
-        # Get current date    
-        current_date = datetime.date.today()
+    # Write data file to ingest directory.
+    outputFile = 'harvest_data_files_'+file_name
 
-        # Create output file name
-        if inputSourceName == 'adcirc':
-            outputFile = 'harvest_data_files_'+inputFilenamePrefix+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
-        else:
-            outputFile = 'harvest_data_files_'+inputSourceArchive+'_stationdata_'+inputDataSource+'_'+inputFilenamePrefix+'_'+first_time.strip()+'_'+last_time.strip()+'_'+current_date.strftime("%b-%d-%Y")+'.csv'
-
-        # Write DataFrame containing list of files to a csv file
-        df.to_csv(ingestPath+outputFile, index=False, header=False)
-        logger.info('Finished processing source data for data source '+inputDataSource+', source name '+inputSourceName+', source archive '+inputSourceArchive+', and data filename prefix '+inputFilenamePrefix+'.')
+    # Write DataFrame containing list of files to a csv file
+    df.to_csv(ingestPath+outputFile, index=False, header=False)
+    logger.info('Finished processing source data for model run id '+modelRunID+' data source '+inputDataSource+', source name '+inputSourceName+
+                ', source archive '+inputSourceArchive+', with filename prefix '+inputFilenamePrefix+' and modelRunID '+modelRunID+'.')
 
 if __name__ == "__main__":
     ''' Takes argparse inputs and passes theme to the main function
         Parameters
-            harvestPath: string
-                Directory path to harvest data files
+            dirInputFile: string
+                Directory path and harvest file to be ingested. 
             ingestPath: string
                 Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
                 path.
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db. Used by createFileList(),
+                getOldHarvestFiles() and getFileDateTime(). 
             inputDataSource: string
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
             inputSourceName: string
@@ -290,8 +174,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--harvestDIR", "--harvestPath", help="Input directory path", action="store", dest="harvestPath", required=True)    
+    parser.add_argument("--dirInputFile", "--dirInputFile", help="Directory path and harvest file to be ingested", action="store", dest="dirInputFile", required=True)    
     parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
+    parser.add_argument("--modelRunID", "--modelRunId", help="Model run ID for ADCIRC forecast data", action="store", dest="modelRunID", required=False)
     parser.add_argument("--inputDataSource", help="Input data source name", action="store", dest="inputDataSource", required=True)
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
