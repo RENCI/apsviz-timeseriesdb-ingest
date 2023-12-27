@@ -1,1 +1,0 @@
-python runModelIngest.py --harvestDir /data/ast-run-harvester-prod/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID  4374-2023120912-gfsforecast

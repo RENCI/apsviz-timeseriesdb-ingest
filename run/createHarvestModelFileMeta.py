@@ -13,7 +13,8 @@ from loguru import logger
 # This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
 # It uses them to create a file list that is then ingested into the drf_harvest_model_file_meta table, and used to ingest the
 # data files. This function also returns first_time, and last_time which are used in cross checking the data.
-def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputFilenamePrefix, inputTimemark):
+def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, 
+                   inputAdvisory, inputTimemark):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_harvest_model_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
@@ -31,8 +32,8 @@ def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, i
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
             inputForcingMetaclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
-            inputFilenamePrefix: string
-                Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob. 
+            inputAdvisory: string
+                The model start time for synoptic runs, and the storm advisory number for tropical runs
             inputTimemark: string
                 Model run ID timemark, or the start time of the model. This is only for ADCIRC data.
         Returns
@@ -62,12 +63,12 @@ def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, i
 
     outputList = []
     outputList.append([dir_path,file_name,model_run_id,processing_datetime,data_date_time,data_begin_time,data_end_time,inputDataSource,inputSourceName,
-                       inputSourceArchive,inputSourceInstance,inputForcingMetaclass,inputTimemark,ingested,overlap_past_file_date_time]) 
+                       inputSourceArchive,inputSourceInstance,inputForcingMetaclass,inputAdvisory,inputTimemark,ingested,overlap_past_file_date_time]) 
 
     # Convert outputList to a DataFrame
     df = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'model_run_id', 'processing_datetime', 'data_date_time', 'data_begin_time', 'data_end_time', 
-                                            'data_source', 'source_name', 'source_archve', 'source_instance' , 'forcing_metaclass', 'timemark', 
-                                            'ingested', 'overlap_past_file_date_time'])
+                                            'data_source', 'source_name', 'source_archve', 'source_instance' , 'forcing_metaclass', 'advisory', 
+                                            'timemark', 'ingested', 'overlap_past_file_date_time'])
 
 
     # Return DataFrame first time, and last time
@@ -98,6 +99,8 @@ def main(args):
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
             inputForcingMetaclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
+            inputAdvisory: string
+                The model start time for synoptic runs, and the storm advisory number for tropical runs
             inputFilenamePrefix: string
                 Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob. 
         Returns
@@ -119,7 +122,7 @@ def main(args):
     inputSourceArchive = args.inputSourceArchive
     inputSourceInstance = args.inputSourceInstance
     inputForcingMetaclass = args.inputForcingMetaclass
-    inputFilenamePrefix = args.inputFilenamePrefix
+    inputAdvisory = args.inputAdvisory
     inputTimemark = args.inputTimemark
 
     if not os.path.exists(ingestPath):
@@ -129,10 +132,11 @@ def main(args):
         logger.info("Directory %s already exists" % ingestPath)
 
     logger.info('Start processing source data for data source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+
-                ', with filename prefix '+inputFilenamePrefix+' and modelRunID '+modelRunID+'.')
+                ', with modelRunID '+modelRunID+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    df, file_name = createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputFilenamePrefix, inputTimemark)
+    df, file_name = createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, 
+                                   inputForcingMetaclass, inputAdvisory, inputTimemark)
 
     # Write data file to ingest directory.
     outputFile = 'harvest_data_files_'+file_name
@@ -140,7 +144,7 @@ def main(args):
     # Write DataFrame containing list of files to a csv file
     df.to_csv(ingestPath+outputFile, index=False, header=False)
     logger.info('Finished processing source data for model run id '+modelRunID+' data source '+inputDataSource+', source name '+inputSourceName+
-                ', source archive '+inputSourceArchive+', with filename prefix '+inputFilenamePrefix+' and modelRunID '+modelRunID+'.')
+                ', source archive '+inputSourceArchive+', with modelRunID '+modelRunID+'.')
 
 if __name__ == "__main__":
     ''' Takes argparse inputs and passes theme to the main function
@@ -163,8 +167,8 @@ if __name__ == "__main__":
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
             inputForcingMetaclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
-            inputFilenamePrefix: string
-                Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
+            inputAdvisory: string
+                The model start time for synoptic runs, and the storm advisory number for tropical runs
             inputTimemark: string
                 Model run ID timemark, or the start time of the model. This is only for ADCIRC data.
         Returns
@@ -182,7 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
     parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
     parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
-    parser.add_argument("--inputFilenamePrefix", help="Input data filename prefix", action="store", dest="inputFilenamePrefix", required=True)
+    parser.add_argument("--inputAdvisory", help="Input advisoty date or number", action="store", dest="inputAdvisory", required=True)
     parser.add_argument("--inputTimemark", help="Input timemark", action="store", dest="inputTimemark", required=False)
 
     # Parse input arguments

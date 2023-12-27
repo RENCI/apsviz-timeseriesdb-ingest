@@ -161,14 +161,12 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
             logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the forcingEnsemblename and grid name')
             forecast_data_source = forcingEnsemblename.upper()+'_'+grid_name
             forecast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
-            forecast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_'+forcingEnsemblename.upper()+'_'+grid_name+'_FORECAST_'+forecast_obs_station_type
-            nowcast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_NOWCAST_'+grid_name+'_NOWCAST_'+forecast_obs_station_type 
+            forecast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_'+forcingEnsemblename.upper()+'_'+grid_name+'_FORECAST_'+forecast_obs_station_type 
         else:
             logger.info('Input file '+inputFile+' data is from a hurricane, so data source consists of the storm, forcingEnsemblename and grid name')
             forecast_data_source = storm+'_'+forcingEnsemblename+'_'+grid_name
             forecast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
             forecast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_'+forcingEnsemblename+'_'+grid_name+'_FORECAST_'+forecast_obs_station_type
-            nowcast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_NOWCAST_'+grid_name+'_NOWCAST_'+forecast_obs_station_type
 
         # Define other source meta variables
         if forecast_obs_station_type == 'NOAASTATIONS':
@@ -222,8 +220,8 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
             # Forecast files
             program_list.append(['python','createHarvestModelFileMeta.py','--dirInputFile',dirInputFile,'--ingestPath',ingestPath,'--modelRunID', modelRunID,
                                  '--inputDataSource',forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,
-                                 '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,
-                                 '--inputFilenamePrefix',forecast_prefix,'--inputTimemark',timemark])
+                                 '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,'--inputAdvisory', advisory,
+                                 '--inputTimemark',timemark])
 
         else:
             # log results
@@ -233,16 +231,16 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
             # Forecast files
             program_list.append(['python','createHarvestModelFileMeta.py','--dirInputFile',dirInputFile,'--ingestPath',ingestPath,'--modelRunID', modelRunID,
                                  '--inputDataSource',forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,
-                                 '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,
-                                 '--inputFilenamePrefix',forecast_prefix,'--inputTimemark',timemark])
+                                 '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,'--inputAdvisory', advisory,
+                                 '--inputTimemark',timemark])
 
     # Get ADCIRC nowcast filenames
     filelist = glob.glob(harvestPath+'NOWCAST_*.csv')
 
     # Check if filelist is not empty
     if len(filelist) > 0:
-        # Loop through filelist running createHarvestModelFileMeta.py on each file path
 
+        # Loop through filelist running createHarvestModelFileMeta.py on each file path
         for dirInputFile in filelist:
             # Define inputFile 
             inputFile = dirInputFile.split('/')[-1]
@@ -250,8 +248,8 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
             # Nowcast files (NO LONGER HAVE nowcast_data_source, BUT NEED TO KEEP AN EYE ON THIS)
             program_list.append(['python','createHarvestModelFileMeta.py','--dirInputFile',dirInputFile,'--ingestPath',ingestPath,'--modelRunID', modelRunID,
                                  '--inputDataSource',forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,
-                                 '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,
-                                 '--inputFilenamePrefix',nowcast_prefix,'--inputTimemark',timemark])
+                                 '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,'--inputAdvisory', advisory,
+                                 '--inputTimemark',timemark])
     else:
         logger.info('No Nowcast files found for model run id: '+modelRunID)
 
@@ -276,21 +274,34 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
         for dirInputFile in filelist:
             # Define inputFile 
             inputFile = dirInputFile.split('/')[-1]
+            meta_forecast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
+
+            # Define other source meta variables
+            if meta_forecast_obs_station_type == 'NOAASTATIONS':
+                meta_location_type = 'tidal'
+            elif meta_forecast_obs_station_type == 'CONTRAILSCOASTAL':
+                meta_location_type = 'coastal'
+            elif meta_forecast_obs_station_type == 'CONTRAILSRIVERS':
+                meta_location_type = 'river'
+            elif meta_forecast_obs_station_type == 'NDBCBUOYS':
+                meta_location_type = 'ocean'
+            else:
+                logger.info('Forecast obs station type: '+meta_forecast_obs_station_type+' is incorrect.')          
 
             # Meta files
             apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
             program_list.append(['python','createApsVizStationFileMeta.py','--harvestPath',harvestPath,'--ingestPath',ingestPath,'--inputDataSource',
-                                 forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputSourceInstance',source_instance,
+                                 forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputSourceInstance', source_instance,
                                  '--inputForcingMetaclass',forcingMetaclass,'--inputFilename',apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,
-                                 '--timeMark',timemark,'--inputLocationType',location_type,'--csvURL',csv_url,'--dataDateTime',data_date_time])
+                                 '--timeMark',timemark,'--inputLocationType',meta_location_type,'--csvURL',csv_url,'--dataDateTime',data_date_time])
 
-            program_list.append(['python','ingestModelTasks.py','--ingestPath',ingestPath,'--inputTask','ingestApsVizStationFileMeta'])
+        program_list.append(['python','ingestModelTasks.py','--ingestPath',ingestPath,'--inputTask','ingestApsVizStationFileMeta'])
 
-            # Run list of program commands using subprocess
-            for program in program_list:
-                logger.info('Run '+" ".join(program))
-                output = subprocess.run(program, shell=False, check=True)
-                logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        # Run list of program commands using subprocess
+        for program in program_list:
+            logger.info('Run '+" ".join(program))
+            output = subprocess.run(program, shell=False, check=True)
+            logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
     else:
         logger.info('No meta forecast files found for model run id: '+modelRunID)
@@ -406,7 +417,8 @@ def runApsVizStationCreateIngest(ingestPath, modelRunID):
         program_list.append(['python','createIngestApsVizStationData.py','--harvestPath',row['dir_path'],'--ingestPath',ingestPath,
                              '--inputFilename',row['file_name'],'--timeMark',str(row['timemark']),'--modelRunID',row['model_run_id'],
                              '--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],
-                             '--inputLocationType',row['location_type'],'--allLocationTypes',all_location_types,'--gridName',row['grid_name'],'--csvURL',row['csvurl']])
+                             '--inputLocationType',row['location_type'],'--allLocationTypes',all_location_types,'--gridName',row['grid_name'],
+                             '--csvURL',row['csvurl']])
 
     # Run list of program commands using subprocess
     for program in program_list:
