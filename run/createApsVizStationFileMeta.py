@@ -14,57 +14,6 @@ import numpy as np
 from pathlib import Path
 from loguru import logger
 
-def getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, modelRunID, inputLocationType):
-    ''' Returns a DataFrame containing a list of files, from table drf_apsviz_station_file_meta, that have been ingested.
-        Parameters
-            inputDataSource: string
-                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...) 
-            inputSourceName: string
-                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
-            inputSourceArchive: string
-                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
-            inputSourceInstance: string
-                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
-                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
-            modelRunID: string
-                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db
-        Returns
-            DataFrame
-    '''
-    try:
-        # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
-                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
-                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
-                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
-                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
-        cur = conn.cursor()
-       
-        # Run query
-        cur.execute("""SELECT file_id, dir_path, file_name, data_date_time, data_source, source_name, source_archive, grid_name, model_run_id, timemark, location_type, csvurl, ingested 
-                       FROM drf_apsviz_station_file_meta
-                       WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                       source_archive = %(sourcearchive)s AND source_instance = %(sourceinstance)s AND forcing_metaclass = %(forcingmetaclass)s AND 
-                       ingested = True AND model_run_id = %(modelrunid)s AND location_type = %(locationtype)s""", 
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourceinstance': inputSourceInstance, 
-                     'forcingmetaclass': inputForcingMetaclass, 'modelrunid': modelRunID, 'locationtype': inputLocationType})
-          
-        # convert query output to Pandas dataframe 
-        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'data_date_time', 'data_source', 'source_name', 'source_archive', 'source_instance', 
-                                                   'forcing_metaclass ', 'grid_name', 'model_run_id', 'timemark', 'location_type', 'csvurl', 'ingested'])
-
-        # Close cursor and database connection
-        cur.close()
-        conn.close()
-
-        # Return DataFrame
-        return(df)
-
-    # If exception log error    
-    except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-
 def createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetaclass,gridName,modelRunID,timeMark,inputLocationType,csvURL):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_apsviz_station_file_meta. It also returns
         first_time, and last_time used for cross checking.
@@ -110,29 +59,11 @@ def createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputS
                        gridName,modelRunID,timeMark,inputLocationType,csvURL,ingested])
 
     # Convert outputList to a DataFrame
-    dfnew = pd.DataFrame(outputList, columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archve','source_instance','forcing_metaclass',
-                                              'grid_name','model_run_id','timemark','location_type','csv_url','ingested'])
-
-    # Get DataFrame of existing list of files, in the database, that have been ingested.
-    dfold = getOldApsVizStationFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, modelRunID, inputLocationType)
-
-    # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta and drf_harvest_model_file_meta.
-    df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
-
-    if len(df.values) == 0:
-        logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+inputSourceArchive+' archive, with model run ID '+
-                    modelRunID+' and location type'+inputLocationType+'.')
-        first_time = np.nan
-        last_time = np.nan
-    else:
-        logger.info('There are '+str(len(df.values))+' new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+
-                    inputSourceArchive+' archive, with model run ID '+modelRunID+' and location type'+inputLocationType+'.')
-        # Get first time, and last time from the list of files. This will be used in the filename, to enable checking for time overlap in files
-        first_time = df['data_date_time'].iloc[0]
-        last_time = df['data_date_time'].iloc[-1] 
+    df = pd.DataFrame(outputList, columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archve','source_instance','forcing_metaclass',
+                                           'grid_name','model_run_id','timemark','location_type','csv_url','ingested'])
 
     # Return DataFrame first time, and last time
-    return(df, first_time, last_time)
+    return(df)
 
 @logger.catch
 def main(args):
@@ -200,20 +131,14 @@ def main(args):
     logger.info('Start processing source station data for source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+', with filename prefix '+inputFilename+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    df, first_time, last_time = createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetaclass,gridName,modelRunID,timeMark,inputLocationType,csvURL)
+    df = createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetaclass,gridName,modelRunID,timeMark,inputLocationType,csvURL)
 
-    if pd.isnull(first_time) and pd.isnull(last_time):
-        logger.info('No new files for station meta data source '+inputDataSource+', source name '+inputSourceName+', source archive '+inputSourceArchive+', and location type '+inputLocationType+'.')
-    else:
-        # Get current date    
-        current_date = datetime.date.today()
+    # Create output file name
+    outputFile = 'harvest_meta_files_'+inputFilename
 
-        # Create output file name
-        outputFile = 'harvest_meta_files_'+inputFilename
-
-        # Write DataFrame containing list of files to a csv file
-        df.to_csv(ingestPath+outputFile, index=False, header=False)
-        logger.info('Finished processing source station meta data for file '+inputFilename+' with model run ID '+modelRunID+'.')
+    # Write DataFrame containing list of files to a csv file
+    df.to_csv(ingestPath+outputFile, index=False, header=False)
+    logger.info('Finished processing source station meta data for file '+inputFilename+' with model run ID '+modelRunID+'.')
 
 if __name__ == "__main__":
     ''' Takes argparse inputs and passes theme to the main function

@@ -98,7 +98,7 @@ def ingestSourceData(ingestPath):
             for sourceFile in inputFiles:
                 # Run ingest query
                 with open(sourceFile, "r") as f:
-                    with cur.copy("COPY drf_model_source (station_id,data_source,source_instance,source_name,forcing_metaclass,source_archive,units) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_model_source (station_id,data_source,source_name,source_archive,source_instance,forcing_metaclass,units) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -109,56 +109,6 @@ def ingestSourceData(ingestPath):
             # Close cursor and database connection
             cur.close()
             conn.close()
-
-    # If exception log error
-    except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-
-def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass):
-    ''' This function takes a data source, source name, and source archive as inputs and uses them to query 
-        the drf_harvest_model_file_meta table, creating a DataFrame that contains a list of data files to 
-        ingest. The ingest directory is the directory path in the apsviz-timeseriesdb database container.
-        Parameters
-            inputDataSource: string
-                Unique identifier of data source (e.g. NAMFORECAST_NCSC_SAB_V1.23...).
-            inputSourceName: string
-                Organization that owns original source data (e.g., adcirc...).
-            inputSourceArchive: string
-                Where the original data source is archived (e.g., renci, psc, uga...).
-            inputSourceInstance: string
-                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
-                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
-        Returns
-            DataFrame
-    '''
-
-    try:
-        # Create connection to database, and get cursor
-        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
-                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
-                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
-                             port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
-                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD']) as conn:
-            cur = conn.cursor()
-
-            # Run query
-            cur.execute("""SELECT dir_path, file_name
-                           FROM drf_harvest_model_file_meta
-                           WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND source_archive = %(sourcearchive)s AND 
-                           source_instance = %(sourceinstance)s AND forcing_metaclass = %(forcingmetaclass)s AND ingested = False
-                           ORDER BY data_date_time""",
-                        {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive,
-                         'sourceinstance': inputSourceInstance, 'forcingmetaclass': inputForcingMetaclass})
-
-            # convert query output to Pandas dataframe
-            df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name'])
- 
-            # Close cursor and database connection
-            cur.close()
-            conn.close()
-
-            return(df)
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
@@ -251,7 +201,7 @@ def ingestApsVizStationFileMeta(ingestPath):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def ingestData(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputSourceInstance, inputForcingMetaclass):
+def ingestData(ingestPath, inputFilename):
     ''' This function takes an ingest directory, data source, source name, source archive, and source variable as input,
         and uses them to run the getHarvestDataFileMeta function. The getHarvestDataFileMeta function produces a DataFrame 
         (dfDirFiles) that contains a list of data files, that are queried from the drf_harvest_model_file_meta table. These 
@@ -259,30 +209,19 @@ def ingestData(ingestPath, inputDataSource, inputSourceName, inputSourceArchive,
         "ingested", in the drf_harvest_model_file_meta table, is updated from False to True. The ingest directory is the 
         directory path in the apsviz-timeseriesdb database container.
         Parameters
-             ingestPath: string
+            ingestPath: string
                 Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
                 path.
-            inputDataSource: string
-                Unique identifier of data source (e.g., NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
-            inputSourceName: string
-                Model that produced the source data (e.g., adcirc...). Used by ingestSourceMeta,
-                and ingestData.
-            inputSourceArchive: string
-                Where the original data source is archived (e.g., renci, psc, uga...). Used by
-                ingestSourceMeta, and ingestData.
-            inputSourceVariable: string
-                Source variable, such as water_level. Used by ingestSourceMeta, and ingestData.
-            inputSourceInstance: string
-                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
-                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
+            inputFilename: string
+                The name of the input file. 
         Returns
             None
     '''
 
-    logger.info('Begin ingesting data source '+inputDataSource+', with source name '+inputSourceName+', source variable '+inputSourceVariable+' and source archive '+inputSourceArchive)
+    # Extract model run id from ingestPath
+    modelRunID = ingestPath.split('/')[-2]
+    logger.info('Begin ingesting file '+inputFilename+', from model run id '+modelRunID+'.')
     # Get DataFrame the contains list of data files that need to be ingested
-    dfDirFiles = getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass)
 
     try:
         # Create connection to database, set autocommit, and get cursor
@@ -294,36 +233,26 @@ def ingestData(ingestPath, inputDataSource, inputSourceName, inputSourceArchive,
                              autocommit=True) as conn:
             cur = conn.cursor()
 
-            # Loop thru DataFrame ingesting each data file
-            for index, row in dfDirFiles.iterrows():
-                ingestFile = row[1]
-                ingestPathFile = ingestPath+'data_copy_'+ingestFile
-                logger.info('Ingest file: '+ingestPathFile)
+            # Define ingestPathFile, which is a combination of ingestPath and inputFilename
+            ingestPathFile = ingestPath+'data_copy_'+inputFilename
+            logger.info('Ingest file: '+ingestPathFile)
 
-                with open(ingestPathFile, "r") as f:
-                    with cur.copy(sql.SQL("""COPY drf_model_data (source_id,timemark,time,{}) 
-                                             FROM STDIN WITH (FORMAT CSV)""").format(sql.Identifier(inputSourceVariable))) as copy:
-                        while data := f.read(100):
-                            copy.write(data)
+            with open(ingestPathFile, "r") as f:
+                with cur.copy("COPY drf_model_data (source_id,timemark,time,water_level) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    while data := f.read(100):
+                        copy.write(data)
 
-                # Get min and max times from adcirc data files
-                minTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].min()
-                maxTime = pd.read_csv(ingestPathFile, names=['source_id','timemark','time','variable_name'])['time'].max()
-
-                logger.info('Data source '+inputDataSource+', with source name '+inputSourceName+', and source archive '+inputSourceArchive
-                            +', with min time: '+str(minTime)+' and max time '+str(maxTime)+' does not need duplicate times removed.')
-
-                # Run update 
-                cur.execute("""UPDATE drf_harvest_model_file_meta
-                               SET ingested = True
-                               WHERE file_name = %(update_file)s
-                               """,
-                            {'update_file': ingestFile})
+            # Run update 
+            cur.execute("""UPDATE drf_harvest_model_file_meta
+                           SET ingested = True
+                           WHERE file_name = %(update_file)s
+                           """,
+                        {'update_file': inputFilename, 'modelrunid': modelRunID})
 
 
-                # Remove ingest data file after ingesting it.
-                logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
-                os.remove(ingestPathFile)
+            # Remove ingest data file after ingesting it.
+            logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
+            os.remove(ingestPathFile)
 
             # Close cursor and database connection
             cur.close()
@@ -456,26 +385,25 @@ def main(args):
                 path. Used by ingestStations, ingestSourceData, ingestHarvestDataFileMeta, ingestApsVizStationFileMeta, ingestData, 
                 and ingestApsVizStationData.
             inputFilename: string
-                The name of the input file. This is a full file name that is used when ingesting ApsViz Station data. Used by
-                ingestApsVizStationFileMeta, and ingestApsVizStationData.
+                The name of the input file. This is a full file name that is used when ingesting ApsViz Station data, and ADCIRC data. 
+                Used by ingestApsVizStationFileMeta, ingestApsVizStationData, and ingestDate.
             inputFilenamePrefix: string
                 Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
                 Used by ingestSourceMeta.
             inputDataSource: string
                 Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
-                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta.
             inputSourceName: string
-                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...). Used by ingestSourceMeta,
-                and ingestData.
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...). Used by ingestSourceMeta.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...). Used by
-                ingestSourceMeta, and ingestData.
+                ingestSourceMeta.
             inputSourceVariable: string
-                Source variable, such as water_level. Used by ingestSourceMeta, and ingestData.
+                Source variable, such as water_level. Used by ingestSourceMeta.
             inputSourceInstance: string
-                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, ingestData, and getHarvestDataFileMeta.
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and getHarvestDataFileMeta.
             inputForcingMetaclass: string
-                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             inputUnits: string
@@ -525,15 +453,10 @@ def main(args):
         logger.info('Ingested input apsViz station meta file information.')
     elif inputTask.lower() == 'ingestdata':
         ingestPath = os.path.join(args.ingestPath, '')
-        inputDataSource = args.inputDataSource
-        inputSourceName = args.inputSourceName
-        inputSourceArchive = args.inputSourceArchive
-        inputSourceVariable = args.inputSourceVariable
-        inputSourceInstance = args.inputSourceInstance
-        inputForcingMetaclass = args.inputForcingMetaclass
-        logger.info('Ingesting data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+' with source instance '+inputSourceInstance+'.')
-        ingestData(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputSourceInstance, inputForcingMetaclass)
-        logger.info('Ingested data from data source '+inputDataSource+', with source name '+inputSourceName+', and source variable '+inputSourceVariable+', from source archive '+inputSourceArchive+' with source instance '+inputSourceInstance+'.')
+        inputFilename = args.inputFilename
+        logger.info('Ingesting data with ingest path '+ingestPath+', and input filename '+inputFilename+'.')
+        ingestData(ingestPath, inputFilename)
+        logger.info('Ingested data '+ingestPath+', and input filename '+inputFilename+'.')
     elif inputTask.lower() == 'ingestapsvizstationdata':
         ingestPath = args.ingestPath
         inputFilename = args.inputFilename
@@ -616,12 +539,7 @@ if __name__ == "__main__":
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
     elif args.inputTask.lower() == 'ingestdata':
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
-        parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
-        parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
-        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", required=True)
-        parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
-        parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
-        parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
+        parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for ADCIRC data files", action="store", dest="inputFilename", required=True)
     elif args.inputTask.lower() == 'ingestapsvizstationdata':
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
         parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for apzViz station meta file", action="store", dest="inputFilename", required=True)

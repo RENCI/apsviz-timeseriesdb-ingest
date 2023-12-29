@@ -60,6 +60,7 @@ def getObsStations(beginDate, endDate, inputLocationType):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
+# Currently this function is not being used
 def getADCIRCStations(timeMark):
     ''' Returns DataFrame containing station names queried from the drf_apsviz_station  table.
         Parameters  
@@ -139,7 +140,8 @@ def getGaugeStationInfo(stationNames):
         logger.info(error)
 
 def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName,
-                             inputSourceArchive, inputLocationType, allLocationTypes, gridName, csvURL):
+                             inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputLocationType, allLocationTypes, 
+                             gridName, csvURL):
     ''' Returns a csv file that containes station location data for the drf_apsviz_station table. The function adds a 
         timemark, that it gets from the input file name. The timemark values can be used to uniquely query an ADCIRC 
         forecast model run. It also adds a model_run_id, data_source, source_archive, grid_name, and csv_url. The 
@@ -167,6 +169,10 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
                 and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
+            inputForcingMetaclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (TIDAL or OCEAN). In this function the inputLocationType is specific to the ADCIRC 
                 data being process, and currently all ADCIRC station location types are tidal or ocean.
@@ -182,12 +188,12 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     '''
 
     # Create station meta filename from the input file name.
-    apsviz_station_meta_filename = 'adcirc_'+"_".join(inputFilename.split('_')[1:])
+    # apsviz_station_meta_filename = 'adcirc_'+"_".join(inputFilename.split('_')[1:])
 
     # Read input file, convert column name to lower case, rename station column to station_name, convert its data
     # type to string, and add timemark, model_run_id, and csvurl columns
-    dfADCRICMeta = pd.read_csv(harvestPath+apsviz_station_meta_filename)
-    dfADCRICMeta.columns= dfADCRICMeta.columns.str.lower()
+    dfADCRICMeta = pd.read_csv(harvestPath+inputFilename)
+    dfADCRICMeta.columns = dfADCRICMeta.columns.str.lower()
     dfADCRICMeta = dfADCRICMeta.rename(columns={'station': 'station_name'})
     dfADCRICMeta = dfADCRICMeta.astype({"station_name": str})
     dfADCIRCStations = dfADCRICMeta["station_name"].to_frame()
@@ -201,6 +207,8 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     dfADCIRCOut.insert(0,'data_source', '')
     dfADCIRCOut.insert(0,'source_name','')
     dfADCIRCOut.insert(0,'source_archive', '')
+    dfADCIRCOut.insert(0,'source_instance', '')
+    dfADCIRCOut.insert(0,'forcing_metaclass', '')
     dfADCIRCOut.insert(0,'location_type','')
     dfADCIRCOut.insert(0,'grid_name', '')
     dfADCIRCOut.insert(0,'csvurl', '')
@@ -208,7 +216,8 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     # Reorder columns
     dfADCIRCOut = dfADCIRCOut.loc[:, ["station_name","lat","lon","tz","gauge_owner","location_name","country",
                                       "state","county","geom","timemark","model_run_id","data_source","source_name",
-                                      "source_archive","location_type","grid_name","csvurl"]]
+                                      "source_archive","source_instance","forcing_metaclass","location_type",
+                                      "grid_name","csvurl"]]
  
      # Add model_run_id, timemark, and csvurl values to specifies columns in DataFrame
     timemark = "T".join(timeMark.split(' ')).split('+')[0]+'Z'
@@ -217,6 +226,8 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     dfADCIRCOut['data_source'] = inputDataSource
     dfADCIRCOut['source_name'] = inputSourceName
     dfADCIRCOut['source_archive'] = inputSourceArchive
+    dfADCIRCOut['source_instance'] = inputSourceInstance
+    dfADCIRCOut['forcing_metaclass'] = inputForcingMetaclass
     dfADCIRCOut['location_type'] = inputLocationType
     dfADCIRCOut['grid_name'] = gridName
 
@@ -303,7 +314,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
         dfOut.at[index,'csvurl'] = csvURL
 
     # Write DataFrame to CSV file
-    dfOut.to_csv(ingestPath+'meta_copy_'+apsviz_station_meta_filename, index=False, header=False)
+    dfOut.to_csv(ingestPath+'meta_copy_'+inputFilename, index=False, header=False)
 
 # Main program function takes args as input, which contains the  ingestPath, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
@@ -332,6 +343,10 @@ def main(args):
                 and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
+            inputForcingMetaclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             allLocationTypes: string
@@ -361,16 +376,19 @@ def main(args):
     inputDataSource = args.inputDataSource
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
+    inputSourceInstance = args.inputSourceInstance
+    inputForcingMetaclass = args.inputForcingMetaclass
     inputLocationType = args.inputLocationType
     allLocationTypes = args.allLocationTypes.split(',')
     gridName = args.gridName
     csvURL = args.csvURL
         
     logger.info('Start processing data from '+harvestPath+inputFilename+', with output directory '+ingestPath+', model run ID '+
-                modelRunID+', timemark '+timeMark+', and csvURL '+csvURL+'.')
-    addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputLocationType, allLocationTypes, gridName, csvURL)
+                modelRunID+', source intance '+inputSourceInstance+', timemark '+timeMark+', and csvURL '+csvURL+'.')
+    addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, 
+                             inputSourceInstance, inputForcingMetaclass, inputLocationType, allLocationTypes, gridName, csvURL)
     logger.info('Finished processing data from '+harvestPath+inputFilename+', with output directory '+ingestPath+', model run ID '+
-                modelRunID+', timemark '+timeMark+', and csvURL '+csvURL+'.')
+                modelRunID+', source intance '+inputSourceInstance+', timemark '+timeMark+', and csvURL '+csvURL+'.')
  
 # Run main function takes harvestPath, ingestPath, inputFilename, and timeMark as input.
 if __name__ == "__main__": 
@@ -395,6 +413,10 @@ if __name__ == "__main__":
                 and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
+            inputForcingMetaclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             allLocationTypes: string
@@ -419,6 +441,8 @@ if __name__ == "__main__":
     parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
+    parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
+    parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
     parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
     parser.add_argument("--allLocationTypes", help="All location types", action="store", dest="allLocationTypes", required=True)
     parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)

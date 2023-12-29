@@ -5,9 +5,9 @@
 import os
 import sys
 import glob
-import re
+# import re
 import argparse
-import shutil
+# import shutil
 import psycopg
 import subprocess
 import pandas as pd
@@ -62,6 +62,45 @@ def getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcing
         conn.close()
 
         # return DataFrame
+        return(df)
+
+    # If exception log error
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.info(error)
+
+def getHarvestDataFileMeta(modelRunID):
+    ''' Returns DataFrame containing a list of filenames, from the table drf_havest_model_file_meta, that have not been ingested yet.
+        Parameters
+            modelRunID: string
+                Unique identifier of a model run. It combines the instance_id, and uid from asgs_dashboard db.
+        Returns
+            DataFrame
+    '''
+
+    try:
+        # Create connection to database and get cursor
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        cur = conn.cursor()
+
+        # Run query
+        cur.execute("""SELECT dir_path, file_name, timemark, data_source, source_name, source_archive, source_instance, forcing_metaclass
+                       FROM drf_harvest_model_file_meta 
+                       WHERE model_run_id = %(modelrunid)s AND ingested = False
+                       ORDER BY data_date_time""",
+                    {'modelrunid': modelRunID})
+
+        # convert query output to Pandas DataFrame
+        df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name', 'timemark','data_source','source_name','source_archive',
+                                                   'source_instance','forcing_metaclass'])
+
+        # Close cursor and database connection
+        cur.close()
+        conn.close()
+
         return(df)
 
     # If exception log error
@@ -124,29 +163,32 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
     # Sources from drf_source_model_meta will not be used in this run
     logger.info('Process data for ADCIRC model run: '+modelRunID)
 
-    # Get input file name, grid_name, timemark, forcing_metaclass, storm, and workflow_type
+    # Get ADCIRC input variables from the asgs_dashoard DB
     df = gdm.getADCIRCRunPropertyVariables(modelRunID)
 
-    source_name = df['suite.model'].values[0]
+    # Extract variables from DataFrame
     grid_name = df['ADCIRCgrid'].values[0].upper()
-    advisory = df['advisory'].values[0] 
     forcingEnsemblename = df['forcing.ensemblename'].values[0]
-    forcingMetaclass = df['forcing.metclass'].values[0]
     source_instance = df['instancename'].values[0]
-    storm = df['storm'].values[0]
-    stormname = df['stormname'].values[0]
-    stormnumber = df['stormnumber'].values[0]
+    source_name = df['suite.model'].values[0]
+    forecast_data_source = forcingEnsemblename.upper()+'_'+grid_name
+    nowcast_data_source = 'NOWCAST_'+grid_name
     source_archive = df['physical_location'].values[0]
+    forcingMetaclass = df['forcing.metclass'].values[0]
+    storm = df['storm'].values[0]
+    # stormname = df['stormname'].values[0]
+    # stormnumber = df['stormnumber'].values[0]
+    advisory = df['advisory'].values[0] 
     time_currentdate = df['time.currentdate'].values[0]
     time_currentcycle = df['time.currentcycle'].values[0]
-    workflowType = df['workflow_type'].values[0]
+    # workflowType = df['workflow_type'].values[0]
 
+    # Derive timemark from time_currentdate and time_currentcycle
     timemark = ":".join(datetime(int('20'+time_currentdate[0:2]),int(time_currentdate[2:4]),
                                  int(time_currentdate[4:6]),int(time_currentcycle)).isoformat().split(':')[:-1])
     data_date_time = timemark
 
-
-     # Create program list for runing forecast and nowcast processes including ingest
+    # Create program list for runing forecast processes including ingest
     program_list = []
     
     # Get ADCIRC forecast filenames
@@ -159,12 +201,10 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
         # Define variables that differ between synoptic and tropical runs
         if forcingMetaclass == 'synoptic':
             logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the forcingEnsemblename and grid name')
-            forecast_data_source = forcingEnsemblename.upper()+'_'+grid_name
             forecast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
             forecast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_'+forcingEnsemblename.upper()+'_'+grid_name+'_FORECAST_'+forecast_obs_station_type 
         else:
             logger.info('Input file '+inputFile+' data is from a hurricane, so data source consists of the storm, forcingEnsemblename and grid name')
-            forecast_data_source = storm+'_'+forcingEnsemblename+'_'+grid_name
             forecast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
             forecast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_'+forcingEnsemblename+'_'+grid_name+'_FORECAST_'+forecast_obs_station_type
 
@@ -215,6 +255,7 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
             program_list.append(['python','createIngestModelSourceMeta.py','--ingestPath',ingestPath,'--inputDataSource',forecast_data_source,'--inputSourceName',
                                  source_name,'--inputSourceArchive',source_archive,'--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,
                                  '--inputUnits',units,'--inputLocationType',location_type])
+
             program_list.append(['python','ingestModelTasks.py','--ingestPath',ingestPath,'--inputTask','ingestSourceData'])
 
             # Forecast files
@@ -245,11 +286,75 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
             # Define inputFile 
             inputFile = dirInputFile.split('/')[-1]
 
-            # Nowcast files (NO LONGER HAVE nowcast_data_source, BUT NEED TO KEEP AN EYE ON THIS)
-            program_list.append(['python','createHarvestModelFileMeta.py','--dirInputFile',dirInputFile,'--ingestPath',ingestPath,'--modelRunID', modelRunID,
-                                 '--inputDataSource',forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,
-                                 '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,'--inputAdvisory', advisory,
-                                 '--inputTimemark',timemark])
+            # Define variables that differ between synoptic and tropical runs
+            if forcingMetaclass == 'synoptic':
+                logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the forcingEnsemblename and grid name')
+                nowcast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
+                nowcast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_NOWCAST_'+grid_name+'_NOWCAST_'+nowcast_obs_station_type 
+            else:
+                logger.info('Input file '+inputFile+' data is from a hurricane, so data source consists of the storm, forcingEnsemblename and grid name')
+                nowcast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
+                nowcast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_NOWCAST_'+grid_name+'_NOWCAST_'+nowcast_obs_station_type
+
+            # Define other source meta variables
+            if nowcast_obs_station_type == 'NOAASTATIONS':
+                logger.info('Nowcast obs station type: '+nowcast_obs_station_type+' so defining additional parameters.')
+                source_variable = 'water_level'
+                location_type = 'tidal'
+                units = 'm'
+                csv_url = os.environ['UI_DATA_URL']
+            elif nowcast_obs_station_type == 'CONTRAILSCOASTAL':
+                logger.info('Nowcast obs station type: '+nowcast_obs_station_type+' so defining additional parameters.')
+                source_variable = 'water_level'
+                location_type = 'coastal'
+                units = 'm'
+                csv_url = os.environ['UI_DATA_URL']
+            elif nowcast_obs_station_type == 'CONTRAILSRIVERS':
+                logger.info('Nowcast obs station type: '+nowcast_obs_station_type+' so defining additional parameters.')
+                source_variable = 'water_level'
+                location_type = 'river'
+                units = 'm'
+                csv_url = os.environ['UI_DATA_URL']
+            elif nowcast_obs_station_type == 'NDBCBUOYS':
+                logger.info('Nowcast obs station type: '+nowcast_obs_station_type+' so defining additional parameters.')
+                source_variable = 'wave_height'
+                location_type = 'ocean'
+                units = 'm'
+                csv_url = os.environ['UI_DATA_URL']
+            else:
+                logger.info('Nowcast obs station type: '+nowcast_obs_station_type+' is incorrect.')
+
+            # Check to see if nowcast source exists
+            dfcheck = gdm.checkModelSourceMeta(nowcast_prefix, source_instance)
+
+            # Check if dfcheck is empty, for nowcast. If it is a new source is added to the drf_source_model_meta table ,and then drf_model_source table. 
+            if dfcheck.empty:
+                # Log results
+                logger.info('The following source does not exist in the drf_source_model_meta table:\n '+
+                            nowcast_data_source+','+source_name+','+source_archive+','+source_variable+','+
+                            nowcast_prefix+','+location_type+','+units)
+
+                # Create source information and ingest it into the drf_source_model_meta, and drf_model_source tables
+                program_list.append(['python','ingestModelTasks.py','--inputDataSource',nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',
+                                     source_archive,'--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,'--inputSourceVariable',
+                                     source_variable,'--inputFilenamePrefix',nowcast_prefix,'--inputLocationType',location_type, '--inputUnits',units,'--inputTask','ingestSourceMeta'])
+                program_list.append(['python','createIngestModelSourceMeta.py','--ingestPath',ingestPath,'--inputDataSource',nowcast_data_source,'--inputSourceName',
+                                     source_name,'--inputSourceArchive',source_archive,'--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,
+                                     '--inputUnits',units,'--inputLocationType',location_type])
+                program_list.append(['python','ingestModelTasks.py','--ingestPath',ingestPath,'--inputTask','ingestSourceData'])
+
+                # Nowcast files
+                program_list.append(['python','createHarvestModelFileMeta.py','--dirInputFile',dirInputFile,'--ingestPath',ingestPath,'--modelRunID', modelRunID,
+                                     '--inputDataSource',nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,
+                                     '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,'--inputAdvisory', advisory,
+                                     '--inputTimemark',timemark])
+
+            else: 
+                # Nowcast files 
+                program_list.append(['python','createHarvestModelFileMeta.py','--dirInputFile',dirInputFile,'--ingestPath',ingestPath,'--modelRunID', modelRunID,
+                                     '--inputDataSource',nowcast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,
+                                     '--inputSourceInstance',source_instance,'--inputForcingMetaclass',forcingMetaclass,'--inputAdvisory', advisory,
+                                     '--inputTimemark',timemark])
     else:
         logger.info('No Nowcast files found for model run id: '+modelRunID)
 
@@ -289,10 +394,10 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
                 logger.info('Forecast obs station type: '+meta_forecast_obs_station_type+' is incorrect.')          
 
             # Meta files
-            apsviz_station_meta_filename = 'adcirc_meta_'+"_".join(inputFile.split('_')[1:])
             program_list.append(['python','createApsVizStationFileMeta.py','--harvestPath',harvestPath,'--ingestPath',ingestPath,'--inputDataSource',
-                                 forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,'--inputSourceInstance', source_instance,
-                                 '--inputForcingMetaclass',forcingMetaclass,'--inputFilename',apsviz_station_meta_filename,'--gridName',grid_name,'--modelRunID',modelRunID,
+                                 forecast_data_source,'--inputSourceName',source_name,'--inputSourceArchive',source_archive,
+                                 '--inputSourceInstance', source_instance, '--inputForcingMetaclass',forcingMetaclass,
+                                 '--inputFilename',inputFile,'--gridName',grid_name,'--modelRunID',modelRunID,
                                  '--timeMark',timemark,'--inputLocationType',meta_location_type,'--csvURL',csv_url,'--dataDateTime',data_date_time])
 
         program_list.append(['python','ingestModelTasks.py','--ingestPath',ingestPath,'--inputTask','ingestApsVizStationFileMeta'])
@@ -319,29 +424,31 @@ def runDataCreate(ingestPath, modelRunID):
             None, but it runs createIngestModelData.py, which returns a CSV file
     '''
 
-    # NEED TO CHANGE THIS SO IT QUERIES THE drf_harvest_model_file_meta TABLE. THE modelRunID WILL RETURN MULTIPLE ROWS BECAUSE OF MULTIPLE 
-    # FILES FOR ONE modelRunID, BUT SHOULD ONLY NEED SINGLE VALUES FOR dataSource, sourceName, sourceArchive, sourceInstance, AND forcingMetaclass.
     # QUESTIONS FOR THE FUTURE IS HOW WE WILL DEAL WITH MULTIPLE VARIABLE COMMING FROM SINGLE STATION. CURRENTLY, FOR ADCIRC DATA ONLY ONE VARIABLE
     # EXIST FOR A STATION, EITHER water_level OR wave_height.
-    dfh = gdm.getADCIRCRunPropertyVariables(modelRunID)
-
-    # Define input variable for ingestModelTasks.py
-    dataSource = dfh['data_source']
-    sourceName = dfh['source_name']
-    sourceArchive = dfh['source_archive']
-    sourceInstance = dfh['source_instance']
-    forcingMetaclass = dfh['forcing_metaclass']
-
-    # Get source_variable from 
-    dfv = getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcingMetaclass)
-    sourceVariable = dfv['source_variable']
+    df = getHarvestDataFileMeta(modelRunID)
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','createIngestModelData.py','--ingestPath',ingestPath,'--inputDataSource','--inputDataSource', dataSource,
-                             '--inputSourceName', sourceName,'--inputSourceArchive', sourceArchive, '--inputSourceVariable', sourceVariable,
-                             '--inputSourceInstance' ,sourceInstance, 'inputSourceInstance', forcingMetaclass])
+        # Define input variable for ingestModelTasks.py
+        harvestPath = row['dir_path']
+        inputFilename = row['file_name']
+        timeMark = str(row['timemark'])
+        dataSource = row['data_source']
+        sourceName = row['source_name']
+        sourceArchive = row['source_archive']
+        sourceInstance = row['source_instance']
+        forcingMetaclass = row['forcing_metaclass']
+
+        # Get source_variable from 
+        #dfv = getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcingMetaclass)
+        #sourceVariable = dfv['source_variable']
+        
+        program_list.append(['python','createIngestModelData.py', '--ingestPath', ingestPath, '--harvestPath', harvestPath,
+                             '--inputFilename', inputFilename, '--timeMark', timeMark, '--inputDataSource', dataSource,
+                             '--inputSourceName', sourceName, '--inputSourceArchive', sourceArchive,
+                             '--inputSourceInstance' , sourceInstance, '--inputForcingMetaclass', forcingMetaclass])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -360,29 +467,21 @@ def runDataIngest(ingestPath, modelRunID):
             None, but it runs ingestTask.py, which ingest data into the drf_gauge_station table.
     '''
 
-    # NEED TO CHANGE THIS SO IT QUERIES THE drf_harvest_model_file_meta TABLE. THE modelRunID WILL RETURN MULTIPLE ROWS BECAUSE OF MULTIPLE 
-    # FILES FOR ONE modelRunID, BUT SHOULD ONLY NEED SINGLE VALUES FOR dataSource, sourceName, sourceArchive, sourceInstance, AND forcingMetaclass.
     # QUESTIONS FOR THE FUTURE IS HOW WE WILL DEAL WITH MULTIPLE VARIABLE COMMING FROM SINGLE STATION. CURRENTLY, FOR ADCIRC DATA ONLY ONE VARIABLE
     # EXIST FOR A STATION, EITHER water_level OR wave_height.
-    df = gdm.getADCIRCRunPropertyVariables(modelRunID)
-
-    # Define input variable for ingestModelTasks.py
-    dataSource = df['data_source']
-    sourceName = df['source_name']
-    sourceArchive = df['source_archive']
-    sourceInstance = df['source_instance']
-    forcingMetaclass = df['forcing_metaclass']
-
-    # Get source_variable from 
-    dfv = getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcingMetaclass)
-    sourceVariable = dfv['source_variable']
+    df = getHarvestDataFileMeta(modelRunID)
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        program_list.append(['python','ingestModelTasks.py','--ingestPath',ingestPath,'--inputTask','ingestData','--inputDataSource', dataSource,
-                             '--inputSourceName', sourceName,'--inputSourceArchive', sourceArchive, '--inputSourceVariable', sourceVariable,
-                             'inputSourceInstance' ,sourceInstance,'inputSourceInstance', forcingMetaclass])
+        # Define input variable for ingestModelTasks.py
+        inputFilename = row['file_name']
+
+        # Get source_variable from 
+        #dfv = getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcingMetaclass)
+        #sourceVariable = dfv['source_variable']
+        program_list.append(['python','ingestModelTasks.py','--ingestPath', ingestPath, '--inputFilename', inputFilename,
+                             '--inputTask','ingestData'])
 
     # Run list of program commands using subprocess
     for program in program_list:
@@ -417,6 +516,7 @@ def runApsVizStationCreateIngest(ingestPath, modelRunID):
         program_list.append(['python','createIngestApsVizStationData.py','--harvestPath',row['dir_path'],'--ingestPath',ingestPath,
                              '--inputFilename',row['file_name'],'--timeMark',str(row['timemark']),'--modelRunID',row['model_run_id'],
                              '--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],
+                             '--inputSourceInstance', row['source_instance'],'--inputForcingMetaclass', row['forcing_metaclass'],
                              '--inputLocationType',row['location_type'],'--allLocationTypes',all_location_types,'--gridName',row['grid_name'],
                              '--csvURL',row['csvurl']])
 
