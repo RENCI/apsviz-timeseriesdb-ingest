@@ -289,17 +289,22 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
         dfObsOut.insert(0,'timemark', '')
         dfObsOut.insert(0,'model_run_id', '')
         dfObsOut.insert(0,'grid_name', '')
+        dfObsOut.insert(0,'source_instance', '')
+        dfObsOut.insert(0,'forcing_metaclass', '')
         dfObsOut.insert(0,'csvurl', '')
         
         # Add model_run_id, timemark, and csvurl values to specifies columns in DataFrame
         dfObsOut['timemark'] = timemark
         dfObsOut['model_run_id'] = modelRunID
         dfObsOut['grid_name'] = gridName
+        dfObsOut['source_instance'] = inputSourceInstance
+        dfObsOut['forcing_metaclass'] = inputForcingMetaclass
 
         # Reorder columns
         dfObsOut = dfObsOut.loc[:, ["station_name","lat","lon","tz","gauge_owner","location_name","country",
-                                    "state","county","geom","timemark","model_run_id","data_source",
-                                    "source_name","source_archive","location_type","grid_name","csvurl"]]
+                                    "state","county","geom","timemark","model_run_id","data_source","source_name",
+                                    "source_archive","source_instance","forcing_metaclass","location_type",
+                                    "grid_name","csvurl"]]
         
         # Concatinate dfADCIRCOut with dfObsOut
         dfOut = pd.concat([dfADCIRCOut, dfObsOut], ignore_index=True, sort=False)

@@ -220,6 +220,7 @@ def ingestData(ingestPath, inputFilename):
 
     # Extract model run id from ingestPath
     modelRunID = ingestPath.split('/')[-2]
+
     logger.info('Begin ingesting file '+inputFilename+', from model run id '+modelRunID+'.')
     # Get DataFrame the contains list of data files that need to be ingested
 
@@ -276,6 +277,9 @@ def ingestApsVizStationData(ingestPath, inputFilename):
             None
     '''
 
+    # Extract model run id from ingestPath
+    modelRunID = ingestPath.split('/')[-2]
+
     ingestFilename = 'meta_copy_'+inputFilename
     logger.info('Begin ingesting apsViz station data from file '+ingestFilename+', in directory '+ingestPath+'.')
 
@@ -298,9 +302,9 @@ def ingestApsVizStationData(ingestPath, inputFilename):
             # Run update 
             cur.execute("""UPDATE drf_apsviz_station_file_meta
                            SET ingested = True
-                           WHERE file_name = %(update_file)s
+                           WHERE file_name = %(update_file)s AND model_run_id = %()s
                            """,
-                        {'update_file': inputFilename})
+                        {'update_file': inputFilename, 'modelrunid': modelRunID})
 
             # Remove ingest data file after ingesting it.
             logger.info('Remove ingest data file: '+ingestPath+ingestFilename+' after ingesting it')
