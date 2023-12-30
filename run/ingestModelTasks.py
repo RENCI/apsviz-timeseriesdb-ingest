@@ -302,7 +302,7 @@ def ingestApsVizStationData(ingestPath, inputFilename):
             # Run update 
             cur.execute("""UPDATE drf_apsviz_station_file_meta
                            SET ingested = True
-                           WHERE file_name = %(update_file)s AND model_run_id = %()s
+                           WHERE file_name = %(update_file)s AND model_run_id = %(modelrunid)s
                            """,
                         {'update_file': inputFilename, 'modelrunid': modelRunID})
 
