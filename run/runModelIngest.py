@@ -661,7 +661,7 @@ if __name__ == "__main__":
     elif args.inputTask.lower() == 'sequenceingest':
         parser.add_argument("--harvestDIR", "--harvestDir", help="Harvest directory path", action="store", dest="harvestDir", required=True)
     else:
-        logger.info(args.inputTask+' not correct')
+        logger.info(args.inputTask+' is not an optional argument')
 
     # Parse arguments
     args = parser.parse_args()
