@@ -315,7 +315,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
 
     # Create csvURL and add it to DataFrame
     for index, row in dfOut.iterrows():
-        csvURL = os.environ['UI_DATA_URL']+'/get_station_data?station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource+'&instance_name='+inputSourceInstance
+        csvURL = os.environ['UI_DATA_URL']+'/get_station_data?station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource+'&instance_name='+inputSourceInstance+'&forcing_metaclass='+inputForcingMetaclass
         dfOut.at[index,'csvurl'] = csvURL
 
     # Write DataFrame to CSV file

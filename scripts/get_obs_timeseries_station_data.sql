@@ -1,4 +1,4 @@
-create function get_obs_timeseries_station_data(_station_name character varying, _start_date character varying, _end_date character varying, _nowcast_source character varying) returns json
+create function get_obs_timeseries_station_data(_station_name character varying, _start_date character varying, _end_date character varying) returns json
     language plpgsql
 as
 $$
@@ -23,15 +23,13 @@ $$
                    g.station_name= ''''' || _station_name || ''''' AND
                    time >= ''''' || _start_date || ''''' AND time <= ''''' || _end_date || '''''
                 ORDER BY d.time'',
-                ''SELECT data_source FROM (VALUES (''''' || _nowcast_source || '''''),
-                                                  (''''ocean_buoy''''),
+                ''SELECT data_source FROM (VALUES (''''ocean_buoy''''),
                                                   (''''tidal_gauge''''),
                                                   (''''tidal_predictions''''),
                                                   (''''coastal_gauge''''),
                                                   (''''river_gauge'''')) b(data_source)''
                 ) AS (
                  time_stamp TEXT,
-                 ' || SPLIT_PART(_nowcast_source::TEXT, '.', 1) || SPLIT_PART(_nowcast_source::TEXT, '.', 2) || ' double precision,
                  "ocean_buoy_wave_height" double precision,
                  "tidal_gauge_water_level" double precision,
                  "tidal_predictions" double precision,
@@ -47,7 +45,7 @@ BEGIN
 END
 $$;
 
-alter function get_obs_timeseries_station_data(varchar, varchar, varchar, varchar) owner to postgres;
+alter function get_obs_timeseries_station_data(varchar, varchar, varchar) owner to postgres;
 
-grant execute on function get_obs_timeseries_station_data(varchar, varchar, varchar, varchar) to apsviz_ingester;
+grant execute on function get_obs_timeseries_station_data(varchar, varchar, varchar) to apsviz_ingester;
 

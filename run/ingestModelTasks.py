@@ -338,7 +338,7 @@ def createModelView():
 
             # Run query
             cur.execute("""CREATE or REPLACE VIEW drf_model_station_source_data AS
-                           SELECT d.model_id AS model_id,,
+                           SELECT d.model_id AS model_id,
                                   s.source_id AS source_id,
                                   g.station_id AS station_id,
                                   g.station_name AS station_name,
