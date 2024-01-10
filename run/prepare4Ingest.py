@@ -55,7 +55,10 @@ def runIngestObsSourceMeta():
     program_list = []
     # data_source,source_name,source_archive,location_type
     for index, row in df.iterrows():
-        program_list.append(['python','ingestObsTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],'--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],'--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],'--dataType',row['data_type'],'--inputUnits',row['units'],'--inputTask','ingestSourceMeta'])
+        program_list.append(['python','ingestObsTasks.py','--inputDataSource',row['data_source'],'--inputSourceName',row['source_name'],
+                             '--inputSourceArchive',row['source_archive'],'--inputSourceVariable',row['source_variable'],
+                             '--inputFilenamePrefix',row['filename_prefix'],'--inputLocationType',row['location_type'],
+                             '--inputUnits',row['units'],'--inputTask','ingestSourceMeta'])
 
     # Run programe list using subprocess
     for program in program_list:
@@ -169,7 +172,7 @@ def runSequenceIngest(ingestDir):
     runIngestStations(ingestDir)
     runIngestObsSourceMeta()
     runIngestObsSourceData(ingestDir)
-    #runCreateModelView()
+    runCreateModelView()
 
 @logger.catch
 def main(args):

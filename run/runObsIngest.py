@@ -12,11 +12,8 @@ import subprocess
 import pandas as pd
 from loguru import logger
 
-def getSourceMeta(dataType):
+def getSourceMeta():
     ''' Returns DataFrame containing source meta-data queried from the drf_source_obs_meta table. 
-        Parameters
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data.
         Returns
             DataFrame
     '''
@@ -31,11 +28,12 @@ def getSourceMeta(dataType):
         cur = conn.cursor()
 
         # Run query
-        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, data_type, units FROM drf_source_obs_meta 
-                       WHERE data_type = %(datatype)s ORDER BY filename_prefix""", {'datatype': dataType})
+        cur.execute("""SELECT data_source, source_name, source_archive, source_variable, filename_prefix, location_type, units 
+                       FROM drf_source_obs_meta 
+                       ORDER BY filename_prefix""")
 
         # convert query output to Pandas dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 'filename_prefix', 'location_type', 'data_type', 'units'])
+        df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 'filename_prefix', 'location_type', 'units'])
 
         # Close cursor and database connection
         cur.close()
@@ -98,7 +96,7 @@ def runHarvestFile(harvestDir, ingestDir):
     '''
 
     # get source meta
-    df = getSourceMeta('obs')
+    df = getSourceMeta()
 
     # Create list of program commands to ingest meta-data on harvest files
     program_list = []
@@ -141,12 +139,10 @@ def runHarvestFile(harvestDir, ingestDir):
     else:
         logger.info('Program list has 0 length, so continue')
 
-def runDataCreate(ingestDir, dataType):
+def runDataCreate(ingestDir):
     ''' This function runs createIngestObsData.py, which ureates gauge data, from the original harvest data files, that will be 
         ingested into the database using the runDataIngest function.
         Parameters
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data.
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
                 DataIngest, and SequenceIngest.
@@ -155,7 +151,7 @@ def runDataCreate(ingestDir, dataType):
     '''
 
     # get source meta
-    df = getSourceMeta(dataType)
+    df = getSourceMeta()
 
     # Create list of program commands
     program_list = []
@@ -169,11 +165,9 @@ def runDataCreate(ingestDir, dataType):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-def runDataIngest(ingestDir, dataType):
+def runDataIngest(ingestDir):
     ''' This function runs ingestObsTasks.py with --inputTask ingestData, ingest gauge data into the drf_gauge_data table, in the database. 
         Parameters
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data.
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
                 DataIngest, and SequenceIngest.   
@@ -182,7 +176,7 @@ def runDataIngest(ingestDir, dataType):
     '''
 
     # get source meta
-    df = getSourceMeta(dataType)
+    df = getSourceMeta()
 
     # Create list of program commands
     program_list = []
@@ -242,7 +236,7 @@ def runRetainObsStationCreateIngest(ingestDir):
         output = subprocess.run(program, shell=False, check=True)
         logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
 
-def runSequenceIngest(harvestDir, ingestDir, dataType):
+def runSequenceIngest(harvestDir, ingestDir):
     ''' Runs the runHarvestFile(), runDataCreate(), and runDataIngest() functions in sequence. 
         Parameters
             harvestDir: string
@@ -250,17 +244,15 @@ def runSequenceIngest(harvestDir, ingestDir, dataType):
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
                 DataIngest, and SequenceIngest.
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data.
         Returns
             None, but the functions it calls return values, described above.
     '''
 
     runHarvestFile(harvestDir, ingestDir)
-    runDataCreate(ingestDir, dataType)
-    runDataIngest(ingestDir, dataType)
+    runDataCreate(ingestDir)
+    runDataIngest(ingestDir)
 
-    logger.info('Data type '+dataType+' needs to have obs stations ingested into the drf_retain_obs_station table')
+    logger.info('Ingest station meta data into the drf_retain_obs_station table')
     runRetainObsStationCreateIngest(ingestDir)
 
 @logger.catch
@@ -277,8 +269,6 @@ def main(args):
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate,
                 DataIngest, and SequenceIngest.
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data. Used by DataCreate, DataIngest, and SequenceIngest.
         Returns
             None
     '''         
@@ -302,15 +292,13 @@ def main(args):
         logger.info('Ran input file information.')
     elif inputTask.lower() == 'datacreate':
         ingestDir = os.path.join(args.ingestDir, '')
-        dataType = args.dataType
         logger.info('Run data create.')
-        runDataCreate(ingestDir, dataType)
+        runDataCreate(ingestDir)
         logger.info('Ran data create.')
     elif inputTask.lower() == 'dataingest':
         ingestDir = os.path.join(args.ingestDir, '')
-        dataType = args.dataType
         logger.info('Run data ingest.')
-        runDataIngest(ingestDir, dataType)
+        runDataIngest(ingestDir)
         logger.info('Ran data ingest.')
     elif inputTask.lower() == 'runretainobsstationcreateingest':
         ingestDir = os.path.join(args.ingestDir, '')
@@ -320,9 +308,8 @@ def main(args):
     elif inputTask.lower() == 'sequenceingest':
         harvestDir = os.path.join(args.harvestDir, '')
         ingestDir = os.path.join(args.ingestDir, '')
-        dataType = args.dataType
         logger.info('Run sequence ingest.')
-        runSequenceIngest(harvestDir, ingestDir, dataType)
+        runSequenceIngest(harvestDir, ingestDir)
         logger.info('Ran sequence ingest.')
 
 # Run main function 
@@ -337,8 +324,6 @@ if __name__ == "__main__":
             ingestDir: string
                 Directory path to ingest data files, created from the harvest files. Used by ingestHarvestDataFileMeta, DataCreate, 
                 DataIngest, SequenceIngest.
-            dataType: string 
-                Type of data, obs for observation data, such as noaa gauge data. Used by DataCreate, DataIngest, and SequenceIngest.
         Returns
             None
     '''         
@@ -358,16 +343,13 @@ if __name__ == "__main__":
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'datacreate':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
-        parser.add_argument("--dataType", "--datatype", help="Data type to be processed, model or obs", action="store", dest="dataType", required=True)
     elif args.inputTask.lower() == 'dataingest':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
-        parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)
     elif args.inputTask.lower() == 'runretainobsstationcreateingest':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
     elif args.inputTask.lower() == 'sequenceingest':
         parser.add_argument("--harvestDIR", "--harvestDir", help="Harvest directory path", action="store", dest="harvestDir", required=True)
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
-        parser.add_argument("--dataType", "--datatype", help="Data type, model or obs", action="store", dest="dataType", required=True)
     else:
         logger.info(args.inputTask+' not correct')
 

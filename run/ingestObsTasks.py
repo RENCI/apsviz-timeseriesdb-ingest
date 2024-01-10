@@ -61,7 +61,7 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
     except (Exception, psycopg.DatabaseError) as error:
         print(error)
 
-def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, dataType, inputUnits):
+def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits):
     ''' This function takes data source, source name, source archive, source variable, filename prefix, location type, data type, and 
         units  as input. It ingest these variables into the source meta table (drf_source_obs_meta). The variables in this table are then 
         used as inputs in runObsIngest.py.
@@ -79,8 +79,6 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
                 Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). 
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data. 
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars).
         Returns 
@@ -102,11 +100,11 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 
             # Run query
             cur.execute("""INSERT INTO drf_source_obs_meta(data_source, source_name, source_archive, source_variable, filename_prefix, 
-                                       location_type, data_type, units)
+                                       location_type, units)
                            VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s, %(filenamevariable)s, %(locationtype)s, 
-                                   %(datatype)s,  %(units)s)""",
+                                   %(units)s)""",
                         {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 
-                         'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'datatype': dataType, 'units': inputUnits})
+                         'filenamevariable': inputFilenamePrefix, 'locationtype': inputLocationType, 'units': inputUnits})
 
             # Close cursor and database connection
             cur.close()
@@ -564,8 +562,6 @@ def main(args):
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars).
                 Used by ingestSourceMeta.
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data. Used by ingestSourceMeta.
         Returns
             None
     '''
@@ -587,10 +583,9 @@ def main(args):
         inputSourceVariable = args.inputSourceVariable
         inputFilenamePrefix = args.inputFilenamePrefix
         inputLocationType = args.inputLocationType
-        dataType = args.dataType
         inputUnits = args.inputUnits
         logger.info('Ingesting source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
-        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, dataType, inputUnits)
+        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits)
         logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
     elif inputTask.lower() == 'ingeststations':
         ingestDir = os.path.join(args.ingestDir, '')
@@ -669,8 +664,6 @@ if __name__ == "__main__":
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars).
                 Used by ingestSourceMeta.
-            dataType: string
-                Type of data, obs for observation data, such as noaa gauge data. Used by ingestSourceMeta.
         Returns
             None
     '''         
@@ -693,7 +686,6 @@ if __name__ == "__main__":
         parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
         parser.add_argument("--inputFilenamePrefix", help="Input filename variables", action="store", dest="inputFilenamePrefix", required=True)
         parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
-        parser.add_argument("--dataType", help="Data type to be processed, model or obs", action="store", dest="dataType", required=True)
         parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=True)
     elif args.inputTask.lower() == 'ingeststations':
         parser.add_argument("--ingestDIR", "--ingestDir", help="Ingest directory path", action="store", dest="ingestDir", required=True)
