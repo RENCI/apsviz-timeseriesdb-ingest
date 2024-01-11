@@ -4,14 +4,22 @@ The software, in this repo, is used to ingest observation station data (tidal an
 The Python scripts used to process the data are:
 
 * prepare4Ingest.py - This script manages the ingestion of station (drf_gauge_station) and source data (drf_gauge_source).
-* createIngestSourceMeta.py - This script creates the source meta data.
-* runIngest.py - This script manages the ingestion of station observation data and model data.
-* ingestTasks.py - This script has functions that interact with the DB.
-* createHarvestDataFileMeta.py - This script creates meta-data about the harvest data files to be ingested. This meta-data is used to manage the ingest process.
-* createIngestData.py - This script creates the data files, from the original harvest data files, that are ingested into the drf_gauge_data table. It adds a source ID, and timemark to the original data.
-* createApsVizStationFileMeta.py - This script creates meta-data about the harvest meta files to be ingested. This meta-data is used to manage the ingest process.
-* createIngestApsVizStationData.py - This script creates the ApsViz Station data, from the harvest meta files, and ingest that data.
-* getDashboardMeta.py - This script interacts with variables from the ASGS_Mon_config_item table, in the asgs_dashboard DB, that are used to add ADCIRC model source automatically.
+* Scripts to Ingest Observation Data
+  _createIngestObsSourceMeta.py - This script creates the source meta data, for observation sources.
+  _runObsIngest.py - This script manages the ingestion of station observation data.
+  _ingestObsTasks.py - This script has functions that interact with the DB to ingest observation data.
+  _createHarvestObsFileMeta.py - This script creates meta-data about the observation harvest data files to be ingested. This meta-data is used to manage the ingest process.
+  _createIngestObsData.py - This script creates the data files, from the original observation harvest data files, that are ingested into the drf_gauge_data table. It adds a source ID, and timemark to the original data.
+  _createRetainObsStationFileMeta.py - This script creates meta-data files, that are ingested into the drf_retain_obs_station_file_meta table. The meta-data in that table are used to track the ingestion of the obs stations meta-files, which is used in to display station location in the ApsViZ front end. 
+* Scripts to Ingest Model Data
+  _createIngestModelSourceMeta.py - This script creates the source meta data, for model sources.
+  _runModelIngest.py - This script manages the ingestion of station model data.
+  _ingestModelTasks.py - This script has functions that interact with the DB to ingest model data.
+  _createHarvestModelFileMeta.py - This script creates meta-data about the model harvest data files to be ingested. This meta-data is used to manage the ingest process.
+  _createIngestModelData.py - This script creates the data files, from the original model harvest data files, that are ingested into the drf_model_data table. It adds a source ID, and timemark to the original data.
+  _createApsVizStationFileMeta.py - This script creates meta-data files, that are ingested into the drf_apsviz_station_file_meta table. The meta-data in that table are used to track the ingestion of the model stations meta-files, which are used in to display station location in the ApsViZ front end. 
+  _createIngestApsVizStationData.py - This script creates the ApsViz Station data, from the harvest model station meta files. It also extracts observation stations available for that time period, form the drf_retain_obs_station_file_meta table, and includes them.
+  _getDashboardMeta.py - This script interacts with variables from the ASGS_Mon_config_item table, in the asgs_dashboard DB, that are used to add ADCIRC model source automatically.
 
 # Install apsviz-timeseriesdb-ingest
 
