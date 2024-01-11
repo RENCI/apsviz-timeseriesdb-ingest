@@ -132,11 +132,11 @@ python prepare4Ingest.py --ingestDir /data/ast-run-ingester/ --inputTask Sequenc
 
 To ingest the gauge data run the command below in the /home/nru directory:
 
-python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
+python runObsIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest
 
 To ingest ADCIRC model data, for a specific modelRunID, run the command below:
 
-python runIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --modelRunID xxxx-dddddddddd-mmmmmmmmmmm
+python runModelIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --modelRunID xxxx-dddddddddd-mmmmmmmmmmm
 
 where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-namforecast shows. 
 
@@ -182,7 +182,7 @@ To ingest the source data, first ingest the source meta using the following comm
 
 python prepare4Ingest.py --inputTask ingestSourceMeta
 
-This will ingest meta data, containing information on the data sources, into the drf_source_meta table. This meta data will be used as argparse input when running prepare4Ingest.py and runIngest.py. 
+This will ingest meta data, containing information on the data sources, into the drf_source_meta table. This meta data will be used as argparse input when running prepare4Ingest.py, runObsIngest.py and runModelIngest.py. 
 
 The next step is to ingest the source data into the drf_gauge_source table. To do this run the following command:
 
