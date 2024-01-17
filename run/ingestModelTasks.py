@@ -295,7 +295,7 @@ def ingestApsVizStationData(ingestPath, inputFilename):
     
             # Run ingest query
             with open(ingestPath+ingestFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,location_name,tz,gauge_owner,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_instance,source_archive,forcing_metaclass,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,tz,gauge_owner,location_name,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_archive,source_instance,forcing_metaclass,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
