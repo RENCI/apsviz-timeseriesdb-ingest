@@ -171,8 +171,6 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
     forcingEnsemblename = df['forcing.ensemblename'].values[0]
     source_instance = df['instancename'].values[0]
     source_name = df['suite.model'].values[0]
-    forecast_data_source = forcingEnsemblename.upper()+'_'+grid_name
-    nowcast_data_source = 'NOWCAST_'+grid_name
     source_archive = df['physical_location'].values[0]
     forcingMetaclass = df['forcing.metclass'].values[0]
     storm = df['storm'].values[0]
@@ -201,10 +199,14 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
         # Define variables that differ between synoptic and tropical runs
         if forcingMetaclass == 'synoptic':
             logger.info('Input file '+inputFile+' data is not from a hurricane, so data source only consists of the forcingEnsemblename and grid name')
+            forecast_data_source = forcingEnsemblename.upper()+'_'+grid_name
+            nowcast_data_source = 'NOWCAST_'+grid_name
             forecast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
             forecast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_'+forcingEnsemblename.upper()+'_'+grid_name+'_FORECAST_'+forecast_obs_station_type 
         else:
             logger.info('Input file '+inputFile+' data is from a hurricane, so data source consists of the storm, forcingEnsemblename and grid name')
+            forecast_data_source = storm+'_'+forcingEnsemblename.upper()+'_'+grid_name
+            nowcast_data_source = storm+'_NOWCAST_'+grid_name
             forecast_obs_station_type = inputFile.split('_')[-1].split('.')[0]
             forecast_prefix = source_name+'_'+storm+'_'+source_archive.upper()+'_'+forcingEnsemblename+'_'+grid_name+'_FORECAST_'+forecast_obs_station_type
 
