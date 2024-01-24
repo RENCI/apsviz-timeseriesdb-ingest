@@ -119,7 +119,7 @@ def checkModelSourceMeta(filename_prefix, source_instance):
 
         # Run query
         cur.execute("""SELECT data_source, source_name, source_archive, source_variable, source_instance,
-                              forcing_metaclass, filename_prefix, location_type, units 
+                              forcing_metclass, filename_prefix, location_type, units 
                        FROM drf_source_model_meta
                        WHERE filename_prefix = %(filename_prefix)s AND source_instance = %(source_instance)s
                        ORDER BY filename_prefix""",
@@ -127,7 +127,7 @@ def checkModelSourceMeta(filename_prefix, source_instance):
 
         # convert query output to Pandas dataframe
         df = pd.DataFrame(cur.fetchall(), columns=['data_source', 'source_name', 'source_archive', 'source_variable', 
-                                                   'source_instance', 'forcing_metaclass', 'filename_prefix', 'location_type', 
+                                                   'source_instance', 'forcing_metclass', 'filename_prefix', 'location_type', 
                                                    'units'])
 
         # Close cursor and database connection

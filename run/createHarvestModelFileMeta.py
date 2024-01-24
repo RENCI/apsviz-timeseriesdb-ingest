@@ -13,7 +13,7 @@ from loguru import logger
 # This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
 # It uses them to create a file list that is then ingested into the drf_harvest_model_file_meta table, and used to ingest the
 # data files. This function also returns first_time, and last_time which are used in cross checking the data.
-def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, 
+def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, 
                    inputAdvisory, inputTimemark):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_harvest_model_file_meta. It also returns
         first_time, and last_time used for cross checking.
@@ -30,7 +30,7 @@ def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, i
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputAdvisory: string
                 The model start time for synoptic runs, and the storm advisory number for tropical runs
@@ -63,11 +63,11 @@ def createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, i
 
     outputList = []
     outputList.append([dir_path,file_name,model_run_id,processing_datetime,data_date_time,data_begin_time,data_end_time,inputDataSource,inputSourceName,
-                       inputSourceArchive,inputSourceInstance,inputForcingMetaclass,inputAdvisory,inputTimemark,ingested,overlap_past_file_date_time]) 
+                       inputSourceArchive,inputSourceInstance,inputForcingMetclass,inputAdvisory,inputTimemark,ingested,overlap_past_file_date_time]) 
 
     # Convert outputList to a DataFrame
     df = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'model_run_id', 'processing_datetime', 'data_date_time', 'data_begin_time', 'data_end_time', 
-                                            'data_source', 'source_name', 'source_archve', 'source_instance' , 'forcing_metaclass', 'advisory', 
+                                            'data_source', 'source_name', 'source_archve', 'source_instance' , 'forcing_metclass', 'advisory', 
                                             'timemark', 'ingested', 'overlap_past_file_date_time'])
 
 
@@ -97,7 +97,7 @@ def main(args):
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputAdvisory: string
                 The model start time for synoptic runs, and the storm advisory number for tropical runs
@@ -121,7 +121,7 @@ def main(args):
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputSourceInstance = args.inputSourceInstance
-    inputForcingMetaclass = args.inputForcingMetaclass
+    inputForcingMetclass = args.inputForcingMetclass
     inputAdvisory = args.inputAdvisory
     inputTimemark = args.inputTimemark
 
@@ -136,7 +136,7 @@ def main(args):
 
     # Get DataFrame file list, and time variables by running the createFileList function
     df, file_name = createFileList(dirInputFile, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, 
-                                   inputForcingMetaclass, inputAdvisory, inputTimemark)
+                                   inputForcingMetclass, inputAdvisory, inputTimemark)
 
     # Write data file to ingest directory.
     outputFile = 'harvest_data_files_'+file_name
@@ -165,7 +165,7 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputAdvisory: string
                 The model start time for synoptic runs, and the storm advisory number for tropical runs
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
     parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
-    parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
+    parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
     parser.add_argument("--inputAdvisory", help="Input advisoty date or number", action="store", dest="inputAdvisory", required=True)
     parser.add_argument("--inputTimemark", help="Input timemark", action="store", dest="inputTimemark", required=False)
 

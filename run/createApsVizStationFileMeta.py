@@ -14,7 +14,7 @@ import numpy as np
 from pathlib import Path
 from loguru import logger
 
-def createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetaclass,gridName,modelRunID,timeMark,inputLocationType,csvURL):
+def createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetclass,gridName,modelRunID,timeMark,inputLocationType,csvURL):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_apsviz_station_file_meta. It also returns
         first_time, and last_time used for cross checking.
         Parameters
@@ -28,7 +28,7 @@ def createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputS
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputFilename: string
                 The name of the input file
@@ -55,11 +55,11 @@ def createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputS
     ingested = False
 
     # Append variables to output list.
-    outputList.append([harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetaclass,
+    outputList.append([harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetclass,
                        gridName,modelRunID,timeMark,inputLocationType,csvURL,ingested])
 
     # Convert outputList to a DataFrame
-    df = pd.DataFrame(outputList, columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archve','source_instance','forcing_metaclass',
+    df = pd.DataFrame(outputList, columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archve','source_instance','forcing_metclass',
                                            'grid_name','model_run_id','timemark','location_type','csv_url','ingested'])
 
     # Return DataFrame first time, and last time
@@ -85,7 +85,7 @@ def main(args):
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputFilename: string
                 The name of the input file
@@ -119,7 +119,7 @@ def main(args):
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputSourceInstance = args.inputSourceInstance
-    inputForcingMetaclass = args.inputForcingMetaclass
+    inputForcingMetclass = args.inputForcingMetclass
     inputFilename = args.inputFilename
     gridName = args.gridName
     modelRunID = args.modelRunID
@@ -131,7 +131,7 @@ def main(args):
     logger.info('Start processing source station data for source '+inputDataSource+', source name '+inputSourceName+', and source archive '+inputSourceArchive+', with filename prefix '+inputFilename+'.')
 
     # Get DataFrame file list, and time variables by running the createFileList function
-    df = createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetaclass,gridName,modelRunID,timeMark,inputLocationType,csvURL)
+    df = createFileList(harvestPath,inputFilename,dataDateTime,inputDataSource,inputSourceName,inputSourceArchive,inputSourceInstance,inputForcingMetclass,gridName,modelRunID,timeMark,inputLocationType,csvURL)
 
     # Create output file name
     outputFile = 'harvest_meta_files_'+inputFilename
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputFilename: string
                 The name of the input file
@@ -184,7 +184,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
     parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
-    parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
+    parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
     parser.add_argument("--inputFilename", help="Input file name", action="store", dest="inputFilename", required=True)
     parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)
     parser.add_argument("--modelRunID", help="Input model run ID", action="store", dest="modelRunID", required=True)

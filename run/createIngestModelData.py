@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 from loguru import logger
 
-def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, station_list):
+def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, station_list):
     ''' Returns DataFrame containing source_id(s) for model data from the drf_model_source table in the apsviz_gauges database.
         Parameters
             inputDataSource: string
@@ -45,10 +45,10 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, inputSourc
                        INNER JOIN drf_model_source s ON s.station_id=g.station_id
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
                          source_archive = %(sourcearchive)s AND source_instance = %(sourceinstance)s AND 
-                         forcing_metaclass = %(forcingmetaclass)s AND station_name = ANY(%(stationlist)s) 
+                         forcing_metclass = %(forcingmetclass)s AND station_name = ANY(%(stationlist)s) 
                        ORDER BY station_name""",
                     {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 
-                     'sourceinstance': inputSourceInstance, 'forcingmetaclass': inputForcingMetaclass, 'stationlist': station_list})
+                     'sourceinstance': inputSourceInstance, 'forcingmetclass': inputForcingMetclass, 'stationlist': station_list})
 
         # convert query output to Pandas dataframe
         dfstations = pd.DataFrame(cur.fetchall(), columns=['source_id','station_id','station_name','data_source','source_name','source_archive','source_instance'])
@@ -65,7 +65,7 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, inputSourc
         logger.info(error)
 
 # ADCIRC forecast model run.
-def addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass):
+def addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass):
     ''' Returns CSV file that containes gauge data. The function uses the getSourceID function above to get a list of existing source
         ids that it includes in the gauge data to enable joining the gauge data (drf_model_data) table with  gauge source (drf_model_source)
         table. The function adds a timemark, that it gets from the input file name. The timemark values can be used to uniquely query an
@@ -87,7 +87,7 @@ def addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, i
                 Where the original data source is archived (e.g., renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical.
         Returns
             CSV file 
@@ -109,7 +109,7 @@ def addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, i
     station_list = [sorted([str(x) for x in df['station_name'].unique().tolist()])]
 
     # Run getSourceID function to get the source_id(s)
-    dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, station_list)
+    dfstations = getSourceID(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, station_list)
 
     # Add source id(s) to dataframe 
     for index, row in dfstations.iterrows():
@@ -144,7 +144,7 @@ def main(args):
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by getSourceID, and addMeta.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by addMeta, and processData.
         Returns
             None, runs processData() function
@@ -165,11 +165,11 @@ def main(args):
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputSourceInstance = args.inputSourceInstance
-    inputForcingMetaclass = args.inputForcingMetaclass
+    inputForcingMetclass = args.inputForcingMetclass
 
     logger.info('Start processing data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive
                 +' with source instance '+inputSourceInstance+'.')
-    addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass)
+    addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass)
     logger.info('Finished processing data from data source '+inputDataSource+', with source name '+inputSourceName+', from source archive '+inputSourceArchive
                 +' with source instance '+inputSourceInstance+'.')
 
@@ -194,7 +194,7 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by getSourceID, and addMeta.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by addMeta.
         Returns
             None
@@ -211,7 +211,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
     parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
-    parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
+    parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
 
     args = parser.parse_args()
     main(args)

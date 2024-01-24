@@ -140,7 +140,7 @@ def getGaugeStationInfo(stationNames):
         logger.info(error)
 
 def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName,
-                             inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputLocationType, allLocationTypes, 
+                             inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputLocationType, allLocationTypes, 
                              gridName, csvURL):
     ''' Returns a csv file that containes station location data for the drf_apsviz_station table. The function adds a 
         timemark, that it gets from the input file name. The timemark values can be used to uniquely query an ADCIRC 
@@ -171,7 +171,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (TIDAL or OCEAN). In this function the inputLocationType is specific to the ADCIRC 
@@ -208,7 +208,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     dfADCIRCOut.insert(0,'source_name','')
     dfADCIRCOut.insert(0,'source_archive', '')
     dfADCIRCOut.insert(0,'source_instance', '')
-    dfADCIRCOut.insert(0,'forcing_metaclass', '')
+    dfADCIRCOut.insert(0,'forcing_metclass', '')
     dfADCIRCOut.insert(0,'location_type','')
     dfADCIRCOut.insert(0,'grid_name', '')
     dfADCIRCOut.insert(0,'csvurl', '')
@@ -216,7 +216,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     # Reorder columns
     dfADCIRCOut = dfADCIRCOut.loc[:, ["station_name","lat","lon","tz","gauge_owner","location_name","country",
                                       "state","county","geom","timemark","model_run_id","data_source","source_name",
-                                      "source_archive","source_instance","forcing_metaclass","location_type",
+                                      "source_archive","source_instance","forcing_metclass","location_type",
                                       "grid_name","csvurl"]]
  
      # Add model_run_id, timemark, and csvurl values to specifies columns in DataFrame
@@ -227,7 +227,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     dfADCIRCOut['source_name'] = inputSourceName
     dfADCIRCOut['source_archive'] = inputSourceArchive
     dfADCIRCOut['source_instance'] = inputSourceInstance
-    dfADCIRCOut['forcing_metaclass'] = inputForcingMetaclass
+    dfADCIRCOut['forcing_metclass'] = inputForcingMetclass
     dfADCIRCOut['location_type'] = inputLocationType
     dfADCIRCOut['grid_name'] = gridName
 
@@ -290,7 +290,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
         dfObsOut.insert(0,'model_run_id', '')
         dfObsOut.insert(0,'grid_name', '')
         dfObsOut.insert(0,'source_instance', '')
-        dfObsOut.insert(0,'forcing_metaclass', '')
+        dfObsOut.insert(0,'forcing_metclass', '')
         dfObsOut.insert(0,'csvurl', '')
         
         # Add model_run_id, timemark, and csvurl values to specifies columns in DataFrame
@@ -298,12 +298,12 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
         dfObsOut['model_run_id'] = modelRunID
         dfObsOut['grid_name'] = gridName
         dfObsOut['source_instance'] = inputSourceInstance
-        dfObsOut['forcing_metaclass'] = inputForcingMetaclass
+        dfObsOut['forcing_metclass'] = inputForcingMetclass
 
         # Reorder columns
         dfObsOut = dfObsOut.loc[:, ["station_name","lat","lon","tz","gauge_owner","location_name","country",
                                     "state","county","geom","timemark","model_run_id","data_source","source_name",
-                                    "source_archive","source_instance","forcing_metaclass","location_type",
+                                    "source_archive","source_instance","forcing_metclass","location_type",
                                     "grid_name","csvurl"]]
         
         # Concatinate dfADCIRCOut with dfObsOut
@@ -315,7 +315,7 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
 
     # Create csvURL and add it to DataFrame
     for index, row in dfOut.iterrows():
-        csvURL = os.environ['UI_DATA_URL']+'/get_station_data?station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource+'&instance_name='+inputSourceInstance+'&forcing_metaclass='+inputForcingMetaclass
+        csvURL = os.environ['UI_DATA_URL']+'/get_station_data?station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource+'&instance_name='+inputSourceInstance+'&forcing_metclass='+inputForcingMetclass
         dfOut.at[index,'csvurl'] = csvURL
 
     # Write DataFrame to CSV file
@@ -350,7 +350,7 @@ def main(args):
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
@@ -382,7 +382,7 @@ def main(args):
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputSourceInstance = args.inputSourceInstance
-    inputForcingMetaclass = args.inputForcingMetaclass
+    inputForcingMetclass = args.inputForcingMetclass
     inputLocationType = args.inputLocationType
     allLocationTypes = args.allLocationTypes.split(',')
     gridName = args.gridName
@@ -391,7 +391,7 @@ def main(args):
     logger.info('Start processing data from '+harvestPath+inputFilename+', with output directory '+ingestPath+', model run ID '+
                 modelRunID+', source intance '+inputSourceInstance+', timemark '+timeMark+', and csvURL '+csvURL+'.')
     addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, 
-                             inputSourceInstance, inputForcingMetaclass, inputLocationType, allLocationTypes, gridName, csvURL)
+                             inputSourceInstance, inputForcingMetclass, inputLocationType, allLocationTypes, gridName, csvURL)
     logger.info('Finished processing data from '+harvestPath+inputFilename+', with output directory '+ingestPath+', model run ID '+
                 modelRunID+', source intance '+inputSourceInstance+', timemark '+timeMark+', and csvURL '+csvURL+'.')
  
@@ -420,7 +420,7 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
@@ -447,7 +447,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
     parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
-    parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
+    parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
     parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
     parser.add_argument("--allLocationTypes", help="All location types", action="store", dest="allLocationTypes", required=True)
     parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)

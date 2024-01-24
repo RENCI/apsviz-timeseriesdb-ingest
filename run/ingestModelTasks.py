@@ -12,7 +12,7 @@ import pandas as pd
 from pathlib import Path
 from loguru import logger
 
-def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputSourceInstance, inputForcingMetaclass, 
+def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputSourceInstance, inputForcingMetclass, 
                      inputFilenamePrefix, inputLocationType, inputUnits):
     ''' This function takes data source, source name, source archive, source variable, filename prefix, location type, data type, and 
         units  as input. It ingest these variables into the source meta table (drf_source_model_meta). The variables in this table are then 
@@ -29,7 +29,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
                 Source variable, such as water_level. Used by ingestSourceMeta, and ingestData.
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputFilenamePrefix: string
                 Prefix filename to data files that are being ingested. The prefix is used to search for the data files, using glob.
@@ -55,10 +55,10 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
             cur = conn.cursor()
 
             # Run query
-            cur.execute("""INSERT INTO drf_source_model_meta(data_source, source_name, source_archive, source_variable, source_instance, forcing_metaclass, filename_prefix, location_type, units)
-                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s,%(sourceinstance)s,%(forcingmetaclass)s, %(filenamevariable)s, %(locationtype)s, %(units)s)""",
+            cur.execute("""INSERT INTO drf_source_model_meta(data_source, source_name, source_archive, source_variable, source_instance, forcing_metclass, filename_prefix, location_type, units)
+                           VALUES (%(datasource)s, %(sourcename)s, %(sourcearchive)s, %(sourcevariable)s,%(sourceinstance)s,%(forcingmetclass)s, %(filenamevariable)s, %(locationtype)s, %(units)s)""",
                         {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 
-                         'sourceinstance':inputSourceInstance, 'forcingmetaclass':inputForcingMetaclass, 'filenamevariable': inputFilenamePrefix, 
+                         'sourceinstance':inputSourceInstance, 'forcingmetclass':inputForcingMetclass, 'filenamevariable': inputFilenamePrefix, 
                          'locationtype': inputLocationType, 'units': inputUnits})
 
             # Close cursor and database connection
@@ -98,7 +98,7 @@ def ingestSourceData(ingestPath):
             for sourceFile in inputFiles:
                 # Run ingest query
                 with open(sourceFile, "r") as f:
-                    with cur.copy("COPY drf_model_source (station_id,data_source,source_name,source_archive,source_instance,forcing_metaclass,units) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_model_source (station_id,data_source,source_name,source_archive,source_instance,forcing_metclass,units) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -141,7 +141,7 @@ def ingestHarvestDataFileMeta(ingestPath):
             for infoFile in inputFiles:
                 # Run ingest query
                 with open(infoFile, "r") as f:
-                    with cur.copy("COPY drf_harvest_model_file_meta (dir_path,file_name,model_run_id,processing_datetime,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,source_instance,forcing_metaclass,advisory,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_harvest_model_file_meta (dir_path,file_name,model_run_id,processing_datetime,data_date_time,data_begin_time,data_end_time,data_source,source_name,source_archive,source_instance,forcing_metclass,advisory,timemark,ingested,overlap_past_file_date_time) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -185,7 +185,7 @@ def ingestApsVizStationFileMeta(ingestPath):
             for infoFile in inputFiles:
             # Run ingest query
                 with open(infoFile, "r") as f:
-                    with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,source_instance,forcing_metaclass,grid_name,model_run_id,timemark,location_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
+                    with cur.copy("COPY drf_apsviz_station_file_meta (dir_path,file_name,data_date_time,data_source,source_name,source_archive,source_instance,forcing_metclass,grid_name,model_run_id,timemark,location_type,csvurl,ingested) FROM STDIN WITH (FORMAT CSV)") as copy:
                         while data := f.read(100):
                             copy.write(data)
 
@@ -295,7 +295,7 @@ def ingestApsVizStationData(ingestPath, inputFilename):
     
             # Run ingest query
             with open(ingestPath+ingestFilename, "r") as f:
-                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,tz,gauge_owner,location_name,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_archive,source_instance,forcing_metaclass,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
+                with cur.copy("COPY drf_apsviz_station (station_name,lat,lon,tz,gauge_owner,location_name,country,state,county,geom,timemark,model_run_id,data_source,source_name,source_archive,source_instance,forcing_metclass,location_type,grid_name,csvurl) FROM STDIN WITH (FORMAT CSV)") as copy:
                     while data := f.read(100):
                         copy.write(data)
 
@@ -352,7 +352,7 @@ def createModelView():
                                   s.source_name AS source_name,
                                   s.source_archive AS source_archive,
                                   s.source_instance AS source_instance,
-                                  s.forcing_metaclass AS forcing_metaclass,
+                                  s.forcing_metclass AS forcing_metclass,
                                   s.units AS units,
                                   g.location_name AS location_name,
                                   g.apsviz_station AS apsviz_station,
@@ -406,7 +406,7 @@ def main(args):
                 Source variable, such as water_level. Used by ingestSourceMeta.
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and getHarvestDataFileMeta.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
@@ -433,12 +433,12 @@ def main(args):
         inputSourceArchive = args.inputSourceArchive
         inputSourceVariable = args.inputSourceVariable
         inputSourceInstance = args.inputSourceInstance
-        inputForcingMetaclass = args.inputForcingMetaclass
+        inputForcingMetclass = args.inputForcingMetclass
         inputFilenamePrefix = args.inputFilenamePrefix
         inputLocationType = args.inputLocationType
         inputUnits = args.inputUnits
         logger.info('Ingesting source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
-        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputSourceInstance, inputForcingMetaclass, inputFilenamePrefix, inputLocationType, inputUnits)
+        ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputSourceInstance, inputForcingMetclass, inputFilenamePrefix, inputLocationType, inputUnits)
         logger.info('ingested source meta: '+inputDataSource+', '+inputSourceName+', '+inputSourceArchive+', '+inputSourceVariable+', '+inputFilenamePrefix+', '+inputLocationType+','+inputUnits+'.')
     elif inputTask.lower() == 'ingestsourcedata':
         ingestPath = os.path.join(args.ingestPath, '')
@@ -503,7 +503,7 @@ if __name__ == "__main__":
                 Source variable, such as water_level. Used by ingestSourceMeta, and ingestData.
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, ingestData, and getHarvestDataFileMeta.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
@@ -531,7 +531,7 @@ if __name__ == "__main__":
         parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", required=True)
         parser.add_argument("--inputSourceVariable", help="Input source variables", action="store", dest="inputSourceVariable", required=True)
         parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
-        parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
+        parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
         parser.add_argument("--inputFilenamePrefix", help="Input filename variables", action="store", dest="inputFilenamePrefix", required=True)
         parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
         parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=True)

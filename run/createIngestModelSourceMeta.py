@@ -48,7 +48,7 @@ def getStationID(locationType):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def addMeta(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputUnits, inputLocationType):
+def addMeta(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputUnits, inputLocationType):
     ''' Returns a CSV file that containes source information specific to station IDs that have been extracted from the drf_gauge_station table.
         The function adds additional source information (data source, source name, source archive, data units) to the station IDs. This 
         information is latter ingested into table drf_model_source by running the ingestModelSourceData() function in ingetTask.py
@@ -63,7 +63,7 @@ def addMeta(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, in
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
@@ -79,14 +79,14 @@ def addMeta(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, in
     df['source_name'] = inputSourceName
     df['source_archive'] = inputSourceArchive
     df['source_instance'] = inputSourceInstance
-    df['forcing_metaclass'] = inputForcingMetaclass
+    df['forcing_metclass'] = inputForcingMetclass
     df['units'] = inputUnits
 
     # Drop station_name from DataFrame 
     df.drop(columns=['station_name'], inplace=True)
 
     # Reorder column name and update indeces 
-    newColsOrder = ['station_id','data_source','source_name','source_archive','source_instance','forcing_metaclass','units']
+    newColsOrder = ['station_id','data_source','source_name','source_archive','source_instance','forcing_metclass','units']
     df=df.reindex(columns=newColsOrder)
 
     # Write dataframe to csv file 
@@ -111,7 +111,7 @@ def main(args):
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
@@ -134,7 +134,7 @@ def main(args):
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
     inputSourceInstance = args.inputSourceInstance
-    inputForcingMetaclass = args.inputForcingMetaclass
+    inputForcingMetclass = args.inputForcingMetclass
     inputUnits = args.inputUnits
     inputLocationType = args.inputLocationType
 
@@ -147,7 +147,7 @@ def main(args):
     logger.info('Start processing source data for data source '+inputDataSource+', with source name '+inputSourceName+', source archive '+inputSourceArchive+', and location type '+inputLocationType+'.')
 
     # Run addMeta function
-    addMeta(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetaclass, inputUnits, inputLocationType)
+    addMeta(ingestPath, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputUnits, inputLocationType)
     logger.info('Finished processing source data for file data source '+inputDataSource+', with source name '+inputSourceName+', source archive '+inputSourceArchive+', and location type '+inputLocationType+'.')
 
 # Run main function takes ingestPath, and outputFile as input.
@@ -164,7 +164,7 @@ if __name__ == "__main__":
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceInstance: string
                 Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
-            inputForcingMetaclass: string
+            inputForcingMetclass: string
                 ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars)
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("--inputSourceName", help="Input source name", action="store", dest="inputSourceName", choices=['adcirc','noaa','ndbc','ncem'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True) 
     parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
-    parser.add_argument("--inputForcingMetaclass", help="Input forcing metaclass", action="store", dest="inputForcingMetaclass", required=True)
+    parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
     parser.add_argument("--inputUnits", help="Input units", action="store", dest="inputUnits", required=True)
     parser.add_argument("--inputLocationType", help="Input location type", action="store", dest="inputLocationType", required=True)
 
