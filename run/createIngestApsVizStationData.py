@@ -60,6 +60,7 @@ def getObsStations(beginDate, endDate, inputLocationType):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
+# Currently this function is not being used
 def getADCIRCStations(timeMark):
     ''' Returns DataFrame containing station names queried from the drf_apsviz_station  table.
         Parameters  
@@ -138,18 +139,20 @@ def getGaugeStationInfo(stationNames):
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
 
-def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName,
-                             inputSourceArchive, inputLocationType, allLocationTypes, gridName, csvURL):
+def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName,
+                             inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputLocationType, allLocationTypes, 
+                             gridName, csvURL):
     ''' Returns a csv file that containes station location data for the drf_apsviz_station table. The function adds a 
         timemark, that it gets from the input file name. The timemark values can be used to uniquely query an ADCIRC 
         forecast model run. It also adds a model_run_id, data_source, source_archive, grid_name, and csv_url. The 
         model_run_id specifies what model run the data is from, and the csvurl is the URL used to access that data 
         from the apsViz interface.
         Parameters
-            harvestDir: string
+            harvestPath: string
                 Directory path to harvest data files
-            ingestDir: string
-                Directory path to ingest data files, created from the harvest files
+            ingestPath: string
+                Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
+                path.
             inputFilename: string
                 The name of the input file
             timeMark: datatime 
@@ -166,6 +169,10 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
                 and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
+            inputForcingMetclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (TIDAL or OCEAN). In this function the inputLocationType is specific to the ADCIRC 
                 data being process, and currently all ADCIRC station location types are tidal or ocean.
@@ -181,12 +188,12 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
     '''
 
     # Create station meta filename from the input file name.
-    apsviz_station_meta_filename = 'adcirc_'+"_".join(inputFilename.split('_')[1:])
+    # apsviz_station_meta_filename = 'adcirc_'+"_".join(inputFilename.split('_')[1:])
 
     # Read input file, convert column name to lower case, rename station column to station_name, convert its data
     # type to string, and add timemark, model_run_id, and csvurl columns
-    dfADCRICMeta = pd.read_csv(harvestDir+apsviz_station_meta_filename)
-    dfADCRICMeta.columns= dfADCRICMeta.columns.str.lower()
+    dfADCRICMeta = pd.read_csv(harvestPath+inputFilename)
+    dfADCRICMeta.columns = dfADCRICMeta.columns.str.lower()
     dfADCRICMeta = dfADCRICMeta.rename(columns={'station': 'station_name'})
     dfADCRICMeta = dfADCRICMeta.astype({"station_name": str})
     dfADCIRCStations = dfADCRICMeta["station_name"].to_frame()
@@ -200,6 +207,8 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
     dfADCIRCOut.insert(0,'data_source', '')
     dfADCIRCOut.insert(0,'source_name','')
     dfADCIRCOut.insert(0,'source_archive', '')
+    dfADCIRCOut.insert(0,'source_instance', '')
+    dfADCIRCOut.insert(0,'forcing_metclass', '')
     dfADCIRCOut.insert(0,'location_type','')
     dfADCIRCOut.insert(0,'grid_name', '')
     dfADCIRCOut.insert(0,'csvurl', '')
@@ -207,7 +216,8 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
     # Reorder columns
     dfADCIRCOut = dfADCIRCOut.loc[:, ["station_name","lat","lon","tz","gauge_owner","location_name","country",
                                       "state","county","geom","timemark","model_run_id","data_source","source_name",
-                                      "source_archive","location_type","grid_name","csvurl"]]
+                                      "source_archive","source_instance","forcing_metclass","location_type",
+                                      "grid_name","csvurl"]]
  
      # Add model_run_id, timemark, and csvurl values to specifies columns in DataFrame
     timemark = "T".join(timeMark.split(' ')).split('+')[0]+'Z'
@@ -216,6 +226,8 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
     dfADCIRCOut['data_source'] = inputDataSource
     dfADCIRCOut['source_name'] = inputSourceName
     dfADCIRCOut['source_archive'] = inputSourceArchive
+    dfADCIRCOut['source_instance'] = inputSourceInstance
+    dfADCIRCOut['forcing_metclass'] = inputForcingMetclass
     dfADCIRCOut['location_type'] = inputLocationType
     dfADCIRCOut['grid_name'] = gridName
 
@@ -277,17 +289,22 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
         dfObsOut.insert(0,'timemark', '')
         dfObsOut.insert(0,'model_run_id', '')
         dfObsOut.insert(0,'grid_name', '')
+        dfObsOut.insert(0,'source_instance', '')
+        dfObsOut.insert(0,'forcing_metclass', '')
         dfObsOut.insert(0,'csvurl', '')
         
         # Add model_run_id, timemark, and csvurl values to specifies columns in DataFrame
         dfObsOut['timemark'] = timemark
         dfObsOut['model_run_id'] = modelRunID
         dfObsOut['grid_name'] = gridName
+        dfObsOut['source_instance'] = inputSourceInstance
+        dfObsOut['forcing_metclass'] = inputForcingMetclass
 
         # Reorder columns
         dfObsOut = dfObsOut.loc[:, ["station_name","lat","lon","tz","gauge_owner","location_name","country",
-                                    "state","county","geom","timemark","model_run_id","data_source",
-                                    "source_name","source_archive","location_type","grid_name","csvurl"]]
+                                    "state","county","geom","timemark","model_run_id","data_source","source_name",
+                                    "source_archive","source_instance","forcing_metclass","location_type",
+                                    "grid_name","csvurl"]]
         
         # Concatinate dfADCIRCOut with dfObsOut
         dfOut = pd.concat([dfADCIRCOut, dfObsOut], ignore_index=True, sort=False)
@@ -298,24 +315,25 @@ def addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, mod
 
     # Create csvURL and add it to DataFrame
     for index, row in dfOut.iterrows():
-        csvURL = os.environ['UI_DATA_URL']+'/get_station_data?station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource
+        csvURL = os.environ['UI_DATA_URL']+'/get_station_data?station_name='+row['station_name']+'&time_mark='+timemark+'&data_source='+inputDataSource+'&instance_name='+inputSourceInstance+'&forcing_metclass='+inputForcingMetclass
         dfOut.at[index,'csvurl'] = csvURL
 
     # Write DataFrame to CSV file
-    dfOut.to_csv(ingestDir+'meta_copy_'+apsviz_station_meta_filename, index=False, header=False)
+    dfOut.to_csv(ingestPath+'meta_copy_'+inputFilename, index=False, header=False)
 
-# Main program function takes args as input, which contains the  ingestDir, inputDataSource, inputSourceName, and inputSourceArchive values.
+# Main program function takes args as input, which contains the  ingestPath, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
 def main(args):
     ''' Main program function takes args as input, starts logger, runs createFileList, and writes output to CSV file.
-        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runIngest.py
+        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runModelIngest.py
         Parameters
             args: dictionary 
                 contains the parameters listed below
-            harvestDir: string
+            harvestPath: string
                 Directory path to harvest data files
-            ingestDir: string
-                Directory path to ingest data files, created from the harvest files
+            ingestPath: string
+                Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
+                path.
             inputFilename: string
                 The name of the input file
             timeMark: datatime
@@ -330,6 +348,10 @@ def main(args):
                 and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
+            inputForcingMetclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             allLocationTypes: string
@@ -351,33 +373,37 @@ def main(args):
     logger.add(sys.stderr, level="ERROR")
 
     # Extract args variables
-    harvestDir = os.path.join(args.harvestDir, '')
-    ingestDir = os.path.join(args.ingestDir, '')
+    harvestPath = os.path.join(args.harvestPath, '')
+    ingestPath = os.path.join(args.ingestPath, '')
     inputFilename = args.inputFilename 
     timeMark = args.timeMark
     modelRunID = args.modelRunID
     inputDataSource = args.inputDataSource
     inputSourceName = args.inputSourceName
     inputSourceArchive = args.inputSourceArchive
+    inputSourceInstance = args.inputSourceInstance
+    inputForcingMetclass = args.inputForcingMetclass
     inputLocationType = args.inputLocationType
     allLocationTypes = args.allLocationTypes.split(',')
     gridName = args.gridName
     csvURL = args.csvURL
         
-    logger.info('Start processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
-                modelRunID+', timemark '+timeMark+', and csvURL '+csvURL+'.')
-    addApsVizStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, inputLocationType, allLocationTypes, gridName, csvURL)
-    logger.info('Finished processing data from '+harvestDir+inputFilename+', with output directory '+ingestDir+', model run ID '+
-                modelRunID+', timemark '+timeMark+', and csvURL '+csvURL+'.')
+    logger.info('Start processing data from '+harvestPath+inputFilename+', with output directory '+ingestPath+', model run ID '+
+                modelRunID+', source intance '+inputSourceInstance+', timemark '+timeMark+', and csvURL '+csvURL+'.')
+    addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName, inputSourceArchive, 
+                             inputSourceInstance, inputForcingMetclass, inputLocationType, allLocationTypes, gridName, csvURL)
+    logger.info('Finished processing data from '+harvestPath+inputFilename+', with output directory '+ingestPath+', model run ID '+
+                modelRunID+', source intance '+inputSourceInstance+', timemark '+timeMark+', and csvURL '+csvURL+'.')
  
-# Run main function takes harvestDir, ingestDir, inputFilename, and timeMark as input.
+# Run main function takes harvestPath, ingestPath, inputFilename, and timeMark as input.
 if __name__ == "__main__": 
     ''' Takes argparse inputs and passes theme to the main function
         Parameters
-            harvestDir: string
+            harvestPath: string
                 Directory path to harvest data files
-            ingestDir: string
-                Directory path to ingest data files, created from the harvest files
+            ingestPath: string
+                Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
+                path.
             inputFilename: string
                 The name of the input file
             timeMark: datatime
@@ -392,6 +418,10 @@ if __name__ == "__main__":
                 and ingestData.
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and ingestData.
+            inputForcingMetclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta, and ingestData.
             inputLocationType: string
                 Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
             allLocationTypes: string
@@ -408,14 +438,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Optional argument which requires a parameter (eg. -d test)
-    parser.add_argument("--harvestDIR", "--harvestDir", help="Input directory path", action="store", dest="harvestDir", required=True)
-    parser.add_argument("--ingestDIR", "--ingestDir", help="Output directory path", action="store", dest="ingestDir", required=True)
+    parser.add_argument("--harvestDIR", "--harvestPath", help="Input directory path", action="store", dest="harvestPath", required=True)
+    parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
     parser.add_argument("--inputFilename", help="Input file name containing meta data on apsViz stations", action="store", dest="inputFilename", required=True)
     parser.add_argument("--timeMark", help="Time model run started", action="store", dest="timeMark", required=True)
     parser.add_argument("--modelRunID", help="Model run ID for model run", action="store", dest="modelRunID", required=True)
     parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
     parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
     parser.add_argument("--inputSourceArchive", help="Input source archive name", action="store", dest="inputSourceArchive", required=True)
+    parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
+    parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
     parser.add_argument("--inputLocationType", help="Input location type to be processed", action="store", dest="inputLocationType", required=True)
     parser.add_argument("--allLocationTypes", help="All location types", action="store", dest="allLocationTypes", required=True)
     parser.add_argument("--gridName", help="Name of grid being used in model run", action="store", dest="gridName", required=True)

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.get_adcirc_filename_variables(_run_id character varying)
+CREATE OR REPLACE FUNCTION public.get_adcirc_run_property_variables(_run_id character varying)
  RETURNS json
  LANGUAGE plpgsql
 AS $function$
@@ -15,26 +15,36 @@ AS $function$
 		    FROM
 			"ASGS_Mon_config_item"
 		    WHERE
-			key IN (''''ADCIRCgrid'''', ''''advisory'''', ''''downloadurl'''', ''''forcing.metclass'''', ''''stormnumber'''', ''''time.currentdate'''',''''time.currentcycle'''',''''workflow_type'''')
+			key IN (''''suite.model'''', ''''ADCIRCgrid'''', ''''advisory'''', ''''forcing.ensemblename'''', ''''forcing.metclass'''', ''''instancename'''', ''''storm'''', ''''stormname'''', ''''stormnumber'''',''''physical_location'''', ''''time.currentdate'''', ''''time.currentcycle'''', ''''workflow_type'''')
 			and instance_id || ''''-'''' || uid = ''''' || _run_id || '''''
 		    ORDER BY id ASC, key ASC'',
 		    ''SELECT data_source
 		     FROM (VALUES
+                        (''''suite.model''''),
 			(''''ADCIRCgrid''''),
 			(''''advisory''''),
-			(''''downloadurl''''),
+			(''''forcing.ensemblename''''),
 			(''''forcing.metclass''''),
+			(''''instancename''''),
+                        (''''storm''''),
+                        (''''stormname''''),
                         (''''stormnumber''''),
+                        (''''physical_location''''),
                         (''''time.currentdate''''),
                         (''''time.currentcycle''''),
                         (''''workflow_type'''')) b(data_source)''
 		) AS (
 		    id INT,
+                    "suite.model" TEXT,
 		    "ADCIRCgrid" TEXT,
 		    "advisory" TEXT,
-		    "downloadurl" TEXT,
-                    "forcing.metclass" TEXT,
+		    "forcing.ensemblename" TEXT,
+		    "forcing.metclass" TEXT,
+                    "instancename" TEXT,
+                    "storm" TEXT,
+                    "stormname" TEXT,
                     "stormnumber" TEXT,
+                    "physical_location" TEXT,
                     "time.currentdate" TEXT,
                     "time.currentcycle" TEXT,
 		    "workflow_type" TEXT)) AS ct';
@@ -48,5 +58,5 @@ BEGIN
 END
 $function$;
 
-ALTER FUNCTION get_adcirc_filename_variables(varchar) OWNER TO postgres;
-GRANT EXECUTE ON FUNCTION get_adcirc_filename_variables(varchar) TO asgs; 
+ALTER FUNCTION get_adcirc_run_property_variables(varchar) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION get_adcirc_run_property_variables(varchar) TO asgs; 

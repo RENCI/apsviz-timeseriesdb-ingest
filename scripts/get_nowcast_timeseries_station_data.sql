@@ -1,4 +1,4 @@
-create function get_forecast_timeseries_station_data(_station_name character varying, _timemark character varying, _data_source character varying, _source_instance character varying) returns json
+create function get_nowcast_timeseries_station_data(_station_name character varying, _start_date character varying, _end_date character varying, _data_source character varying, _source_instance character varying) returns json
     language plpgsql
 as
 $$
@@ -21,7 +21,7 @@ $$
                    drf_gauge_station g ON s.station_id=g.station_id
                 WHERE
                    g.station_name = ''''' || _station_name || ''''' AND
-                   timemark = ''''' || _timemark || ''''' AND 
+                   time >= ''''' || _start_date || ''''' AND time <= ''''' || _end_date || ''''' AND 
                    data_source = ''''' || _data_source || '''''  AND
                    source_instance = ''''' || _source_instance || '''''
                 ORDER BY d.time''
@@ -38,7 +38,7 @@ BEGIN
 END
 $$;
 
-alter function get_forecast_timeseries_station_data(varchar, varchar, varchar, varchar) owner to postgres;
+alter function get_nowcast_timeseries_station_data(varchar, varchar, varchar, varchar, varchar) owner to postgres;
 
-grant execute on function get_forecast_timeseries_station_data(varchar, varchar, varchar, varchar) to apsviz_ingester;
+grant execute on function get_nowcast_timeseries_station_data(varchar, varchar, varchar, varchar, varchar) to apsviz_ingester;
 

@@ -122,7 +122,7 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
         # Get DataFrame of existing list of files, in the database, that have been ingested.
         dfold = getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType)
 
-        # Create DataFrame of list of current files that are not already ingested in table drf_harvest_data_file_meta.
+        # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta.
         df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
         # Check to see if there are any files 
@@ -142,7 +142,7 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
 @logger.catch
 def main(args):
     ''' Main program function takes args as input, starts logger, runs createFileList, and writes output to CSV file. 
-        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runIngest.py
+        The CSV file will be ingest into table drf_apsviz_station_file_meta during runHarvestFile() is run in runObsIngest.py
         Parameters
             args: dictionary 
                 contains the parameters listed below

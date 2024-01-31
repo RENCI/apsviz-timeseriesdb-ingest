@@ -1,0 +1,12 @@
+data_source,source_name,source_archive,source_variable,filename_prefix,location_type,units
+coastal_gauge,ncem,contrails,water_level,contrails_stationdata_coastal_water_level,coastal,m
+air_barometer,ncem,contrails,air_pressure,contrails_stationdata_air_pressure,coastal,mb
+river_gauge,ncem,contrails,water_level,contrails_stationdata_river_water_level,river,m
+stream_gauge,ncem,contrails,stream_elevation,contrails_stationdata_river_stream_elevation,river,m
+ocean_buoy,ndbc,ndbc,wave_height,ndbc_stationdata_wave_height,ocean,m
+wind_anemometer,ndbc,ndbc,wind_speed,ndbc_stationdata_wind_speed,ocean,mps
+air_barometer,ndbc,ndbc,air_pressure,ndbc_stationdata_air_pressure,ocean,mb
+tidal_predictions,noaa,noaa,water_level,noaaweb_stationdata_predictions,tidal,m
+tidal_gauge,noaa,noaa,water_level,noaaweb_stationdata_water_level,tidal,m
+air_barometer,noaa,noaa,air_pressure,noaaweb_stationdata_air_pressure,tidal,mb
+wind_anemometer,noaa,noaa,wind_speed,noaaweb_stationdata_wind_speed,tidal,mps
