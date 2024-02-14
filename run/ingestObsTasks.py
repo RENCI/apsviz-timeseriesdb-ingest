@@ -59,7 +59,8 @@ def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, m
             conn.close()
 
     except (Exception, psycopg.DatabaseError) as error:
-        print(error)
+        logger.info(error)
+        sys.exit(1)
 
 def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputFilenamePrefix, inputLocationType, inputUnits):
     ''' This function takes data source, source name, source archive, source variable, filename prefix, location type, data type, and 
@@ -113,6 +114,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestStations(ingestDir):
     ''' This function takes as input an ingest directory. The input directory is used to search for geom stations files
@@ -159,6 +161,7 @@ def ingestStations(ingestDir):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestSourceData(ingestDir):
     ''' This function takes as input an ingest directory. It uses the input directory to search for source CSV files, that where
@@ -203,6 +206,7 @@ def ingestSourceData(ingestDir):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
     ''' This function takes a data source, source name, and source archive as inputs and uses them to query 
@@ -250,6 +254,7 @@ def getHarvestDataFileMeta(inputDataSource, inputSourceName, inputSourceArchive,
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestHarvestDataFileMeta(ingestDir):
     ''' This function takes as input an ingest directory. It uses the input directory to seach for harvest_data_files
@@ -292,6 +297,7 @@ def ingestHarvestDataFileMeta(ingestDir):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestRetainObsStationFileMeta(ingestDir):
     ''' This function takes as input an ingest directory. It uses the input directory to seach for harvest_data_files
@@ -334,6 +340,7 @@ def ingestRetainObsStationFileMeta(ingestDir):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
     ''' This function takes an ingest directory, data source, source name, source archive, and source variable as input,
@@ -420,6 +427,7 @@ def ingestData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestRetainObsStationData(ingestDir, inputFilename):
     ''' This function takes an ingest directory and input dataset as input, and used them to ingest the data in the file, 
@@ -471,6 +479,7 @@ def ingestRetainObsStationData(ingestDir, inputFilename):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def createObsView():
     ''' This function takes not input, and creates the drf_gauge_station_source_data view.

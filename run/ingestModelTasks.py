@@ -68,6 +68,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestSourceData(ingestPath):
     ''' This function takes as input an ingest directory. It uses the input directory to search for source CSV files, that where
@@ -113,6 +114,7 @@ def ingestSourceData(ingestPath):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestHarvestDataFileMeta(ingestPath):
     ''' This function takes as input an ingest directory. It uses the input directory to seach for harvest_data_files
@@ -156,6 +158,7 @@ def ingestHarvestDataFileMeta(ingestPath):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestApsVizStationFileMeta(ingestPath):
     ''' This function takes an ingest directory, and filename as input. It uses the input filename, along with the input
@@ -200,6 +203,7 @@ def ingestApsVizStationFileMeta(ingestPath):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestData(ingestPath, inputFilename):
     ''' This function takes an ingest directory, data source, source name, source archive, and source variable as input,
@@ -262,6 +266,7 @@ def ingestData(ingestPath, inputFilename):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def ingestApsVizStationData(ingestPath, inputFilename):
     ''' This function takes an ingest directory and input dataset as input, and used them to ingest the data in the file, 
@@ -317,6 +322,7 @@ def ingestApsVizStationData(ingestPath, inputFilename):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def createModelView():
     ''' This function takes not input, and creates the drf_gauge_station_source_data view.

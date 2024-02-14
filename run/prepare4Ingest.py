@@ -76,7 +76,11 @@ def getSourceObsMeta():
 
     try:
         # Create connection to database and get cursor
-        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], host=os.environ['APSVIZ_GAUGES_DB_HOST'], port=os.environ['APSVIZ_GAUGES_DB_PORT'], password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
+        conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                               user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
+                               password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
 
         # Run query
@@ -95,6 +99,7 @@ def getSourceObsMeta():
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def runIngestObsSourceData(ingestDir):
     ''' This function runs createIngestObsSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source 

@@ -28,11 +28,11 @@ def getADCIRCRunPropertyVariables(modelRunID):
 
     try:
         # Create connection to database, set autocommit, and get cursor
-        with psycopg.connect(dbname=os.environ['ASGS_DB_DATABASE'], 
-                             user=os.environ['ASGS_DB_USERNAME'], 
-                             host=os.environ['ASGS_DB_HOST'], 
-                             port=os.environ['ASGS_DB_PORT'], 
-                             password=os.environ['ASGS_DB_PASSWORD']) as conn:
+        with psycopg.connect(dbname=os.environ['APSVIZ_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_DB_USERNAME'], 
+                             host=os.environ['APSVIZ_DB_HOST'], 
+                             port=os.environ['APSVIZ_DB_PORT'], 
+                             password=os.environ['APSVIZ_DB_PASSWORD']) as conn:
             cur = conn.cursor()
 
             # Run query
@@ -52,6 +52,7 @@ def getADCIRCRunPropertyVariables(modelRunID):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def checkObsSourceMeta(filename_prefix):
     ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_obs_meta, using a filename_prefix. This function
@@ -96,6 +97,7 @@ def checkObsSourceMeta(filename_prefix):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def checkModelSourceMeta(filename_prefix, source_instance):
     ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_model_meta, using a filename_prefix. This function
@@ -140,4 +142,5 @@ def checkModelSourceMeta(filename_prefix, source_instance):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 

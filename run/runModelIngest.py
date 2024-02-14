@@ -67,6 +67,7 @@ def getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcing
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def getHarvestDataFileMeta(modelRunID):
     ''' Returns DataFrame containing a list of filenames, from the table drf_havest_model_file_meta, that have not been ingested yet.
@@ -145,6 +146,7 @@ def getApsVizStationInfo(modelRunID):
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
         logger.info(error)
+        sys.exit(1)
 
 def runHarvestFile(harvestPath, ingestPath, modelRunID):
     ''' This function runs createHarvestModelFileMeta.py, which creates harvest meta data files, that are ingested into the 
