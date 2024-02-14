@@ -51,8 +51,7 @@ def getADCIRCRunPropertyVariables(modelRunID):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def checkObsSourceMeta(filename_prefix):
     ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_obs_meta, using a filename_prefix. This function
@@ -96,8 +95,7 @@ def checkObsSourceMeta(filename_prefix):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def checkModelSourceMeta(filename_prefix, source_instance):
     ''' Returns a DataFrame, that contains source meta-data, queried from the drf_source_model_meta, using a filename_prefix. This function
@@ -141,6 +139,4 @@ def checkModelSourceMeta(filename_prefix, source_instance):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
-
+        logger.exception(error)

@@ -98,8 +98,7 @@ def getSourceObsMeta():
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def runIngestObsSourceData(ingestDir):
     ''' This function runs createIngestObsSourceMeta.py which creates source data files that are then ingested into the drf_gauge_source 

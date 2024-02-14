@@ -42,7 +42,7 @@ def getStationID(locationType):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 def addMeta(ingestDir, inputDataSource, inputSourceName, inputSourceArchive, inputUnits, inputLocationType):
     ''' Returns a CSV file that containes source information specific to station IDs that have been extracted from the drf_gauge_station table.

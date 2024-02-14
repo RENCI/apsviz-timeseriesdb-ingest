@@ -67,8 +67,7 @@ def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, input
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def ingestSourceData(ingestPath):
     ''' This function takes as input an ingest directory. It uses the input directory to search for source CSV files, that where
@@ -113,8 +112,7 @@ def ingestSourceData(ingestPath):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def ingestHarvestDataFileMeta(ingestPath):
     ''' This function takes as input an ingest directory. It uses the input directory to seach for harvest_data_files
@@ -157,8 +155,7 @@ def ingestHarvestDataFileMeta(ingestPath):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def ingestApsVizStationFileMeta(ingestPath):
     ''' This function takes an ingest directory, and filename as input. It uses the input filename, along with the input
@@ -202,8 +199,7 @@ def ingestApsVizStationFileMeta(ingestPath):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def ingestData(ingestPath, inputFilename):
     ''' This function takes an ingest directory, data source, source name, source archive, and source variable as input,
@@ -265,8 +261,7 @@ def ingestData(ingestPath, inputFilename):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def ingestApsVizStationData(ingestPath, inputFilename):
     ''' This function takes an ingest directory and input dataset as input, and used them to ingest the data in the file, 
@@ -321,8 +316,7 @@ def ingestApsVizStationData(ingestPath, inputFilename):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def createModelView():
     ''' This function takes not input, and creates the drf_gauge_station_source_data view.
@@ -377,7 +371,7 @@ def createModelView():
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 # Main program function takes args as input, which contains the inputDir, inputTask, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch

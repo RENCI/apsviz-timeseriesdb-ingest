@@ -48,7 +48,7 @@ def getGaugeStationInfo(stationNames):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 # look into using **kwargs here, and eventually other places where it make sense.
 def addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginDate, endDate, inputDataSource, inputSourceName, inputSourceArchive, inputLocationType):

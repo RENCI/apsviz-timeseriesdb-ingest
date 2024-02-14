@@ -62,7 +62,7 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, inputSourc
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 # ADCIRC forecast model run.
 def addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass):

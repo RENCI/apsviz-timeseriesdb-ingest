@@ -57,7 +57,7 @@ def getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArc
 
     # If exception log error    
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSourceArchive,inputLocationType,inputFilenamePrefix):
     ''' Returns a DataFrame containing a list of files, with meta-data, to be ingested in to table drf_retain_obs_station_file_meta. It also returns

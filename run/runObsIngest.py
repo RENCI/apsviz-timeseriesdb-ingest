@@ -44,8 +44,7 @@ def getSourceMeta():
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def getRetainObsStationInfo():
     ''' Returns DataFrame containing variables from the drf_retain_obs_station_file_meta table. It takes a model run ID as input.
@@ -81,8 +80,7 @@ def getRetainObsStationInfo():
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def runHarvestFile(harvestDir, ingestDir):
     ''' This function runs createHarvestObsFileMeta.py, which creates harvest meta data files, that are ingested into the 

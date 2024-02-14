@@ -50,7 +50,7 @@ def getFileDateTime(inputFile):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
     ''' Returns a DataFrame containing a list of files, from table drf_harvest_obs_file_meta, with specified data source, source name,
@@ -99,7 +99,7 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inp
 
     # If exception log error    
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 # This function takes as input the harvest directory path, data source, source name, source archive, and a file name prefix.
 # It uses them to create a file list that is then ingested into the drf_harvest_obs_file_meta table, and used to ingest the

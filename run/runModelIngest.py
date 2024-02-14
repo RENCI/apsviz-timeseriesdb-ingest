@@ -66,8 +66,7 @@ def getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcing
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def getHarvestDataFileMeta(modelRunID):
     ''' Returns DataFrame containing a list of filenames, from the table drf_havest_model_file_meta, that have not been ingested yet.
@@ -106,7 +105,7 @@ def getHarvestDataFileMeta(modelRunID):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 def getApsVizStationInfo(modelRunID):
     ''' Returns DataFrame containing variables from the drf_apsviz_station_file_meta table. It takes a model run ID as input.
@@ -145,8 +144,7 @@ def getApsVizStationInfo(modelRunID):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
-        sys.exit(1)
+        logger.exception(error)
 
 def runHarvestFile(harvestPath, ingestPath, modelRunID):
     ''' This function runs createHarvestModelFileMeta.py, which creates harvest meta data files, that are ingested into the 
@@ -239,7 +237,6 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
             csv_url = os.environ['UI_DATA_URL']
         else:
             logger.info('Forecast obs station type: '+forecast_obs_station_type+' is incorrect.')
-            sys.exit(1)
 
         # Check to see if forecast source exists
         dfcheck = gdm.checkModelSourceMeta(forecast_prefix, source_instance)

@@ -58,7 +58,7 @@ def getObsStations(beginDate, endDate, inputLocationType):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 # Currently this function is not being used
 def getADCIRCStations(timeMark):
@@ -98,7 +98,7 @@ def getADCIRCStations(timeMark):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 def getGaugeStationInfo(stationNames):
     ''' Returns DataFrame containing variables from the drf_gauge_station table. It takes a list of station 
@@ -137,7 +137,7 @@ def getGaugeStationInfo(stationNames):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, modelRunID, inputDataSource, inputSourceName,
                              inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputLocationType, allLocationTypes, 

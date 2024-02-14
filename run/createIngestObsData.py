@@ -47,7 +47,7 @@ def getFileMetaTimemark(inputFile):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 
 def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
@@ -91,7 +91,7 @@ def getInputFiles(inputDataSource, inputSourceName, inputSourceArchive):
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_list):
     ''' Returns DataFrame containing source_id(s) for model data from the drf_gauge_source table in the apsviz_gauges database.
@@ -138,7 +138,7 @@ def getSourceID(inputDataSource, inputSourceName, inputSourceArchive, station_li
 
     # If exception log error
     except (Exception, psycopg.DatabaseError) as error:
-        logger.info(error)
+        logger.exception(error)
 
 # ADCIRC forecast model run.
 def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, inputSourceArchive):
