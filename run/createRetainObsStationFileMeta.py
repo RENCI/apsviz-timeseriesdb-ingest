@@ -14,17 +14,20 @@ import numpy as np
 from pathlib import Path
 from loguru import logger
 
-def getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType):
-    ''' Returns a DataFrame containing a list of files, from table drf_apsviz_station_file_meta, that have been ingested.
+def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, oldProcessingDatetime):
+    ''' Returns a DataFrame containing a list of files, from table drf_harvest_obs_file_meta, with specified data 
+        source, source name, and source_archive that have been ingested.
         Parameters
             inputDataSource: string
-                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...) 
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, 
+                wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
             inputSourceName: string
                 Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
-            inputLocationType: string
-                Gauge location type (COASTAL, TIDAL, or RIVERS). Used by ingestSourceMeta.
+            inputSourceVariable: string
+                The variable that is being ingested (e.g., water_level, air_pressure, stream_elevation, 
+                wave_height...)
         Returns
             DataFrame
     '''
@@ -32,21 +35,28 @@ def getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArc
         # Create connection to database and get cursor
         conn = psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
                                user=os.environ['APSVIZ_GAUGES_DB_USERNAME'], 
-                               host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                               host=os.environ['APSVIZ_GAUGES_DB_HOST'],
                                port=os.environ['APSVIZ_GAUGES_DB_PORT'], 
                                password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'])
         cur = conn.cursor()
        
         # Run query
-        cur.execute("""SELECT file_id, dir_path, file_name, data_source, source_name, source_archive, location_type, timemark, begin_date, end_date, ingested
-                       FROM drf_retain_obs_station_file_meta
+        cur.execute("""SELECT file_id, dir_path, file_name, processing_datetime, data_date_time, data_begin_time, 
+                              data_end_time, data_source, source_name, source_archive, source_variable, 
+                              location_type, timemark, ingested, overlap_past_file_date_time
+                       FROM drf_harvest_obs_file_meta
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                       source_archive = %(sourcearchive)s AND location_type = %(locationtype)s AND ingested = True""", 
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 'locationtype': inputLocationType})
-          
+                       source_archive = %(sourcearchive)s AND ingested = True AND 
+                       processing_datetime > %(processing_datetime)s""", 
+                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 
+                     'sourcearchive': inputSourceArchive, 'processing_datetime': oldProcessingDatetime})
+       
         # convert query output to Pandas dataframe 
-        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'data_source', 'source_name', 'source_archive', 'location_type', 
-                                                   'timemark', 'begin_date','end_date', 'ingested'])
+        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'processing_datetime', 
+                                                   'data_date_time', 'data_begin_time', 'data_end_time', 
+                                                   'data_source', 'source_name', 'source_archive', 
+                                                   'source_variable', 'location_type', 'timemark', 'ingested', 
+                                                   'overlap_past_file_date_time'])
 
         # Close cursor and database connection
         cur.close()
@@ -85,6 +95,9 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
     dirInputFiles = glob.glob(harvestDir+inputFilenamePrefix+"*.csv")
 
     if len(dirInputFiles) > 0:
+        # Create oldProcessingDatetime for use in getOldHarvestFiles
+        oldProcessingDatetime = " ".join((datetime.datetime.today() - datetime.timedelta(31)).isoformat().split('.')[0].split('T'))
+
         # Define outputList variable
         outputList = []
 
@@ -104,7 +117,7 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
             datetimes = re.findall(r'(\d+-\d+-\d+T\d+:\d+:\d+)',file_name)
             timeMark = datetimes[0]
             if len(timeMark) == 0:
-                logger.info('Something is wrong for the timeMake from file: '+file_name)
+                logger.info('Something is wrong for the timeMark from file: '+file_name)
             else:
                 timeMarkList.append([timeMark])
 
@@ -119,8 +132,10 @@ def createFileList(harvestDir,ingestDir,inputDataSource,inputSourceName,inputSou
         # Convert outputList to a DataFrame
         dfnew = pd.DataFrame(outputList, columns=['dir_path','file_name','data_source','source_name','source_archve','location_type','timemark','begin_date','end_date','ingested'])
 
-        # Get DataFrame of existing list of files, in the database, that have been ingested.
-        dfold = getOldRetainObsStationFiles(inputDataSource, inputSourceName, inputSourceArchive, inputLocationType)
+        # Get DataFrame of existing list of files, in the database, that have been ingested. Now that the harvest files are being deleted
+        # this step is no longer required. However, it is still being used to in cases there are files that are in the /ast-run-harvester
+        # directory that have been ingested but have not been deleted. MAY EVENTUALLY REMOVE THIS.
+        dfold = getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, oldProcessingDatetime)
 
         # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta.
         df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
@@ -167,7 +182,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createRetainObsStationFileMeta.log', level='DEBUG')
+    logger.add(log_path+'createRetainObsStationFileMeta.log', level='DEBUG', rotation="5 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

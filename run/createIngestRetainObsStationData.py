@@ -118,7 +118,12 @@ def addObsStationFileMeta(harvestDir, ingestDir, inputFilename, timeMark, beginD
     df['location_type'] = inputLocationType
 
     # Write DataFrame to CSV file
+    logger.info('Create ingest file: obs_station_data_copy_'+inputFilename+' from harvest file '+inputFilename)
     df.to_csv(ingestDir+'obs_station_data_copy_'+inputFilename, index=False, header=False)
+
+    # Remove harvest data file after creating the ingest file.
+    logger.info('Remove harvest data file: '+inputFilename+' after creating the ingest file')
+    os.remove(harvestDir+inputFilename)
 
 # Main program function takes args as input, which contains the  ingestDir, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
@@ -158,7 +163,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createIngestRetainObsStationData.log', level='DEBUG')
+    logger.add(log_path+'createIngestRetainObsStationData.log', level='DEBUG', rotation="5 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

@@ -197,7 +197,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'prepare4Ingest.log', level='DEBUG')
+    logger.add(log_path+'prepare4Ingest.log', level='DEBUG', rotation="5 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
