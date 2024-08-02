@@ -152,9 +152,6 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
         data_date_time = datetimes[0]
         processing_datetime = datetime.datetime.today().isoformat().split('.')[0]
 
-        # Create oldProcessingDatetime for use in getOldHarvestFiles
-        oldProcessingDatetime = " ".join((datetime.datetime.today() - datetime.timedelta(31)).isoformat().split('.')[0].split('T'))
-
         df = pd.read_csv(dirInputFile)
         data_begin_time = df['TIME'].min()
         data_end_time = df['TIME'].max()
@@ -175,6 +172,9 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
     dfnew = pd.DataFrame(outputList, columns=['dir_path', 'file_name', 'processing_datetime', 'data_date_time', 'data_begin_time', 'data_end_time', 
                                               'data_source', 'source_name', 'source_archve', 'source_variable', 'location_type', 'timemark', 
                                               'ingested','overlap_past_file_date_time'])
+
+    # Create oldProcessingDatetime for use in getOldHarvestFiles
+    oldProcessingDatetime = " ".join((datetime.datetime.today() - datetime.timedelta(31)).isoformat().split('.')[0].split('T'))
 
     # Get DataFrame of existing list of files, in the database, that have been ingested. Now that the harvest files are being deleted
     # this step is no longer required. However, it is still being used to in cases there are files that are in the /ast-run-harvester

@@ -5,9 +5,9 @@
 import os
 import sys
 import glob
+import shutil
 # import re
 import argparse
-# import shutil
 import psycopg
 import subprocess
 import pandas as pd
@@ -563,8 +563,11 @@ def runSequenceIngest(harvestPath, ingestPath, modelRunID):
     runApsVizStationCreateIngest(ingestPath, modelRunID) 
 
     # After data has been ingested for the model run remove the two model run directories
-    os.rmdir(harvestPath)
-    os.rmdir(ingestPath)
+    try:
+        shutil.rmtree(harvestPath)
+        shutil.rmtree(ingestPath)
+    except OSError as error:
+        logger.exception(error)
 
 @logger.catch
 def main(args):
