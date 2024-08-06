@@ -122,7 +122,7 @@ def addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, i
     logger.info('Create ingest file: data_copy_'+inputFilename+' from harvest file '+inputFilename+' in path '+ingestPath)
     df.to_csv(ingestPath+'data_copy_'+inputFilename, index=False, header=False)
 
-   # Remove harvest data file after creating the ingest file.
+    # Remove harvest data file after creating the ingest file.
     logger.info('Remove harvest data file: '+inputFilename+' in path '+harvestPath+' after creating the ingest file')
     os.remove(harvestPath+inputFilename)
 
