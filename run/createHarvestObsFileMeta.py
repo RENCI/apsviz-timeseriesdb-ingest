@@ -181,15 +181,8 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
     # directory that have been ingested but have not been deleted. MAY EVENTUALLY REMOVE THIS.
     dfold = getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, oldProcessingDatetime)
 
-    # Change name of file_name to meta files
-    meta_file_name = []
-    for i, v in dfold['file_name'].str.rsplit("stationdata", n=-1, expand=False).iteritems():
-        meta_file_name.append("stationdata_meta".join(v))
-
-    dfold['meta_file_name'] = meta_file_name
-
     # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta.
-    df = dfnew.loc[~dfnew['file_name'].isin(dfold['meta_file_name'])]
+    df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
 
     if len(df.values) == 0:
         logger.info('No new files for data source '+inputDataSource+', with source name '+inputSourceName+', from the '+
@@ -235,7 +228,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createHarvestObsFileMeta.log', level='DEBUG', rotation="5 MB")
+    logger.add(log_path+'runObsIngest.log', level='DEBUG', rotation="5 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

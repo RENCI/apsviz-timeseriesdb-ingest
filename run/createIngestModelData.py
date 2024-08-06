@@ -122,9 +122,9 @@ def addMeta(ingestPath, harvestPath, inputFilename, timeMark, inputDataSource, i
     logger.info('Create ingest file: data_copy_'+inputFilename+' from harvest file '+inputFilename+' in path '+ingestPath)
     df.to_csv(ingestPath+'data_copy_'+inputFilename, index=False, header=False)
 
-   # Remove harvest data file after creating the ingest file.
-    logger.info('Remove harvest data file: '+inputFilename+' in path '+harvestPath+' after creating the ingest file')
-    os.remove(harvestPath+inputFilename)
+    # Remove harvest data file after creating the ingest file.
+    # logger.info('Remove harvest data file: '+inputFilename+' in path '+harvestPath+' after creating the ingest file')
+    # os.remove(harvestPath+inputFilename)
 
 @logger.catch
 def main(args):
@@ -157,7 +157,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createIngestModelData.log', level='DEBUG', rotation="5 MB")
+    logger.add(log_path+'runModelIngest.log', level='DEBUG', rotation="1 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

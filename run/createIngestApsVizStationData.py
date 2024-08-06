@@ -323,8 +323,8 @@ def addApsVizStationFileMeta(harvestPath, ingestPath, inputFilename, timeMark, m
     dfOut.to_csv(ingestPath+'meta_copy_'+inputFilename, index=False, header=False)
 
     # Remove harvest data file after creating the ingest file.
-    logger.info('Remove harvest data file: '+inputFilename+' in path '+harvestPath+' after creating the ingest file')
-    os.remove(harvestPath+inputFilename)
+    # logger.info('Remove harvest data file: '+inputFilename+' in path '+harvestPath+' after creating the ingest file')
+    # os.remove(harvestPath+inputFilename)
 
 # Main program function takes args as input, which contains the  ingestPath, inputDataSource, inputSourceName, and inputSourceArchive values.
 @logger.catch
@@ -373,7 +373,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createIngestApsVizStationData.log', level='DEBUG', rotation="5 MB")
+    logger.add(log_path+'runModelIngest.log', level='DEBUG', rotation="1 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

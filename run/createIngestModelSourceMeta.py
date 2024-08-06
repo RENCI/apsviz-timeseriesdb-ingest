@@ -124,7 +124,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createIngestModelSourceMeta.log', level='DEBUG', rotation="5 MB")
+    logger.add(log_path+'runModelIngest.log', level='DEBUG', rotation="1 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

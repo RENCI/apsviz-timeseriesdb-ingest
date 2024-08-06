@@ -562,9 +562,9 @@ def runSequenceIngest(harvestPath, ingestPath, modelRunID):
     runDataIngest(ingestPath, modelRunID)
     runApsVizStationCreateIngest(ingestPath, modelRunID) 
 
-    # After data has been ingested for the model run remove the two model run directories
+    # After data has been ingested for the model run remove model run directory in ingest
     try:
-        shutil.rmtree(harvestPath)
+        # shutil.rmtree(harvestPath)
         shutil.rmtree(ingestPath)
     except OSError as error:
         logger.exception(error)
@@ -594,7 +594,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'runModelIngest.log', level='DEBUG', rotation="5 MB")
+    logger.add(log_path+'runModelIngest.log', level='DEBUG', rotation="1 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
