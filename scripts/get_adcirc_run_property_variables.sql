@@ -13,7 +13,7 @@ AS $function$
 			key,
 			value
 		    FROM
-			"ASGS_Mon_config_item"
+			"config_item"
 		    WHERE
 			key IN (''''suite.model'''', ''''ADCIRCgrid'''', ''''advisory'''', ''''forcing.ensemblename'''', ''''forcing.metclass'''', ''''instancename'''', ''''storm'''', ''''stormname'''', ''''stormnumber'''',''''physical_location'''', ''''time.currentdate'''', ''''time.currentcycle'''', ''''workflow_type'''')
 			and instance_id || ''''-'''' || uid = ''''' || _run_id || '''''
@@ -59,4 +59,4 @@ END
 $function$;
 
 ALTER FUNCTION get_adcirc_run_property_variables(varchar) OWNER TO postgres;
-GRANT EXECUTE ON FUNCTION get_adcirc_run_property_variables(varchar) TO asgs; 
+GRANT EXECUTE ON FUNCTION get_adcirc_run_property_variables(varchar) TO apsviz; 
