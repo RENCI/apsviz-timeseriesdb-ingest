@@ -5,9 +5,9 @@
 import os
 import sys
 import glob
+import shutil
 # import re
 import argparse
-# import shutil
 import psycopg
 import subprocess
 import pandas as pd
@@ -556,10 +556,18 @@ def runSequenceIngest(harvestPath, ingestPath, modelRunID):
             None, but the functions it calls return values, described above.
     '''
 
+    # Run sequence of functions to ingest data for a model run
     runHarvestFile(harvestPath, ingestPath, modelRunID)
     runDataCreate(ingestPath, modelRunID)
     runDataIngest(ingestPath, modelRunID)
     runApsVizStationCreateIngest(ingestPath, modelRunID) 
+
+    # After data has been ingested for the model run remove model run directory in ingest
+    try:
+        # shutil.rmtree(harvestPath)
+        shutil.rmtree(ingestPath)
+    except OSError as error:
+        logger.exception(error)
 
 @logger.catch
 def main(args):
@@ -586,7 +594,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'runModelIngest.log', level='DEBUG')
+    logger.add(log_path+'runModelIngest.log', level='DEBUG', rotation="1 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

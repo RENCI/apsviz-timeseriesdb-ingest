@@ -52,18 +52,20 @@ def getFileDateTime(inputFile):
     except (Exception, psycopg.DatabaseError) as error:
         logger.exception(error)
 
-def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable):
-    ''' Returns a DataFrame containing a list of files, from table drf_harvest_obs_file_meta, with specified data source, source name,
-        and source_archive that have been ingested.
+def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, oldProcessingDatetime):
+    ''' Returns a DataFrame containing a list of files, from table drf_harvest_obs_file_meta, with specified data 
+        source, source name, and source_archive that have been ingested.
         Parameters
             inputDataSource: string
-                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, 
+                wind_anemometer, NAMFORECAST_NCSC_SAB_V1.23...)
             inputSourceName: string
                 Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...)
             inputSourceArchive: string
                 Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...)
             inputSourceVariable: string
-                The variable that is being ingested (e.g., water_level, air_pressure, stream_elevation, wave_height...)
+                The variable that is being ingested (e.g., water_level, air_pressure, stream_elevation, 
+                wave_height...)
         Returns
             DataFrame
     '''
@@ -77,18 +79,23 @@ def getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inp
         cur = conn.cursor()
        
         # Run query
-        cur.execute("""SELECT file_id, dir_path, file_name, processing_datetime, data_date_time, data_begin_time, data_end_time, data_source, source_name, 
-                              source_archive, source_variable, location_type, timemark, ingested, overlap_past_file_date_time
+        cur.execute("""SELECT file_id, dir_path, file_name, processing_datetime, data_date_time, data_begin_time, 
+                              data_end_time, data_source, source_name, source_archive, source_variable, 
+                              location_type, timemark, ingested, overlap_past_file_date_time
                        FROM drf_harvest_obs_file_meta
                        WHERE data_source = %(datasource)s AND source_name = %(sourcename)s AND
-                       source_archive = %(sourcearchive)s and source_variable = %(sourcevariable)s AND ingested = True""", 
-                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 'sourcearchive': inputSourceArchive, 
-                     'sourcevariable': inputSourceVariable})
+                       source_archive = %(sourcearchive)s and source_variable = %(sourcevariable)s AND 
+                       ingested = True AND processing_datetime > %(processing_datetime)s""", 
+                    {'datasource': inputDataSource, 'sourcename': inputSourceName, 
+                     'sourcearchive': inputSourceArchive, 'sourcevariable': inputSourceVariable, 
+                     'processing_datetime': oldProcessingDatetime})
        
         # convert query output to Pandas dataframe 
-        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'processing_datetime', 'data_date_time', 'data_begin_time', 
-                                                   'data_end_time', 'data_source', 'source_name', 'source_archive', 'source_variable', 'location_type', 
-                                                   'timemark', 'ingested', 'overlap_past_file_date_time'])
+        df = pd.DataFrame(cur.fetchall(), columns=['file_id', 'dir_path', 'file_name', 'processing_datetime', 
+                                                   'data_date_time', 'data_begin_time', 'data_end_time', 
+                                                   'data_source', 'source_name', 'source_archive', 
+                                                   'source_variable', 'location_type', 'timemark', 'ingested', 
+                                                   'overlap_past_file_date_time'])
 
         # Close cursor and database connection
         cur.close()
@@ -166,8 +173,13 @@ def createFileList(harvestDir, inputDataSource, inputSourceName, inputSourceArch
                                               'data_source', 'source_name', 'source_archve', 'source_variable', 'location_type', 'timemark', 
                                               'ingested','overlap_past_file_date_time'])
 
-    # Get DataFrame of existing list of files, in the database, that have been ingested.
-    dfold = getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable)
+    # Create oldProcessingDatetime for use in getOldHarvestFiles
+    oldProcessingDatetime = " ".join((datetime.datetime.today() - datetime.timedelta(31)).isoformat().split('.')[0].split('T'))
+
+    # Get DataFrame of existing list of files, in the database, that have been ingested. Now that the harvest files are being deleted
+    # this step is no longer required. However, it is still being used to in cases there are files that are in the /ast-run-harvester
+    # directory that have been ingested but have not been deleted. MAY EVENTUALLY REMOVE THIS.
+    dfold = getOldHarvestFiles(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, oldProcessingDatetime)
 
     # Create DataFrame of list of current files that are not already ingested in table drf_harvest_obs_file_meta.
     df = dfnew.loc[~dfnew['file_name'].isin(dfold['file_name'])]
@@ -216,7 +228,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createHarvestObsFileMeta.log', level='DEBUG')
+    logger.add(log_path+'runObsIngest.log', level='DEBUG', rotation="5 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 

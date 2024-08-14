@@ -192,7 +192,12 @@ def addMeta(harvestDir, ingestDir, inputFile, inputDataSource, inputSourceName, 
     df.drop(columns=['station_name'], inplace=True)
 
     # Write dataframe to csv file
+    logger.info('Create ingest file: data_copy_'+inputFile+' from harvest file '+inputFile)
     df.to_csv(ingestDir+'data_copy_'+inputFile, index=False, header=False)
+
+    # Remove harvest data file after creating the ingest file.
+    # logger.info('Remove harvest data file: '+inputFile+' after creating the ingest file')
+    # os.remove(harvestDir+inputFile)
 
 def processData(ingestDir, inputDataSource, inputSourceName, inputSourceArchive):
     ''' Runs getInputFiles, and then addMeta 
@@ -237,7 +242,7 @@ def main(args):
     # Add logger
     logger.remove()
     log_path = os.path.join(os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs')), '')
-    logger.add(log_path+'createIngestObsData.log', level='DEBUG')
+    logger.add(log_path+'runObsIngest.log', level='DEBUG', rotation="5 MB")
     logger.add(sys.stdout, level="DEBUG")
     logger.add(sys.stderr, level="ERROR")
 
