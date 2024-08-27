@@ -12,6 +12,58 @@ import pandas as pd
 from pathlib import Path
 from loguru import logger
 
+def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark):
+    ''' This function is used to delete duplicate records in the observation data. The observation data has duplicate 
+        records with the same timestamp, but different timemarks because they are from different harvest data files.
+        Parameters
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
+                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa...). Used by ingestSourceMeta,
+                and ingestData.
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa...). Used by
+                ingestSourceMeta, and ingestData.
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and getHarvestDataFileMeta.
+            forcingMetclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta.
+            inputTimeMark: string
+                The start time of the forcast model run.
+        Returns 
+            None
+    '''         
+
+    try:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'],
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'],
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
+            cur = conn.cursor()
+    
+            cur.execute("""DELETE FROM
+                               drf_model_data a
+                                   USING drf_model_data b,
+                                         drf_model_source s
+                           WHERE
+                               s.data_source = %(datasource)s AND s.source_name = %(sourcename)s AND s.source_archive = %(sourcearchive)s AND
+                               s.source_instance = %(sourceinstance)s AND s.forcing_metclass = %(forcingmetclass)s AND a.timemark = %(timemark)s AND
+                               s.source_id=b.source_id AND
+                               a.model_id < b.model_id AND
+                               a.time = b.time AND
+                               s.source_id=a.source_id""",
+                        {'datasource': inputDataSource,'sourcename': inputSourceName,'sourcearchive': inputSourceArchive, 
+                         'sourceinstance':inputSourceInstance, 'forcingmetclass': inputForcingMetclass, 'timemark': inputTimeMark})
+
+            cur.close()
+            conn.close()
+
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.exception(error)
+
 def ingestSourceMeta(inputDataSource, inputSourceName, inputSourceArchive, inputSourceVariable, inputSourceInstance, inputForcingMetclass, 
                      inputFilenamePrefix, inputLocationType, inputUnits):
     ''' This function takes data source, source name, source archive, source variable, filename prefix, location type, data type, and 
@@ -201,7 +253,7 @@ def ingestApsVizStationFileMeta(ingestPath):
     except (Exception, psycopg.DatabaseError) as error:
         logger.exception(error)
 
-def ingestData(ingestPath, inputFilename):
+def ingestData(ingestPath, inputFilename, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark):
     ''' This function takes an ingest directory, data source, source name, source archive, and source variable as input,
         and uses them to run the getHarvestDataFileMeta function. The getHarvestDataFileMeta function produces a DataFrame 
         (dfDirFiles) that contains a list of data files, that are queried from the drf_harvest_model_file_meta table. These 
@@ -213,7 +265,21 @@ def ingestData(ingestPath, inputFilename):
                 Directory path to ingest data files, created from the harvest files, modelRunID subdirectory is included in this
                 path.
             inputFilename: string
-                The name of the input file. 
+                The name of the input file.
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
+                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta.
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa, adcirc...). Used by ingestSourceMeta.
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa, renci...). Used by
+                ingestSourceMeta.
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and getHarvestDataFileMeta.
+            inputForcingMetclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta.
+            inputTimeMark: string
+                The start time of the forcast model run.
         Returns
             None
     '''
@@ -251,9 +317,20 @@ def ingestData(ingestPath, inputFilename):
                         {'update_file': inputFilename, 'modelrunid': modelRunID})
 
 
+            logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                        +', input source archive: '+inputSourceArchive+', input source intance" '+inputSourceInstance
+                        +', inputForcingMetclass: '+inputForcingMetclass+', with timemark of '+str(inputTimeMark)+'.')
+
+            # Delete duplicate times
+            deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark)
+
+            logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                        +', input source archive: '+inputSourceArchive+', input source intance" '+inputSourceInstance
+                        +', inputForcingMetclass: '+inputForcingMetclass+', with timemark of '+str(inputTimeMark)+'.')
+            
             # Remove ingest data file after ingesting it.
-            logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
-            os.remove(ingestPathFile)
+            # logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
+            # os.remove(ingestPathFile)
 
             # Close cursor and database connection
             cur.close()
@@ -307,8 +384,8 @@ def ingestApsVizStationData(ingestPath, inputFilename):
                         {'update_file': inputFilename, 'modelrunid': modelRunID})
 
             # Remove ingest data file after ingesting it.
-            logger.info('Remove ingest data file: '+ingestPath+ingestFilename+' after ingesting it')
-            os.remove(ingestPath+ingestFilename)
+            # logger.info('Remove ingest data file: '+ingestPath+ingestFilename+' after ingesting it')
+            # os.remove(ingestPath+ingestFilename)
 
             # Close cursor and database connection
             cur.close()
@@ -413,6 +490,8 @@ def main(args):
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars).
                 Used by ingestSourceMeta.
+            inputTimeMark: string
+                The start time of the forcast model run.
         Returns
             None
     '''
@@ -458,8 +537,14 @@ def main(args):
     elif inputTask.lower() == 'ingestdata':
         ingestPath = os.path.join(args.ingestPath, '')
         inputFilename = args.inputFilename
+        inputDataSource = args.inputDataSource
+        inputSourceName = args.inputSourceName 
+        inputSourceArchive = args.inputSourceArchive
+        inputSourceInstance = args.inputSourceInstance
+        inputForcingMetclass = args.inputForcingMetclass
+        inputTimeMark = args.inputTimeMark
         logger.info('Ingesting data with ingest path '+ingestPath+', and input filename '+inputFilename+'.')
-        ingestData(ingestPath, inputFilename)
+        ingestData(ingestPath, inputFilename, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark)
         logger.info('Ingested data '+ingestPath+', and input filename '+inputFilename+'.')
     elif inputTask.lower() == 'ingestapsvizstationdata':
         ingestPath = args.ingestPath
@@ -510,6 +595,8 @@ if __name__ == "__main__":
             inputUnits: string
                 Units of data (e.g., m (meters), m^3ps (meter cubed per second), mps (meters per second), and mb (millibars).
                 Used by ingestSourceMeta.
+            inputTimeMark: string
+                The start time of the forcast model run.
         Returns
             None
     '''         
@@ -544,10 +631,16 @@ if __name__ == "__main__":
     elif args.inputTask.lower() == 'ingestdata':
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
         parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for ADCIRC data files", action="store", dest="inputFilename", required=True)
+        parser.add_argument("--inputDataSource", help="Input data source to be processed", action="store", dest="inputDataSource", required=True)
+        parser.add_argument("--inputSourceName", help="Input source name to be processed", action="store", dest="inputSourceName", choices=['adcirc','ncem','noaa','ndbc'], required=True)
+        parser.add_argument("--inputSourceArchive", help="Input source archive the data is from", action="store", dest="inputSourceArchive", required=True)
+        parser.add_argument("--inputSourceInstance", help="Input source variables", action="store", dest="inputSourceInstance", required=True)
+        parser.add_argument("--inputForcingMetclass", help="Input forcing metclass", action="store", dest="inputForcingMetclass", required=True)
+        parser.add_argument("--inputTimeMark", help="The start time of the forcast model run", action="store", dest="inputTimeMark", required=True)
     elif args.inputTask.lower() == 'ingestapsvizstationdata':
         parser.add_argument("--ingestPath", "--ingestPath", help="Ingest directory path, including the modelRunID", action="store", dest="ingestPath", required=True)
         parser.add_argument("--inputFileName", "--inputFilename", help="Input filename for apzViz station meta file", action="store", dest="inputFilename", required=True)
-
+        
     # Parse arguments
     args = parser.parse_args()
 

@@ -129,7 +129,8 @@ def getApsVizStationInfo(modelRunID):
         cur.execute("""SELECT dir_path, file_name, data_date_time, data_source, source_name, source_archive, source_instance, forcing_metclass,
                               grid_name, model_run_id, timemark, location_type, csvurl, ingested
                        FROM drf_apsviz_station_file_meta
-                       WHERE model_run_id = %(modelrunid)s""", {'modelrunid': modelRunID})
+                       WHERE model_run_id = %(modelrunid)s AND ingested = False""", 
+                    {'modelrunid': modelRunID})
     
         # convert query output to Pandas dataframe
         df = pd.DataFrame(cur.fetchall(), columns=['dir_path','file_name','data_date_time','data_source','source_name','source_archive','source_instance',
@@ -471,17 +472,15 @@ def runDataIngest(ingestPath, modelRunID):
     # QUESTIONS FOR THE FUTURE IS HOW WE WILL DEAL WITH MULTIPLE VARIABLE COMMING FROM SINGLE STATION. CURRENTLY, FOR ADCIRC DATA ONLY ONE VARIABLE
     # EXIST FOR A STATION, EITHER water_level OR wave_height.
     df = getHarvestDataFileMeta(modelRunID)
+    # NEED TO EXTRACT THE OTHER INPUT VARIABLES NEED TO DELETE DUPLICATES, FROM THE ABOVE DATAFRAME. THOSE ADDITIONAL VARIABLES NEED TO BE PASSED IN 
+    # ingestModelTasks.py command below.
 
     # Create list of program commands
     program_list = []
     for index, row in df.iterrows():
-        # Define input variable for ingestModelTasks.py
-        inputFilename = row['file_name']
-
-        # Get source_variable from 
-        #dfv = getSourceMeta(dataSource, sourceName, sourceArchive, sourceInstance, forcingMetclass)
-        #sourceVariable = dfv['source_variable']
-        program_list.append(['python','ingestModelTasks.py','--ingestPath', ingestPath, '--inputFilename', inputFilename,
+        program_list.append(['python','ingestModelTasks.py','--ingestPath', ingestPath, '--inputFilename', row['file_name'],
+                             '--inputDataSource', row['data_source'], '--inputSourceName', row['source_name'], '--inputSourceArchive', row['source_archive'],
+                             '--inputSourceInstance', row['source_instance'], '--inputForcingMetclass', row['forcing_metclass'], '--inputTimeMark', str(row['timemark']),
                              '--inputTask','ingestData'])
 
     # Run list of program commands using subprocess
