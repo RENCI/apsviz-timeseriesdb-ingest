@@ -632,6 +632,10 @@ def main(args):
         runSequenceIngest(harvestPath, ingestPath, modelRunID)
         logger.info('Ran sequence ingest.')
 
+    # Use sys.exit(0) to exit from program for k8s
+    logger.info('Use sys.exit(0) to exit from program for k8s')
+    sys.exit(0)
+
 # Run main function 
 if __name__ == "__main__":
     ''' Takes argparse inputs and passes theme to the main function
