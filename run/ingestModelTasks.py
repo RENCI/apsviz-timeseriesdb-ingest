@@ -12,6 +12,61 @@ import pandas as pd
 from pathlib import Path
 from loguru import logger
 
+def getProcessingDatatime(inputFilename, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark):
+    ''' This function retrieves processing datetime for a specific model run to check if it is a rerun of the model run. The model run is 
+        defined by data source, source name, source archive, source instance, forcing metclass and timemark. It uses file name to retrieve 
+        processing datatime for only the specific file that is being ingested.
+        Parameters
+            inputFilename: string
+                The name of the input file.
+            inputDataSource: string
+                Unique identifier of data source (e.g., river_gauge, tidal_predictions, air_barameter, wind_anemometer,
+                NAMFORECAST_NCSC_SAB_V1.23...). Used by ingestSourceMeta, and ingestData.
+            inputSourceName: string
+                Organization that owns original source data (e.g., ncem, ndbc, noaa...). Used by ingestSourceMeta,
+                and ingestData.
+            inputSourceArchive: string
+                Where the original data source is archived (e.g., contrails, ndbc, noaa...). Used by
+                ingestSourceMeta, and ingestData.
+            inputSourceInstance: string
+                Source instance, such as ncsc123_gfs_sb55.01. Used by ingestSourceMeta, and getHarvestDataFileMeta.
+            forcingMetclass: string
+                ADCIRC model forcing class, such as synoptic or tropical. Used by ingestSourceMeta.
+            inputTimeMark: string
+                The start time of the forcast model run.
+        Returns 
+            None
+    '''         
+
+    try:
+        with psycopg.connect(dbname=os.environ['APSVIZ_GAUGES_DB_DATABASE'], 
+                             user=os.environ['APSVIZ_GAUGES_DB_USERNAME'],
+                             host=os.environ['APSVIZ_GAUGES_DB_HOST'], 
+                             port=os.environ['APSVIZ_GAUGES_DB_PORT'],
+                             password=os.environ['APSVIZ_GAUGES_DB_PASSWORD'], 
+                             autocommit=True) as conn:
+            cur = conn.cursor()
+    
+            cur.execute("""SELECT DISTINCT processing_datetime 
+                           FROM drf_harvest_model_file_meta 
+                           WHERE file_name = %(filename)s AND data_source = %(datasource)s AND source_name = %(sourcename)s AND 
+                                 source_archive = %(sourcearchive)s AND source_instance = %(sourceinstance)s AND 
+                                 forcing_metclass = %(forcingmetclass)s AND timemark = %(timemark)s""",
+                        {'filename': inputFilename,'datasource': inputDataSource,'sourcename': inputSourceName,'sourcearchive': inputSourceArchive, 
+                         'sourceinstance':inputSourceInstance, 'forcingmetclass': inputForcingMetclass, 'timemark': inputTimeMark})
+            
+            # convert query output to Pandas dataframe
+            df = pd.DataFrame(cur.fetchall(), columns=['processing_datetime'])
+
+            cur.close()
+            conn.close()
+
+            # return DataFrame
+            return(df)
+
+    except (Exception, psycopg.DatabaseError) as error:
+        logger.exception(error)
+
 def deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark):
     ''' This function is used to delete duplicate records in the observation data. The observation data has duplicate 
         records with the same timestamp, but different timemarks because they are from different harvest data files.
@@ -316,17 +371,19 @@ def ingestData(ingestPath, inputFilename, inputDataSource, inputSourceName, inpu
                            """,
                         {'update_file': inputFilename, 'modelrunid': modelRunID})
 
+            dfProcessingDatetime = getProcessingDatatime(inputFilename, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark)
 
-            logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
-                        +', input source archive: '+inputSourceArchive+', input source intance" '+inputSourceInstance
-                        +', inputForcingMetclass: '+inputForcingMetclass+', with timemark of '+str(inputTimeMark)+'.')
+            if dfProcessingDatetime['processing_datetime'].count() > 1:
+                logger.info('Remove duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                            +', input source archive: '+inputSourceArchive+', input source intance" '+inputSourceInstance
+                            +', inputForcingMetclass: '+inputForcingMetclass+', with timemark of '+str(inputTimeMark)+'.')
 
-            # Delete duplicate times
-            deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark)
+                # Delete duplicate times
+                deleteDuplicateTimes(inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark)
 
-            logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
-                        +', input source archive: '+inputSourceArchive+', input source intance" '+inputSourceInstance
-                        +', inputForcingMetclass: '+inputForcingMetclass+', with timemark of '+str(inputTimeMark)+'.')
+                logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
+                            +', input source archive: '+inputSourceArchive+', input source intance" '+inputSourceInstance
+                            +', inputForcingMetclass: '+inputForcingMetclass+', with timemark of '+str(inputTimeMark)+'.')
             
             # Remove ingest data file after ingesting it.
             # logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
