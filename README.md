@@ -138,7 +138,7 @@ To ingest ADCIRC model data, for a specific modelRunID, run the command below:
 
 python runModelIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask SequenceIngest --modelRunID xxxx-dddddddddd-mmmmmmmmmmm
 
-where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-namforecast shows. 
+where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as gfsforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-gfsforecast shows. 
 
 ## Ingest The Long Way
 
@@ -202,7 +202,7 @@ To create and ingest the harvest file meta data, for ADCIRC model data, run the 
 
 python runModelIngest.py --harvestDir /data/ast-run-harvester/ --ingestDir /data/ast-run-ingester/ --inputTask ingestHarvestDataFileMeta --modelRunID xxxx-dddddddddd-mmmmmmmmmmm 
 
-where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as namforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-namforecast shows.
+where xxxx is the instance ID, dddddddddd is the start time of the model run, and mmmmmmmmmmm is the model run type, such as gfsforecast. Combined they form the modelRunID, xxxx-dddddddddd-mmmmmmmmmmm, as this example 4358-2023042312-gfsforecast shows.
 
 ### Create and Ingest ApsViz Station Data:
 
@@ -247,7 +247,7 @@ To add a new source, first create the source meta, and ingest it into the drf_so
 python ingestObsTasks.py --inputDataSource xxxxx_xxx --inputSourceName xxxxxx --inputSourceArchive xxxxxx --inputSourceVariable xxxxx_xxxxx --inputFilenamePrefix xxxxx_stationdata_xxxx_xxxxxx --inputLocationType xxxxxx --inputUnits x --inputTask ingestSourceMeta
 
 where: 
-  * --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, 
+  * --inputDataSource xxxxx_xxx is the data source such as gfsforecast_ec95d, 
   * --inputSourceName xxxxxx is the source name such as adcirc, 
   * --inputSourceArchive xxxxxx is the source archive such as renci, 
   * --inputSourceVariable xxxxx_xxxxx is the source variable name such as water_level, 
@@ -261,7 +261,7 @@ python createIngestObsSourceMeta.py --ingestDir /xxx/xxx-xxxxx-xxxx/ --inputData
 
 where:
   * --ingestDir /xxx/xxx-xxxxx-xxxx/ is the ingest directory such as /data/ast-run-ingester/, 
-  * --inputDataSource xxxxx_xxx is the data source such as namforecast_ec95d, 
+  * --inputDataSource xxxxx_xxx is the data source such as gfsforecast_ec95d, 
   * --inputSourceName xxxxx is the source name such as adcirc, 
   * --inputSourceArchive xxxxx is the source archive such as renci, 
   * --inputLocationType xxxxx is the location type such as tidal, and 
