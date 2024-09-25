@@ -371,6 +371,7 @@ def ingestData(ingestPath, inputFilename, inputDataSource, inputSourceName, inpu
                            """,
                         {'update_file': inputFilename, 'modelrunid': modelRunID})
 
+            ''' 
             dfProcessingDatetime = getProcessingDatatime(inputFilename, inputDataSource, inputSourceName, inputSourceArchive, inputSourceInstance, inputForcingMetclass, inputTimeMark)
 
             if dfProcessingDatetime['processing_datetime'].count() > 1:
@@ -384,7 +385,7 @@ def ingestData(ingestPath, inputFilename, inputDataSource, inputSourceName, inpu
                 logger.info('Removed duplicate times for data source '+inputDataSource+', with source name '+inputSourceName
                             +', input source archive: '+inputSourceArchive+', input source intance" '+inputSourceInstance
                             +', inputForcingMetclass: '+inputForcingMetclass+', with timemark of '+str(inputTimeMark)+'.')
-            
+            ''' 
             # Remove ingest data file after ingesting it.
             # logger.info('Remove ingest data file: '+ingestPathFile+' after ingesting it')
             # os.remove(ingestPathFile)
