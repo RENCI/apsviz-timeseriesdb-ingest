@@ -111,8 +111,10 @@ def runHarvestFile(harvestDir, ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
     # Create list of program commands to ingest meta-data on the obs meta files, which contain station information, into the drf_retain_obs_station_file_meta table
     program_list = []
@@ -134,8 +136,10 @@ def runHarvestFile(harvestDir, ingestDir):
     if len(program_list) > 0:
         for program in program_list:
             logger.info('Run '+" ".join(program))
-            output = subprocess.run(program, shell=False, check=True)
-            logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+            try:
+                output = subprocess.run(program, shell=False, check=True)
+            except subprocess.CalledProcessError as e:
+                logger.exception("Command failed with return code:", e.returncode)
     else:
         logger.info('Program list has 0 length, so continue')
 
@@ -162,8 +166,10 @@ def runDataCreate(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runDataIngest(ingestDir):
     ''' This function runs ingestObsTasks.py with --inputTask ingestData, ingest gauge data into the drf_gauge_data table, in the database. 
@@ -187,8 +193,10 @@ def runDataIngest(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runRetainObsStationCreateIngest(ingestDir):
     ''' This function creates and ingests the obs station data from the obs meta files, adding a timemark, begin_date, end_date, 
@@ -222,8 +230,10 @@ def runRetainObsStationCreateIngest(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+' with output returncode '+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
     # Create list of program commands
     program_list = []
@@ -233,8 +243,10 @@ def runRetainObsStationCreateIngest(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runSequenceIngest(harvestDir, ingestDir):
     ''' Runs the runHarvestFile(), runDataCreate(), and runDataIngest() functions in sequence. 

@@ -33,8 +33,10 @@ def runIngestStations(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 # This programs reads the source meta information from source_obs_meta.csv, and ingests it into the drf_source_obs_meta table. The drf_source_obs_meta
 # table is used by runIngestObsSourceData(), by runing getSourceObsMeta(), to get input variables for createIngestObsSourceMeta.py
@@ -63,8 +65,10 @@ def runIngestObsSourceMeta():
     # Run programe list using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def getSourceObsMeta():
     ''' Returns a DataFrame containing source meta-data from the drf_source_obs_meta table.
@@ -125,8 +129,10 @@ def runIngestObsSourceData(ingestDir):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runCreateObsView():
     ''' This function runs ingestObsTasks.py with --inputTask createObsView, creating a view (drf_gauge_station_source_data) that combines 
@@ -142,8 +148,10 @@ def runCreateObsView():
  
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runCreateModelView():
     ''' This function runs ingestModelTasks.py with --inputTask createModelView, creating a view (drf_gauge_station_source_data) that combines 
@@ -159,8 +167,10 @@ def runCreateModelView():
  
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runSequenceIngest(ingestDir):
     ''' Runs the runCreateObsView(), runIngestStations(), runIngestObsSourceMeta(), and runIngestObsSourceData() functions in sequence. 

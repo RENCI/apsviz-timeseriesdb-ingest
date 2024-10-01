@@ -366,8 +366,10 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
     # Get ADCIRC meta forecast filenames
     filelist = glob.glob(harvestPath+'meta_FORECAST_*.csv')
@@ -407,9 +409,10 @@ def runHarvestFile(harvestPath, ingestPath, modelRunID):
         # Run list of program commands using subprocess
         for program in program_list:
             logger.info('Run '+" ".join(program))
-            output = subprocess.run(program, shell=False, check=True)
-            logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
-
+            try:
+                output = subprocess.run(program, shell=False, check=True)
+            except subprocess.CalledProcessError as e:
+                logger.exception("Command failed with return code:", e.returncode)
     else:
         logger.info('No meta forecast files found for model run id: '+modelRunID)
 
@@ -455,8 +458,10 @@ def runDataCreate(ingestPath, modelRunID):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runDataIngest(ingestPath, modelRunID):
     ''' This function runs ingestModelTasks.py with --inputTask ingestData, ingest gauge data into the drf_model_data table, in the database. 
@@ -486,8 +491,10 @@ def runDataIngest(ingestPath, modelRunID):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runApsVizStationCreateIngest(ingestPath, modelRunID):
     ''' This function creates and ingests the apsViz station data from the adcirc meta files, adding a timemark, model_run_id, 
@@ -523,8 +530,10 @@ def runApsVizStationCreateIngest(ingestPath, modelRunID):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+' with output returncode '+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
     logger.info('Ingest apsViz station file data, for model run ID '+modelRunID+', into the apsviz_station table ')
 
@@ -536,8 +545,10 @@ def runApsVizStationCreateIngest(ingestPath, modelRunID):
     # Run list of program commands using subprocess
     for program in program_list:
         logger.info('Run '+" ".join(program))
-        output = subprocess.run(program, shell=False, check=True)
-        logger.info('Ran '+" ".join(program)+" with output returncode "+str(output.returncode))
+        try:
+            output = subprocess.run(program, shell=False, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.exception("Command failed with return code:", e.returncode)
 
 def runSequenceIngest(harvestPath, ingestPath, modelRunID):
     ''' Runs the runHarvestFile(), runDataCreate(), and runDataIngest() functions in sequence. If modelRunID has a value
